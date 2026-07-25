@@ -23,7 +23,7 @@ import java.util.List;
 public class FundReportService implements GetFundReportUseCase {
 
     /** Bumped when report uses mfapi NAV + locally computed rolling returns. */
-    private static final String REPORT_CACHE_PREFIX = "fund-report:v5:";
+    private static final String REPORT_CACHE_PREFIX = "fund-report:v6:";
     /** Bumped when matrix uses mfapi daily NAV history. */
     private static final String MATRIX_CACHE_PREFIX = "fund-report-matrix:v3:";
 

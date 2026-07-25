@@ -16,6 +16,8 @@ import java.util.Map;
 public class DrawdownCalculator {
 
     private static final double CRASH_THRESHOLD = 30;
+    /** Keeps API payloads small; the UI charts a downsampled series anyway. */
+    private static final int MAX_SERIES_POINTS = 400;
 
     public DrawdownReport compute(List<NavPoint> nav) {
         if (nav.size() < 2) {
@@ -56,8 +58,26 @@ public class DrawdownCalculator {
                 recoveryYears,
                 Math.abs(maxDrawdown),
                 avgRecovery,
-                series,
+                downsampleSeries(series, MAX_SERIES_POINTS),
                 episodes);
+    }
+
+    static List<DrawdownReport.DrawdownPoint> downsampleSeries(
+            List<DrawdownReport.DrawdownPoint> series,
+            int maxPoints) {
+        if (series.size() <= maxPoints) {
+            return series;
+        }
+        int step = (int) Math.ceil((double) series.size() / maxPoints);
+        List<DrawdownReport.DrawdownPoint> sampled = new ArrayList<>();
+        for (int i = 0; i < series.size(); i += step) {
+            sampled.add(series.get(i));
+        }
+        DrawdownReport.DrawdownPoint last = series.get(series.size() - 1);
+        if (!sampled.get(sampled.size() - 1).date().equals(last.date())) {
+            sampled.add(last);
+        }
+        return List.copyOf(sampled);
     }
 
     public List<DrawdownReport.DrawdownEpisode> detectEpisodes(List<NavPoint> nav, double thresholdPercent) {

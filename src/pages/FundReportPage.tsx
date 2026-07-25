@@ -60,7 +60,7 @@ export function FundReportPage() {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
 
   const { data, loading, error } = useFundReport(scheme || null)
-  const { data: matrix, loading: matrixLoading } = useFundReportMatrix(scheme || null, matrixMode, !!scheme)
+  const { data: matrix, loading: matrixLoading } = useFundReportMatrix(scheme || null, matrixMode, !!data)
   const activeSection = useSectionNav(SECTION_IDS)
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])

@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -19,12 +21,13 @@ public class RollingReturnsFromNav {
     private static final int TOLERANCE_DAYS = 7;
 
     public RollingReturnsData compute(NavHistory history) {
-        List<RollingReturnRow> fundRows = new ArrayList<>();
         AtomicLong id = new AtomicLong(1);
-        for (Period period : Period.values()) {
-            fundRows.addAll(computePeriod(history, period, id));
-        }
-        return new RollingReturnsData(List.copyOf(fundRows), List.of());
+        List<RollingReturnRow> fundRows = Arrays.stream(Period.values())
+                .parallel()
+                .flatMap(period -> computePeriod(history, period, id).stream())
+                .sorted(Comparator.comparingLong(RollingReturnRow::id))
+                .toList();
+        return new RollingReturnsData(fundRows, List.of());
     }
 
     private List<RollingReturnRow> computePeriod(NavHistory history, Period period, AtomicLong id) {
@@ -34,8 +37,19 @@ public class RollingReturnsFromNav {
             return rows;
         }
 
+        Instant lastNav = nav.get(nav.size() - 1).date();
+        Instant latestValidStart = lastNav.atZone(ZoneOffset.UTC)
+                .minusYears(period.years())
+                .plusDays(TOLERANCE_DAYS)
+                .toInstant();
+        int maxStartIndex = lastIndexOnOrBefore(nav, latestValidStart);
+        if (maxStartIndex < 0) {
+            return rows;
+        }
+
         int endScan = 0;
-        for (NavPoint start : nav) {
+        for (int startIdx = 0; startIdx <= maxStartIndex; startIdx++) {
+            NavPoint start = nav.get(startIdx);
             Instant targetEnd = start.date().atZone(ZoneOffset.UTC).plusYears(period.years()).toInstant();
             Instant windowStart = targetEnd.minus(TOLERANCE_DAYS, ChronoUnit.DAYS);
             Instant windowEnd = targetEnd.plus(TOLERANCE_DAYS, ChronoUnit.DAYS);
@@ -84,5 +98,21 @@ public class RollingReturnsFromNav {
                     rolling));
         }
         return rows;
+    }
+
+    private static int lastIndexOnOrBefore(List<NavPoint> nav, Instant target) {
+        int lo = 0;
+        int hi = nav.size() - 1;
+        int result = -1;
+        while (lo <= hi) {
+            int mid = (lo + hi) >>> 1;
+            if (!nav.get(mid).date().isAfter(target)) {
+                result = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return result;
     }
 }
