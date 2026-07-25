@@ -121,4 +121,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>windows-truststore</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <spring-boot.run.jvmArguments>-Djavax.net.ssl.trustStoreType=Windows-ROOT</spring-boot.run.jvmArguments>
+      </properties>
+    </profile>
+  </profiles>
 </project>

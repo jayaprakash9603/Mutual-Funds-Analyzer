@@ -18,10 +18,12 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.Executors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PeerComparisonServiceTest {
@@ -56,6 +58,19 @@ class PeerComparisonServiceTest {
         assertFalse(report.peers().isEmpty());
         assertTrue(report.peers().stream().anyMatch(PeerComparisonReport.PeerRow::selected));
         assertTrue(report.peers().get(0).totalRecords() > 0);
+    }
+
+    @Test
+    void searchesPeersUsingCategoryKeywordsAcrossAllCategories() {
+        service.compare("Test Fund", "Equity Scheme - Small Cap Fund");
+        verify(schemeCatalogPort).search("Small Cap", "All");
+    }
+
+    @Test
+    void reducesSebiCategoryNamesToSearchableKeywords() {
+        assertEquals("Small Cap", PeerComparisonService.categoryKeywords("Equity Scheme - Small Cap Fund"));
+        assertEquals("Flexi Cap", PeerComparisonService.categoryKeywords("Equity Scheme - Flexi Cap Fund"));
+        assertEquals("", PeerComparisonService.categoryKeywords("All"));
     }
 
     private RollingReturnsData sampleData() {

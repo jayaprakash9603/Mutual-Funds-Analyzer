@@ -23,13 +23,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 
 @Service
 public class PeerComparisonService implements GetPeerComparisonUseCase {
 
     private static final int MAX_PEERS = 10;
+    private static final String ALL_CATEGORIES = "All";
+    /** The catalog only recognises its own labels, so SEBI-style category names are reduced to keywords. */
+    private static final Pattern CATEGORY_NOISE = Pattern.compile("(?i)\\b(fund|funds|scheme|schemes|other)\\b");
+    private static final Pattern PAYOUT_PLAN = Pattern.compile("(?i)\\b(idcw|dividend|payout|bonus)\\b");
 
     private final SchemeCatalogPort schemeCatalogPort;
     private final RollingReturnsPort rollingReturnsPort;
@@ -59,10 +65,7 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
     public PeerComparisonReport compare(String scheme, String category) {
         featureGuard.require(FeatureKeys.ANALYSIS_PEER_COMPARISON);
 
-        List<String> peerNames = schemeCatalogPort.search("", category).stream()
-                .filter(name -> !name.equals(scheme))
-                .limit(MAX_PEERS - 1)
-                .toList();
+        List<String> peerNames = findPeers(scheme, category);
 
         List<String> schemes = new ArrayList<>(peerNames.size() + 1);
         schemes.add(scheme);
@@ -82,6 +85,63 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
         List<String> highlights = buildHighlights(rows);
         return new PeerComparisonReport(rows, highlights, Period.Labels.FIVE_YEAR);
+    }
+
+    /**
+     * The report carries SEBI category names from mfapi, which the investt catalog cannot filter on,
+     * so peers are discovered by searching the category keywords instead.
+     */
+    private List<String> findPeers(String scheme, String category) {
+        String keywords = categoryKeywords(category);
+        List<String> candidates = searchQuietly(keywords);
+        if (candidates.isEmpty()) {
+            candidates = searchQuietly(lastTwoWords(keywords));
+        }
+
+        List<String> direct = new ArrayList<>();
+        List<String> regular = new ArrayList<>();
+        for (String name : candidates) {
+            if (name.equalsIgnoreCase(scheme) || PAYOUT_PLAN.matcher(name).find()) {
+                continue;
+            }
+            if (name.toLowerCase(Locale.ROOT).contains("direct")) {
+                direct.add(name);
+            } else {
+                regular.add(name);
+            }
+        }
+
+        List<String> peers = new ArrayList<>(direct);
+        peers.addAll(regular);
+        return peers.stream().limit(MAX_PEERS - 1L).toList();
+    }
+
+    private List<String> searchQuietly(String query) {
+        if (query.isBlank()) {
+            return List.of();
+        }
+        try {
+            return schemeCatalogPort.search(query, ALL_CATEGORIES);
+        } catch (RuntimeException ignored) {
+            return List.of();
+        }
+    }
+
+    static String categoryKeywords(String category) {
+        if (category == null || category.isBlank() || ALL_CATEGORIES.equalsIgnoreCase(category)) {
+            return "";
+        }
+        String tail = category.substring(category.lastIndexOf('-') + 1);
+        String cleaned = CATEGORY_NOISE.matcher(tail).replaceAll(" ").replaceAll("\\s+", " ").trim();
+        return cleaned.isEmpty() ? category.trim() : cleaned;
+    }
+
+    private static String lastTwoWords(String value) {
+        String[] words = value.split("\\s+");
+        if (words.length <= 2) {
+            return value;
+        }
+        return words[words.length - 2] + " " + words[words.length - 1];
     }
 
     private PeerComparisonReport.PeerRow buildRow(String schemeName, boolean selected) {
