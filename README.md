@@ -44,7 +44,10 @@ store with `-Dspring-boot.run.profiles=h2`, `postgres`, `mongo` or `nodb`.
 | `npm run dev` | Start the Spring Boot API and the Vite dev server |
 | `npm run dev:client` | Vite only |
 | `npm run dev:api` | Spring Boot only |
+| `npm run dev:demo` | Vite in demo mode, serving captured fixtures instead of the API |
 | `npm run build` | Type-check and produce a production build |
+| `npm run build:demo` | Production build with demo mode on by default |
+| `npm run demo:capture` | Refresh the demo fixtures from a running back end |
 | `npm run preview` | Preview the production build |
 | `npm run lint` | Run oxlint |
 | `npm run test` | Front-end unit tests (Vitest) |
@@ -77,6 +80,43 @@ owns that call, caches responses, and serves the analytics to the UI. mfapi.in p
 history; fund rolling returns, SIP, lumpsum, and matrix cells are derived from that series on the server.
 Fund-versus-index rolling aggregates for the Analyze page are stored incrementally, so a later request only
 folds in the NAV rows that arrived since the last computation.
+
+## Demo mode
+
+Demo mode is a **separate front-end build** that serves every API response from JSON files in
+`public/demo`. Use it for demos, portfolios, or any environment where the back end should not
+run. Live builds (`npm run dev`, `npm run build`) always talk to `/api/*` and never show demo
+controls.
+
+```bash
+npm run dev:demo      # local demo with fixtures
+npm run build:demo    # static demo build for hosting
+```
+
+In a demo build the navbar shows a **Demo data** badge and sample-fund chips on Analyze and
+Report. **Use live data** opens a guide for running the live application separately — it does
+**not** switch this demo page to the API. Live mode requires its own front-end server
+(`npm run dev` or `npm run dev:client`) plus the Spring Boot back end on port 8080.
+
+Every response still passes through the same zod schemas, so a stale fixture fails loudly
+instead of rendering wrong numbers.
+
+### Refreshing the fixtures
+
+```bash
+npm run dev:api        # back end must be up
+npm run demo:capture   # or double-click scripts\capture-demo-data.bat
+```
+
+The script resolves each fund in `DEMO_FUNDS` through `/api/schemes`, so scheme spellings are
+never hardcoded, then captures the report, all rolling-return periods, all four matrix modes,
+the fund-versus-index matrix, and peers per fund, plus one shared feature-flag, scheme list and
+comparison payload. Filenames are recorded in `public/demo/manifest.json`, which is the only
+thing the front end reads to find a fixture. Long NAV series are sampled down to 400 points a
+side, keeping the chart shape while holding the whole data set at about 5 MB.
+
+A fund is dropped from the demo set if its report cannot be captured, so the search list and the
+quick-pick chips only ever offer funds that have data.
 
 ## Feature flags
 

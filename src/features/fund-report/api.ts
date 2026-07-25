@@ -1,4 +1,5 @@
-import { ApiError } from '@/api/client'
+import { requestJson } from '@/api/request'
+import { API_ROUTES } from '@/api/routes'
 import {
   fundReportSchema,
   matrixReportSchema,
@@ -10,12 +11,16 @@ import {
 
 export type { FundReport, MatrixReport, PeerComparison }
 
+function withStartDate(params: Record<string, string>, startDate?: string): Record<string, string> {
+  return startDate ? { ...params, start_date: startDate } : params
+}
+
 export async function fetchFundReport(scheme: string, startDate?: string): Promise<FundReport> {
-  const params = new URLSearchParams({ scheme })
-  if (startDate) params.set('start_date', startDate)
-  const res = await fetch(`/api/fund-report?${params}`)
-  if (!res.ok) throw new ApiError(`Fund report failed (${res.status})`, res.status)
-  return fundReportSchema.parse(await res.json())
+  const data = await requestJson<unknown>(API_ROUTES.fundReport, {
+    params: withStartDate({ scheme }, startDate),
+    label: 'Fund report',
+  })
+  return fundReportSchema.parse(data)
 }
 
 export async function fetchFundReportMatrix(
@@ -23,16 +28,17 @@ export async function fetchFundReportMatrix(
   mode: 'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M',
   startDate?: string,
 ): Promise<MatrixReport> {
-  const params = new URLSearchParams({ scheme, mode })
-  if (startDate) params.set('start_date', startDate)
-  const res = await fetch(`/api/fund-report/matrix?${params}`)
-  if (!res.ok) throw new ApiError(`Matrix failed (${res.status})`, res.status)
-  return matrixReportSchema.parse(await res.json())
+  const data = await requestJson<unknown>(API_ROUTES.fundReportMatrix, {
+    params: withStartDate({ scheme, mode }, startDate),
+    label: 'Matrix',
+  })
+  return matrixReportSchema.parse(data)
 }
 
 export async function fetchPeerComparison(scheme: string, category: string): Promise<PeerComparison> {
-  const params = new URLSearchParams({ scheme, category })
-  const res = await fetch(`/api/fund-report/peers?${params}`)
-  if (!res.ok) throw new ApiError(`Peer comparison failed (${res.status})`, res.status)
-  return peerComparisonSchema.parse(await res.json())
+  const data = await requestJson<unknown>(API_ROUTES.fundReportPeers, {
+    params: { scheme, category },
+    label: 'Peer comparison',
+  })
+  return peerComparisonSchema.parse(data)
 }

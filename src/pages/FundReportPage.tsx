@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import { FundSelector } from '@/components/dashboard/FundSelector'
+import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
 import { GoldenTriangleResultCard } from '@/components/dashboard/GoldenTriangleResultCard'
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -25,7 +26,7 @@ import {
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
 import { AXIS_LINE, GRID_STROKE, MARGIN_X, TICK_LINE, TICK_MD, ZERO_LINE_STROKE, xLabel, yLabel } from '@/lib/chartAxes'
-import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/chartColors'
+import { CHART_COLORS, signedReturnColor } from '@/lib/chartColors'
 import { formatPercent } from '@/lib/utils'
 import { useFundReport } from '@/features/fund-report/hooks/useFundReport'
 import { useFundReportMatrix } from '@/features/fund-report/hooks/useFundReportMatrix'
@@ -65,6 +66,11 @@ export function FundReportPage() {
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])
 
+  const selectScheme = (next: string) => {
+    setScheme(next)
+    setSearchParams({ scheme: next })
+  }
+
   return (
     <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-6">
       <header className="space-y-2">
@@ -74,13 +80,12 @@ export function FundReportPage() {
         </p>
       </header>
 
+      <DemoFundPicker selectedScheme={scheme} onSelect={selectScheme} />
+
       <FundSelector
         mode="fund-only"
         selectedScheme={scheme}
-        onSelectScheme={(s) => {
-          setScheme(s)
-          setSearchParams({ scheme: s })
-        }}
+        onSelectScheme={selectScheme}
       />
 
       <ReportSectionNav activeSection={activeSection} />

@@ -3,8 +3,15 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
+const DEMO_MODE_ENV = 'import.meta.env.VITE_DEMO_MODE'
+
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+  // Injected here rather than in a .env file, since .gitignore excludes .env.* and the
+  // demo build needs to be reproducible from a clean checkout.
+  define: {
+    [DEMO_MODE_ENV]: JSON.stringify(mode === 'demo' ? 'true' : 'false'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -20,4 +27,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FundSelector } from '@/components/dashboard/FundSelector'
+import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { GoldenTriangleResultCard } from '@/components/dashboard/GoldenTriangleResultCard'
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
@@ -133,6 +134,8 @@ export function DashboardPage() {
           </div>
         )}
       </div>
+
+      <DemoFundPicker selectedScheme={scheme} onSelect={setScheme} />
 
       <FundSelector
         selectedScheme={scheme}
