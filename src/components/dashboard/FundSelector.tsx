@@ -47,7 +47,6 @@ export function FundSelector({
     query,
     fundOnly ? 'All' : category,
     searchEnabled,
-    fundOnly ? 'mfapi' : 'investt',
   )
   const { toggleFavorite, isFavorite } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)

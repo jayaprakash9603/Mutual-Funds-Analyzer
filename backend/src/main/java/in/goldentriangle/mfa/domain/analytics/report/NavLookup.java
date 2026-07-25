@@ -15,24 +15,43 @@ public final class NavLookup {
     }
 
     public static Optional<NavPoint> navOnOrBefore(List<NavPoint> series, Instant target) {
-        NavPoint best = null;
-        for (NavPoint point : series) {
-            if (!point.date().isAfter(target)) {
-                if (best == null || point.date().isAfter(best.date())) {
-                    best = point;
-                }
+        if (series.isEmpty()) {
+            return Optional.empty();
+        }
+        int lo = 0;
+        int hi = series.size() - 1;
+        int best = -1;
+        while (lo <= hi) {
+            int mid = (lo + hi) >>> 1;
+            Instant midDate = series.get(mid).date();
+            if (!midDate.isAfter(target)) {
+                best = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
             }
         }
-        return Optional.ofNullable(best);
+        return best >= 0 ? Optional.of(series.get(best)) : Optional.empty();
     }
 
     public static Optional<NavPoint> navOnOrAfter(List<NavPoint> series, Instant target) {
-        for (NavPoint point : series) {
-            if (!point.date().isBefore(target)) {
-                return Optional.of(point);
+        if (series.isEmpty()) {
+            return Optional.empty();
+        }
+        int lo = 0;
+        int hi = series.size() - 1;
+        int best = -1;
+        while (lo <= hi) {
+            int mid = (lo + hi) >>> 1;
+            Instant midDate = series.get(mid).date();
+            if (!midDate.isBefore(target)) {
+                best = mid;
+                hi = mid - 1;
+            } else {
+                lo = mid + 1;
             }
         }
-        return Optional.empty();
+        return best >= 0 ? Optional.of(series.get(best)) : Optional.empty();
     }
 
     public static Optional<NavPoint> nearest(List<NavPoint> series, Instant target, int toleranceDays) {

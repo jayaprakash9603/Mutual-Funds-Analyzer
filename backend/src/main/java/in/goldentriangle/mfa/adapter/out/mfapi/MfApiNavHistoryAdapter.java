@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,8 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Component
 @Primary
@@ -24,16 +27,19 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     private final MfApiSchemeResolver schemeResolver;
     private final BenchmarkNavResolver benchmarkNavResolver;
     private final CachePort cachePort;
+    private final Executor matrixExecutor;
 
     public MfApiNavHistoryAdapter(
             MfApiClient client,
             MfApiSchemeResolver schemeResolver,
             BenchmarkNavResolver benchmarkNavResolver,
-            CachePort cachePort) {
+            CachePort cachePort,
+            @Qualifier("matrixExecutor") Executor matrixExecutor) {
         this.client = client;
         this.schemeResolver = schemeResolver;
         this.benchmarkNavResolver = benchmarkNavResolver;
         this.cachePort = cachePort;
+        this.matrixExecutor = matrixExecutor;
     }
 
     @Override
@@ -45,6 +51,10 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     }
 
     private NavHistory load(String scheme, int code, String apiStart, String startDateUsed) {
+        CompletableFuture<BenchmarkNavResolver.BenchmarkSnapshot> benchmarkFuture = CompletableFuture.supplyAsync(
+                () -> benchmarkNavResolver.resolve(scheme, startDateUsed),
+                matrixExecutor);
+
         Map<String, Object> payload = client.get(
                 "/mf/" + code,
                 Map.of("startDate", apiStart),
@@ -62,7 +72,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
             throw new NoDataFoundException("No parseable NAV points for " + scheme);
         }
 
-        BenchmarkNavResolver.BenchmarkSnapshot benchmark = benchmarkNavResolver.resolve(scheme, startDateUsed);
+        BenchmarkNavResolver.BenchmarkSnapshot benchmark = benchmarkFuture.join();
         Instant first = fundNav.stream().map(NavPoint::date).min(Comparator.naturalOrder()).orElse(Instant.EPOCH);
         Instant last = fundNav.stream().map(NavPoint::date).max(Comparator.naturalOrder()).orElse(Instant.EPOCH);
 

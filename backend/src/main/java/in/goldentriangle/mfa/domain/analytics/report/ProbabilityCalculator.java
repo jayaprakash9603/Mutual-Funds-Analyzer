@@ -1,5 +1,8 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
+import in.goldentriangle.mfa.domain.analytics.NavSeriesBuilder;
+import in.goldentriangle.mfa.domain.model.AlignedRollingPoint;
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.ProbabilityReport;
@@ -23,24 +26,23 @@ public class ProbabilityCalculator {
         double beatInflation = RollingBandCalculator.percentAbove(returns, INFLATION_RATE);
         double above10 = RollingBandCalculator.percentAbove(returns, 10);
 
-        List<Double> alignedFund = fund.stream().map(RollingReturnRow::schemeRollingReturns).toList();
-        List<Double> alignedBench = data.benchmark().stream().map(RollingReturnRow::schemeRollingReturns).toList();
-        int min = Math.min(alignedFund.size(), alignedBench.size());
+        List<RollingReturnRow> fundFiveYear = filterPeriod(fund, Period.FIVE_YEAR.label());
+        List<RollingReturnRow> benchFiveYear = filterPeriod(data.benchmark(), Period.FIVE_YEAR.label());
+        List<AlignedRollingPoint> aligned = NavSeriesBuilder.alignRollingReturns(fundFiveYear, benchFiveYear);
         double beatBench = 0;
-        if (min > 0) {
-            long wins = 0;
-            for (int i = 0; i < min; i++) {
-                if (alignedFund.get(i) > alignedBench.get(i)) {
-                    wins++;
-                }
-            }
-            beatBench = wins * 100.0 / min;
+        if (!aligned.isEmpty()) {
+            long wins = aligned.stream().filter(p -> p.fundReturn() > p.benchmarkReturn()).count();
+            beatBench = wins * 100.0 / aligned.size();
         }
 
         double doubleMoney = estimateMultiplyProbability(returns, 2);
         double tripleMoney = estimateMultiplyProbability(returns, 3);
 
         return new ProbabilityReport(positive, beatInflation, beatBench, above10, doubleMoney, tripleMoney);
+    }
+
+    private static List<RollingReturnRow> filterPeriod(List<RollingReturnRow> rows, String periodLabel) {
+        return rows.stream().filter(row -> periodLabel.equals(row.period())).toList();
     }
 
     private double estimateMultiplyProbability(List<Double> cagrReturns, int multiplier) {

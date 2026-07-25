@@ -5,21 +5,23 @@ interface HighlightedTextProps {
   text: string
   query: string
   className?: string
+  /** Brighter match tone when the parent list row is keyboard-selected. */
+  selected?: boolean
 }
 
-export function HighlightedText({ text, query, className }: HighlightedTextProps) {
+export function HighlightedText({ text, query, className, selected = false }: HighlightedTextProps) {
   const parts = highlightMatchParts(text, query)
 
   return (
     <span className={cn('break-words', className)}>
       {parts.map((part, index) =>
         part.match ? (
-          <mark
+          <span
             key={`${part.text}-${index}`}
-            className="rounded-sm bg-primary/30 px-0.5 font-semibold text-foreground underline decoration-primary/50 decoration-2 underline-offset-2 dark:bg-primary/40"
+            className={cn('font-inherit text-primary', selected && 'font-semibold')}
           >
             {part.text}
-          </mark>
+          </span>
         ) : (
           <span key={`${part.text}-${index}`}>{part.text}</span>
         ),

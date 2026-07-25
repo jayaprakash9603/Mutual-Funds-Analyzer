@@ -1,15 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { searchFunds, searchSchemes } from '@/api/client'
+import { searchSchemes } from '@/api/client'
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_QUERY_LENGTH } from '@/lib/constants'
 
-export type FundSearchSource = 'investt' | 'mfapi'
-
-export function useFundSearch(
-  query: string,
-  category: string,
-  enabled = true,
-  source: FundSearchSource = 'investt',
-) {
+export function useFundSearch(query: string, category: string, enabled = true) {
   const [schemes, setSchemes] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +18,7 @@ export function useFundSearch(
       return
     }
 
-    const cacheKey = `${source}:${category}:${trimmed.toLowerCase()}`
+    const cacheKey = `${category}:${trimmed.toLowerCase()}`
     const cached = cacheRef.current.get(cacheKey)
     if (cached) {
       setSchemes(cached)
@@ -39,10 +32,7 @@ export function useFundSearch(
       setLoading(true)
       setError(null)
       try {
-        const results =
-          source === 'mfapi'
-            ? await searchFunds(trimmed, controller.signal)
-            : await searchSchemes(trimmed, category, controller.signal)
+        const results = await searchSchemes(trimmed, category, controller.signal)
         if (controller.signal.aborted) return
         cacheRef.current.set(cacheKey, results)
         setSchemes(results)
@@ -59,7 +49,7 @@ export function useFundSearch(
       clearTimeout(timer)
       controller.abort()
     }
-  }, [query, category, enabled, source])
+  }, [query, category, enabled])
 
   return { schemes, loading, error }
 }

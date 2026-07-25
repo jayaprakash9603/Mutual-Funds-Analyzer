@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -24,6 +23,8 @@ import java.util.concurrent.Executor;
 public class FundRollingReturnsAssembler {
 
     private static final Logger log = LoggerFactory.getLogger(FundRollingReturnsAssembler.class);
+
+    static final List<Period> REPORT_BENCHMARK_PERIODS = List.of(Period.FIVE_YEAR);
 
     private final NavHistoryPort navHistoryPort;
     private final RollingReturnsPort rollingReturnsPort;
@@ -42,26 +43,36 @@ public class FundRollingReturnsAssembler {
     }
 
     public RollingReturnsData assemble(String scheme, String startDate) {
+        return assemble(scheme, startDate, REPORT_BENCHMARK_PERIODS);
+    }
+
+    public RollingReturnsData assemble(String scheme, String startDate, List<Period> benchmarkPeriods) {
         NavHistory history = navHistoryPort.fetch(scheme, startDate);
-        RollingReturnsData fundData = rollingReturnsFromNav.compute(history);
-        if (fundData.fund().isEmpty()) {
-            throw new NoDataFoundException("No rolling returns computed from NAV for " + scheme);
-        }
-        List<RollingReturnRow> benchmark = fetchBenchmarkRows(scheme, startDate);
-        return new RollingReturnsData(fundData.fund(), benchmark);
+        return assembleFromHistory(history, scheme, startDate, benchmarkPeriods);
     }
 
     public RollingReturnsData assembleFromHistory(NavHistory history, String scheme, String startDate) {
+        return assembleFromHistory(history, scheme, startDate, REPORT_BENCHMARK_PERIODS);
+    }
+
+    public RollingReturnsData assembleFromHistory(
+            NavHistory history,
+            String scheme,
+            String startDate,
+            List<Period> benchmarkPeriods) {
+        CompletableFuture<List<RollingReturnRow>> benchmarkFuture = CompletableFuture.supplyAsync(
+                () -> fetchBenchmarkRows(scheme, startDate, benchmarkPeriods),
+                matrixExecutor);
         RollingReturnsData fundData = rollingReturnsFromNav.compute(history);
         if (fundData.fund().isEmpty()) {
             throw new NoDataFoundException("No rolling returns computed from NAV for " + scheme);
         }
-        List<RollingReturnRow> benchmark = fetchBenchmarkRows(scheme, startDate);
+        List<RollingReturnRow> benchmark = benchmarkFuture.join();
         return new RollingReturnsData(fundData.fund(), benchmark);
     }
 
-    private List<RollingReturnRow> fetchBenchmarkRows(String scheme, String startDate) {
-        List<CompletableFuture<RollingReturnsData>> futures = Arrays.stream(Period.values())
+    private List<RollingReturnRow> fetchBenchmarkRows(String scheme, String startDate, List<Period> periods) {
+        List<CompletableFuture<RollingReturnsData>> futures = periods.stream()
                 .map(period -> CompletableFuture.supplyAsync(
                         () -> fetchPeriodQuietly(scheme, startDate, period),
                         matrixExecutor))

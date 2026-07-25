@@ -42,7 +42,7 @@ public class CompareFundsService implements CompareFundsUseCase {
                 : startDate;
         List<GoldenTriangleResult> results = new ArrayList<>();
         for (String scheme : schemes) {
-            RollingReturnsData data = rollingReturnsAssembler.assemble(scheme, resolvedStart);
+            RollingReturnsData data = rollingReturnsAssembler.assemble(scheme, resolvedStart, List.of(period));
             List<RollingReturnRow> fund = RollingReturnFilters.byPeriod(data.fund(), period.label());
             List<RollingReturnRow> benchmark = RollingReturnFilters.byPeriod(data.benchmark(), period.label());
             if (fund.isEmpty()) {
