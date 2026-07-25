@@ -2,7 +2,6 @@ package in.goldentriangle.mfa.application;
 
 import in.goldentriangle.mfa.config.FeatureKeys;
 import in.goldentriangle.mfa.config.ReportProperties;
-import in.goldentriangle.mfa.config.UpstreamProperties;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
 import in.goldentriangle.mfa.domain.analytics.TimelineBuilder;
@@ -12,33 +11,28 @@ import in.goldentriangle.mfa.domain.analytics.report.ExpenseCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.FundReportEngine;
 import in.goldentriangle.mfa.domain.analytics.report.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.MatrixCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.NavHistoryAssembler;
 import in.goldentriangle.mfa.domain.analytics.report.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.QualityScoreCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.RiskReportBuilder;
 import in.goldentriangle.mfa.domain.analytics.report.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.TaxCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.NavHistoryAssembler;
 import in.goldentriangle.mfa.domain.analytics.report.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.rule.CobRule;
 import in.goldentriangle.mfa.domain.analytics.rule.RollingReturnRule;
 import in.goldentriangle.mfa.domain.analytics.rule.RuleEngine;
 import in.goldentriangle.mfa.domain.analytics.rule.SharpeRule;
-import in.goldentriangle.mfa.domain.model.AnalysisQuery;
-import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.FundMetadataPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
-import in.goldentriangle.mfa.domain.port.out.RollingReturnsPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -55,11 +49,11 @@ import static org.mockito.Mockito.when;
 class FundReportServiceTest {
 
     private FundReportService service;
-    private RollingReturnsPort rollingReturnsPort;
+    private FundRollingReturnsAssembler rollingReturnsAssembler;
 
     @BeforeEach
     void setUp() {
-        rollingReturnsPort = mock(RollingReturnsPort.class);
+        rollingReturnsAssembler = mock(FundRollingReturnsAssembler.class);
         NavHistoryPort navHistoryPort = mock(NavHistoryPort.class);
         FundMetadataPort metadataPort = mock(FundMetadataPort.class);
         FeatureGuard featureGuard = mock(FeatureGuard.class);
@@ -102,27 +96,23 @@ class FundReportServiceTest {
                 new MatrixCalculator());
 
         ReportProperties reportProperties = new ReportProperties();
-        UpstreamProperties upstreamProperties = new UpstreamProperties(
-                "analysis.investt.in", "/mutual-funds-research", Duration.ofSeconds(60), "01-01-2013");
 
         when(metadataPort.fetch(any())).thenReturn(Optional.empty());
 
         RollingReturnsData data = sampleData();
-        when(rollingReturnsPort.fetch(any())).thenReturn(data);
+        when(rollingReturnsAssembler.assembleFromHistory(any(), any(), any())).thenReturn(data);
         when(navHistoryPort.fetch(any(), any())).thenReturn(
                 NavHistoryAssembler.assemble("Test Fund", data, "01-01-2020"));
 
         service = new FundReportService(
                 navHistoryPort,
-                rollingReturnsPort,
+                rollingReturnsAssembler,
                 metadataPort,
                 engine,
                 featureGuard,
                 reportProperties,
-                upstreamProperties,
                 cachePort,
-                clock,
-                Runnable::run);
+                clock);
     }
 
     @Test

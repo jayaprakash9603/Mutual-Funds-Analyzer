@@ -301,17 +301,42 @@ export function FundReportPage() {
             </div>
           </SectionShell>
 
-          <SectionShell id="sip" title="SIP Analysis">
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {data.sip.scenarios.map((s) => (
-                <MetricTile
-                  key={s.monthlyAmount}
-                  label={`₹${s.monthlyAmount.toLocaleString('en-IN')}/month SIP`}
-                  value={`₹${s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  hint={`XIRR ${s.xirr.toFixed(1)}% · Gain ₹${s.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  metricKey="xirr"
-                />
-              ))}
+          <SectionShell id="sip" title="SIP Analysis" description="Monthly SIP outcomes from daily NAV history (mfapi.in).">
+            <div className="overflow-x-auto rounded-xl border border-border/70">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-3">Monthly SIP</th>
+                    <th className="px-4 py-3">Invested</th>
+                    <th className="px-4 py-3">Current value</th>
+                    <th className="px-4 py-3">Gain</th>
+                    <th className="px-4 py-3">XIRR</th>
+                    <th className="px-4 py-3">10Y projection</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.sip.scenarios.map((s) => (
+                    <tr key={s.monthlyAmount} className="border-b border-border/40 last:border-0">
+                      <td className="px-4 py-3 font-medium">
+                        ₹{s.monthlyAmount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        ₹{s.moneyInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        ₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                        ₹{s.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums">{s.xirr.toFixed(1)}%</td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        ₹{s.projectedValue10Y.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </SectionShell>
 

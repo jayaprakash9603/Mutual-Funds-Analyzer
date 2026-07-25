@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 
-export function useSectionNav(sectionIds: string[]) {
+/**
+ * Scroll-spy: active section is the last section whose top has crossed
+ * a sticky-nav offset. Updates as the user scrolls the page.
+ */
+export function useSectionNav(sectionIds: string[], offsetPx = 140) {
   const [active, setActive] = useState(sectionIds[0] ?? '')
   const idsKey = useMemo(() => sectionIds.join('|'), [sectionIds])
 
@@ -10,21 +14,25 @@ export function useSectionNav(sectionIds: string[]) {
 
     setActive((prev) => (ids.includes(prev) ? prev : ids[0]))
 
-    const observers: IntersectionObserver[] = []
-    ids.forEach((id) => {
-      const el = document.getElementById(id)
-      if (!el) return
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) setActive(id)
-        },
-        { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
-      )
-      observer.observe(el)
-      observers.push(observer)
-    })
-    return () => observers.forEach((o) => o.disconnect())
-  }, [idsKey])
+    const resolveActive = () => {
+      let current = ids[0]
+      for (const id of ids) {
+        const el = document.getElementById(id)
+        if (!el) continue
+        const top = el.getBoundingClientRect().top
+        if (top - offsetPx <= 0) current = id
+      }
+      setActive(current)
+    }
+
+    resolveActive()
+    window.addEventListener('scroll', resolveActive, { passive: true })
+    window.addEventListener('resize', resolveActive)
+    return () => {
+      window.removeEventListener('scroll', resolveActive)
+      window.removeEventListener('resize', resolveActive)
+    }
+  }, [idsKey, offsetPx])
 
   return active
 }

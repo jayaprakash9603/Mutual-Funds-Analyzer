@@ -2,6 +2,7 @@ package in.goldentriangle.mfa.config;
 
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
+import in.goldentriangle.mfa.domain.analytics.RollingReturnsFromNav;
 import in.goldentriangle.mfa.domain.analytics.TimelineBuilder;
 import in.goldentriangle.mfa.domain.analytics.insight.AlphaInsightGenerator;
 import in.goldentriangle.mfa.domain.analytics.insight.CobInsightGenerator;
@@ -28,7 +29,7 @@ import java.time.Clock;
 import java.util.List;
 
 @Configuration
-@EnableConfigurationProperties({FeatureFlags.class, UpstreamProperties.class, AnalyticsProperties.class})
+@EnableConfigurationProperties({FeatureFlags.class, UpstreamProperties.class, AnalyticsProperties.class, MfApiProperties.class})
 public class DomainConfig {
 
     @Bean
@@ -78,5 +79,10 @@ public class DomainConfig {
             InsightComposer insightComposer,
             TimelineBuilder timelineBuilder) {
         return new GoldenTriangleEvaluator(metricsCalculator, ruleEngine, insightComposer, timelineBuilder);
+    }
+
+    @Bean
+    RollingReturnsFromNav rollingReturnsFromNav() {
+        return new RollingReturnsFromNav();
     }
 }

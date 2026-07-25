@@ -18,8 +18,8 @@ import java.util.TreeSet;
 public class MatrixCalculator {
 
     private static final int STP_MONTHS = 6;
-    /** Allow January-labelled rows when the first trading NAV is a few weeks into the year. */
-    private static final int MAX_START_SLIP_DAYS = 45;
+    /** Allow January-labelled rows when the first trading NAV is a few days into the year. */
+    private static final int MAX_START_SLIP_DAYS = 10;
 
     public MatrixReport compute(NavHistory history, MatrixMode mode) {
         List<NavPoint> nav = history.fundNav();

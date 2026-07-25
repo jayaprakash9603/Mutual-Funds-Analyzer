@@ -31,7 +31,39 @@ const SUMMARY_META: Record<
   },
 }
 
+function cellFilled(rows: MatrixReport['dataRows'], r: number, c: number) {
+  return rows[r]?.cells[c]?.value != null
+}
+
+/** Outer edges of the filled triangle get a stronger step border; filled cells share a platform fill. */
+function stepCellClass(rows: MatrixReport['dataRows'], r: number, c: number) {
+  if (!cellFilled(rows, r, c)) {
+    return 'bg-transparent'
+  }
+
+  const left = cellFilled(rows, r, c - 1)
+  const right = cellFilled(rows, r, c + 1)
+  const up = cellFilled(rows, r - 1, c)
+  const down = cellFilled(rows, r + 1, c)
+
+  return cn(
+    'bg-muted/55 dark:bg-muted/40',
+    // Inner grid within the step block
+    left ? 'border-l border-border/35' : 'border-l-2 border-primary/45',
+    right ? 'border-r border-border/20' : 'border-r-2 border-primary/45',
+    up ? 'border-t border-border/30' : 'border-t-2 border-primary/45',
+    down ? 'border-b border-border/30' : 'border-b-2 border-primary/45',
+    // Soft rounding on the staircase silhouette
+    !left && !up && 'rounded-tl-lg',
+    !right && !up && 'rounded-tr-lg',
+    !left && !down && 'rounded-bl-lg',
+    !right && !down && 'rounded-br-lg',
+  )
+}
+
 export function HeatMatrix({ data }: { data: MatrixReport }) {
+  const rows = data.dataRows
+
   return (
     <div className="w-full space-y-3">
       <div className="w-full overflow-x-auto rounded-xl border border-border bg-card/40">
@@ -90,21 +122,26 @@ export function HeatMatrix({ data }: { data: MatrixReport }) {
           </tbody>
 
           <tbody>
-            {data.dataRows.map((row) => (
-              <tr key={row.startLabel} className="border-b border-border/35 last:border-0">
-                <td className="sticky left-0 z-10 bg-card px-3 py-2 text-sm font-medium text-foreground">
+            {rows.map((row, r) => (
+              <tr key={row.startLabel}>
+                <td className="sticky left-0 z-10 border-b border-border/25 bg-card px-3 py-2 text-sm font-medium text-foreground">
                   {row.startLabel}
                 </td>
-                {row.cells.map((cell) => {
+                {row.cells.map((cell, c) => {
                   const hasValue = cell.value != null
                   return (
                     <td
                       key={cell.holdingYears}
-                      className="px-2 py-1.5 text-center"
+                      className={cn(
+                        'px-1.5 py-1.5 text-center align-middle',
+                        stepCellClass(rows, r, c),
+                        // Empty side of the staircase — faint step guides
+                        !hasValue && 'border-b border-dashed border-border/20',
+                      )}
                     >
                       {hasValue ? (
                         <span
-                          className="inline-flex min-w-[2.75rem] items-center justify-center rounded-md px-1.5 py-1 font-mono text-xs font-semibold tabular-nums sm:text-sm"
+                          className="inline-flex min-w-[2.75rem] items-center justify-center rounded-md px-1.5 py-1 font-mono text-xs font-semibold tabular-nums shadow-sm sm:text-sm"
                           style={{
                             backgroundColor: bandColor(cell.band),
                             color: bandTextColor(cell.band),
@@ -113,7 +150,9 @@ export function HeatMatrix({ data }: { data: MatrixReport }) {
                         >
                           {formatValue(data.mode, cell.value!)}
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="sr-only">No data</span>
+                      )}
                     </td>
                   )
                 })}
@@ -129,6 +168,10 @@ export function HeatMatrix({ data }: { data: MatrixReport }) {
         <LegendSwatch label="Moderate" fill={RETURN_BAND_COLORS.MODERATE} text="#1c1917" />
         <LegendSwatch label="Weak" fill={RETURN_BAND_COLORS.WEAK} text="#0f172a" />
         <LegendSwatch label="Negative" fill={RETURN_BAND_COLORS.NEGATIVE} text="#fff" />
+        <span className="ml-1 inline-flex items-center gap-1.5 text-muted-foreground">
+          <span className="inline-block size-3 rounded-sm border-2 border-primary/45 bg-muted/55" aria-hidden="true" />
+          Step block (available history)
+        </span>
       </div>
     </div>
   )
@@ -179,15 +222,28 @@ export function HeatMatrixSkeleton() {
             </tr>
           ))}
           {Array.from({ length: SKELETON_ROWS }, (_, r) => (
-            <tr key={`row-${r}`} className="border-b border-border/40">
+            <tr key={`row-${r}`}>
               <td className="sticky left-0 z-10 bg-card px-3 py-2">
                 <Skeleton className="h-4 w-14" />
               </td>
-              {Array.from({ length: Math.max(1, SKELETON_YEARS - r) }, (_, c) => (
-                <td key={c} className="px-3 py-2">
-                  <Skeleton className="mx-auto h-6 w-full max-w-[3rem] rounded-md" />
-                </td>
-              ))}
+              {Array.from({ length: SKELETON_YEARS }, (_, c) => {
+                const filled = c < SKELETON_YEARS - r
+                return (
+                  <td
+                    key={c}
+                    className={cn(
+                      'px-1.5 py-1.5',
+                      filled
+                        ? 'border border-primary/25 bg-muted/40'
+                        : 'border-b border-dashed border-border/20',
+                      filled && c === 0 && 'rounded-l-md',
+                      filled && c === SKELETON_YEARS - r - 1 && 'rounded-r-md',
+                    )}
+                  >
+                    {filled ? <Skeleton className="mx-auto h-6 w-full max-w-[3rem] rounded-md" /> : null}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

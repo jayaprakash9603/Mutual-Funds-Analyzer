@@ -53,19 +53,30 @@ store with `-Dspring-boot.run.profiles=h2`, `postgres`, `mongo` or `nodb`.
 ## Architecture
 
 ```
-Browser → Vite (/api/*) → Spring Boot (:8080) → analysis.investt.in
+Browser → Vite (/api/*) → Spring Boot (:8080)
+                               ├─ api.mfapi.in — fund NAV + catalog (Report, Compare fund metrics)
+                               └─ analysis.investt.in — benchmark rows + Analyze page
                                ↓
-        Domain analytics (NAV reconstruction, Golden Triangle rules, insights)
+        Domain analytics (rolling returns from NAV, Golden Triangle rules, insights)
                                ↓
         Rolling aggregates cached in memory and, optionally, in SQL or Mongo
                                ↓
                        Dashboard + 17 charts
 ```
 
-The upstream API blocks browser CORS and requires a GET with a multipart body, so the back end
-owns that call, caches responses, and serves the analytics to the UI. Fund-versus-index rolling
-aggregates are stored incrementally, so a later request only folds in the NAV rows that arrived
-since the last computation.
+### Data sources
+
+| Page / feature | Fund NAV & search | Rolling returns (fund) | Benchmark / index |
+|----------------|-------------------|------------------------|-------------------|
+| **Analyze** (`/dashboard`) | investt.in | investt.in | investt.in |
+| **Fund report** | mfapi.in | Computed locally from mfapi daily NAV | investt.in (bridged by fund name) |
+| **Compare** | mfapi.in | Computed locally from mfapi daily NAV | investt.in (COB, alpha) |
+
+The upstream investt API blocks browser CORS and requires a GET with a multipart body, so the back end
+owns that call, caches responses, and serves the analytics to the UI. mfapi.in provides free daily NAV
+history; fund rolling returns, SIP, lumpsum, and matrix cells are derived from that series on the server.
+Fund-versus-index rolling aggregates for the Analyze page are stored incrementally, so a later request only
+folds in the NAV rows that arrived since the last computation.
 
 ## Feature flags
 

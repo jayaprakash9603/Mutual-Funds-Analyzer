@@ -1,10 +1,12 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
+import in.goldentriangle.mfa.domain.analytics.RollingReturnFilters;
 import in.goldentriangle.mfa.domain.model.AnalysisInput;
 import in.goldentriangle.mfa.domain.model.FundMetrics;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 import in.goldentriangle.mfa.domain.model.Period;
+import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.ConsistencyReport;
@@ -81,7 +83,12 @@ public class FundReportEngine {
             Optional<FundMetadata> metadata,
             Instant computedAt) {
         String periodLabel = Period.Labels.FIVE_YEAR;
-        AnalysisInput input = new AnalysisInput(rollingData.fund(), rollingData.benchmark(), periodLabel);
+        List<RollingReturnRow> fundPeriod = RollingReturnFilters.byPeriod(rollingData.fund(), periodLabel);
+        List<RollingReturnRow> benchmarkPeriod = RollingReturnFilters.byPeriod(rollingData.benchmark(), periodLabel);
+        AnalysisInput input = new AnalysisInput(
+                fundPeriod.isEmpty() ? rollingData.fund() : fundPeriod,
+                benchmarkPeriod.isEmpty() ? rollingData.benchmark() : benchmarkPeriod,
+                periodLabel);
         GoldenTriangleResult goldenTriangle = goldenTriangleEvaluator.evaluate(input);
         FundMetrics metrics = goldenTriangle.metrics();
 

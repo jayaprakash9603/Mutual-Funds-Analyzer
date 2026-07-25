@@ -43,7 +43,12 @@ export function FundSelector({
   const [showResults, setShowResults] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const searchEnabled = showResults && query !== selectedScheme
-  const { schemes, loading } = useFundSearch(query, fundOnly ? 'All' : category, searchEnabled)
+  const { schemes, loading } = useFundSearch(
+    query,
+    fundOnly ? 'All' : category,
+    searchEnabled,
+    fundOnly ? 'mfapi' : 'investt',
+  )
   const { toggleFavorite, isFavorite } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputWrapRef = useRef<HTMLDivElement>(null)

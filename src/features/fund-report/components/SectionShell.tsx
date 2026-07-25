@@ -16,7 +16,7 @@ export function SectionShell({
   children: ReactNode
 }) {
   return (
-    <section id={id} className="scroll-mt-24">
+    <section id={id} className="scroll-mt-36">
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>{title}</CardTitle>

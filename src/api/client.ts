@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   analysisResponseSchema,
   compareResponseSchema,
@@ -14,6 +15,7 @@ import { DEFAULT_PERIOD, DEFAULT_START_DATE } from '@/lib/constants'
 
 const API_ROUTES = {
   schemes: '/api/schemes',
+  fundSearch: '/api/funds/search',
   analysis: '/api/analysis',
   compare: '/api/analysis/compare',
   fundIndexMatrix: '/api/analysis/fund-index-matrix',
@@ -47,6 +49,15 @@ export async function searchSchemes(
   const params = new URLSearchParams({ query, category })
   const data = await fetchJson<unknown>(`${API_ROUTES.schemes}?${params}`, signal)
   return schemesResponseSchema.parse(data)
+}
+
+export async function searchFunds(query: string, signal?: AbortSignal): Promise<string[]> {
+  const params = new URLSearchParams({ query })
+  const data = await fetchJson<unknown>(`${API_ROUTES.fundSearch}?${params}`, signal)
+  return z
+    .array(z.object({ schemeCode: z.number(), schemeName: z.string() }))
+    .parse(data)
+    .map((item) => item.schemeName)
 }
 
 export async function fetchAnalysis(

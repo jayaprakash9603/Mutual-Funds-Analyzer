@@ -34,17 +34,23 @@ public class MetricsCalculator {
 
         List<NavPoint> fundNav = NavSeriesBuilder.buildNavSeries(input.fund());
         List<NavPoint> benchmarkNav = NavSeriesBuilder.buildNavSeries(input.benchmark());
-        DailyReturns daily = alignedDailyReturns(fundNav, benchmarkNav);
+        DailyReturns daily = input.benchmark().isEmpty()
+                ? fundOnlyDailyReturns(fundNav)
+                : alignedDailyReturns(fundNav, benchmarkNav);
 
         double fundAnnReturn = annualisedReturn(daily.fund()) * PERCENT;
-        double benchmarkAnnReturn = annualisedReturn(daily.benchmark()) * PERCENT;
+        double benchmarkAnnReturn = input.benchmark().isEmpty()
+                ? 0
+                : annualisedReturn(daily.benchmark()) * PERCENT;
         double fundVolatility = annualisedVolatility(daily.fund()) * PERCENT;
-        double benchmarkVolatility = annualisedVolatility(daily.benchmark()) * PERCENT;
+        double benchmarkVolatility = input.benchmark().isEmpty()
+                ? 0
+                : annualisedVolatility(daily.benchmark()) * PERCENT;
 
-        double beta = beta(daily);
+        double beta = input.benchmark().isEmpty() ? 0 : beta(daily);
         double fundSharpe = sharpeRatio(daily.fund());
-        double benchmarkSharpe = sharpeRatio(daily.benchmark());
-        double cob = chanceOfBeating(input);
+        double benchmarkSharpe = input.benchmark().isEmpty() ? 0 : sharpeRatio(daily.benchmark());
+        double cob = input.benchmark().isEmpty() ? 0 : chanceOfBeating(input);
 
         return new FundMetrics(
                 fundRolling.getAverage(),
@@ -60,21 +66,28 @@ public class MetricsCalculator {
                 benchmarkAnnReturn,
                 fundVolatility,
                 benchmarkVolatility,
-                alpha(fundAnnReturn, benchmarkAnnReturn, beta),
+                input.benchmark().isEmpty() ? 0 : alpha(fundAnnReturn, benchmarkAnnReturn, beta),
                 beta,
                 sortinoRatio(daily.fund()),
-                treynorRatio(daily.fund(), beta),
-                informationRatio(daily),
+                input.benchmark().isEmpty() ? 0 : treynorRatio(daily.fund(), beta),
+                input.benchmark().isEmpty() ? 0 : informationRatio(daily),
                 maxDrawdown(fundNav),
-                maxDrawdown(benchmarkNav),
+                input.benchmark().isEmpty() ? 0 : maxDrawdown(benchmarkNav),
                 totalReturn(fundNav),
-                totalReturn(benchmarkNav),
+                input.benchmark().isEmpty() ? 0 : totalReturn(benchmarkNav),
                 RiskLevel.forVolatility(fundVolatility).label(),
                 fundAgeYears(fundNav),
                 consistencyScore(
                         cob,
-                        fundSharpe > benchmarkSharpe,
-                        fundRolling.getAverage() > benchmarkRolling.getAverage()));
+                        input.benchmark().isEmpty() ? fundSharpe > 0 : fundSharpe > benchmarkSharpe,
+                        input.benchmark().isEmpty()
+                                ? fundRolling.getAverage() > 0
+                                : fundRolling.getAverage() > benchmarkRolling.getAverage()));
+    }
+
+    private DailyReturns fundOnlyDailyReturns(List<NavPoint> fundNav) {
+        List<Double> fundDaily = NavSeriesBuilder.computeDailyReturns(fundNav);
+        return new DailyReturns(fundDaily, List.of());
     }
 
     private static DoubleSummaryStatistics summarise(List<RollingReturnRow> rows) {

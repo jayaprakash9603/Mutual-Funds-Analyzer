@@ -42,6 +42,7 @@ public final class NavDateParser {
         }
         return fromInstant(dateStr)
                 .or(() -> fromLocalDate(dateStr, DateTimeFormatter.ISO_LOCAL_DATE))
+                .or(() -> fromLocalDate(dateStr, DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH)))
                 .or(() -> fromLocalDate(dateStr, SHORT_MONTH))
                 .or(() -> fromLocalDate(dateStr, LONG_MONTH));
     }

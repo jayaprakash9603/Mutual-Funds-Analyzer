@@ -71,6 +71,10 @@ features:
     basePath: /mutual-funds-research
     timeout: 60s
     defaultStartDate: 01-01-2013
+  mfapi:
+    host: api.mfapi.in
+    timeout: 20s
+    navTtl: 6h
 
 analytics:
   riskFreeRate: 0.06
