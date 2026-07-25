@@ -1,0 +1,7 @@
+# Persistence autoconfiguration is already off in application.yml, so this profile only has to keep
+# the persistence feature reported as disabled.
+features:
+  platform:
+    persistence:
+      enabled: false
+      type: none

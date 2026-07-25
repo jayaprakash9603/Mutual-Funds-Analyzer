@@ -22,12 +22,18 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { useFundSearch } from '@/hooks/useFundSearch'
-import { fetchRollingReturns } from '@/api/client'
-import { evaluateGoldenTriangle } from '@/lib/analytics'
+import { fetchComparison } from '@/api/client'
 import { getRadarData } from '@/lib/analytics/chartData'
-import type { GoldenTriangleResult } from '@/lib/analytics/types'
-import { DEFAULT_PERIOD, SORT_OPTIONS, type Period, type SortOption } from '@/lib/constants'
-import { runWithConcurrency } from '@/lib/utils'
+import type { GoldenTriangleResult } from '@/api/schemas'
+import {
+  DEFAULT_PERIOD,
+  MAX_COMPARE_FUNDS,
+  SORT_OPTIONS,
+  type Period,
+  type SortOption,
+} from '@/lib/constants'
+import { CHART_SERIES } from '@/lib/chartColors'
+import { DOMAIN_0_100 } from '@/lib/chartAxes'
 import {
   ChartContainer,
   ChartTooltip,
@@ -37,8 +43,15 @@ import {
 } from '@/components/ui/chart'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts'
 
-const MAX_FUNDS = 5
-const COLORS = ['#16a34a', '#ea580c', '#f59e0b', '#8b5cf6', '#dc2626']
+const GOLDEN_TRIANGLE_RULES = 3
+const SEARCH_SUGGESTION_MIN_CHARS = 2
+const FUND_NAME_MAX_CHARS = 20
+const RADAR_FILL_OPACITY = 0.15
+const RADAR_METRICS = ['Rolling Return', 'COB', 'Sharpe', 'Alpha', 'Risk', 'Consistency']
+
+function seriesColor(index: number) {
+  return CHART_SERIES[index % CHART_SERIES.length]
+}
 
 export function ComparePage() {
   const [funds, setFunds] = useState<string[]>([])
@@ -50,8 +63,8 @@ export function ComparePage() {
   const { schemes } = useFundSearch(query, 'All')
 
   const addFund = (scheme: string) => {
-    if (funds.length >= MAX_FUNDS) {
-      toast.error(`Maximum ${MAX_FUNDS} funds allowed`)
+    if (funds.length >= MAX_COMPARE_FUNDS) {
+      toast.error(`Maximum ${MAX_COMPARE_FUNDS} funds allowed`)
       return
     }
     if (funds.includes(scheme)) return
@@ -68,14 +81,7 @@ export function ComparePage() {
     if (!funds.length) return
     setLoading(true)
     try {
-      const analyzed = await runWithConcurrency(funds, 2, async (scheme) => {
-        const data = await fetchRollingReturns(scheme, DEFAULT_PERIOD as Period)
-        return evaluateGoldenTriangle({
-          fund: data.fund,
-          benchmark: data.benchmark,
-          period: DEFAULT_PERIOD,
-        })
-      })
+      const analyzed = await fetchComparison(funds, DEFAULT_PERIOD as Period)
       setResults(analyzed)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Comparison failed')
@@ -102,7 +108,7 @@ export function ComparePage() {
   const columns = useMemo<ColumnDef<GoldenTriangleResult>[]>(
     () => [
       { accessorKey: 'fundName', header: 'Fund', cell: (info) => <span className="line-clamp-2 max-w-xs">{String(info.getValue())}</span> },
-      { accessorKey: 'passCount', header: 'Score', cell: (info) => `${info.getValue()}/3` },
+      { accessorKey: 'passCount', header: 'Score', cell: (info) => `${info.getValue()}/${GOLDEN_TRIANGLE_RULES}` },
       { accessorKey: 'overallRating', header: 'Rating' },
       { id: 'cob', header: 'COB', accessorFn: (r) => r.metrics.cob, cell: (info) => `${Number(info.getValue()).toFixed(1)}%` },
       { id: 'sharpe', header: 'Sharpe', accessorFn: (r) => r.metrics.fundSharpe, cell: (info) => Number(info.getValue()).toFixed(2) },
@@ -124,13 +130,11 @@ export function ComparePage() {
 
   const radarData = useMemo(() => {
     if (!results.length) return []
-    const metrics = ['Rolling Return', 'COB', 'Sharpe', 'Alpha', 'Risk', 'Consistency']
-    return metrics.map((metric) => {
+    const perFund = results.map(getRadarData)
+    return RADAR_METRICS.map((metric) => {
       const point: Record<string, string | number> = { metric }
-      results.forEach((r, i) => {
-        const data = getRadarData(r)
-        const match = data.find((d) => d.metric === metric)
-        point[`fund${i}`] = match?.fund ?? 0
+      perFund.forEach((data, i) => {
+        point[`fund${i}`] = data.find((d) => d.metric === metric)?.fund ?? 0
       })
       return point
     })
@@ -140,18 +144,18 @@ export function ComparePage() {
     const config: Record<string, { label: string; color: string }> = {}
     results.forEach((r, i) => {
       config[`fund${i}`] = {
-        label: r.fundName.split(' - ')[0].slice(0, 20),
-        color: COLORS[i % COLORS.length],
+        label: r.fundName.split(' - ')[0].slice(0, FUND_NAME_MAX_CHARS),
+        color: seriesColor(i),
       }
     })
     return config
   }, [results])
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Compare Funds</h1>
-        <p className="text-muted-foreground">Compare up to {MAX_FUNDS} mutual funds side by side</p>
+        <p className="text-muted-foreground">Compare up to {MAX_COMPARE_FUNDS} mutual funds side by side</p>
       </div>
 
       <Card className="glass">
@@ -165,7 +169,7 @@ export function ComparePage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            {query.length >= 2 && schemes.length > 0 && (
+            {query.length >= SEARCH_SUGGESTION_MIN_CHARS && schemes.length > 0 && (
               <ul className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-xl border bg-popover p-1 shadow-lg">
                 {schemes.map((s) => (
                   <li key={s}>
@@ -225,7 +229,7 @@ export function ComparePage() {
             <div>
               <p className="font-semibold">Winner: {winner.fundName}</p>
               <p className="text-sm text-muted-foreground">
-                {winner.passCount}/3 passed | COB {winner.metrics.cob.toFixed(1)}% | Sharpe {winner.metrics.fundSharpe.toFixed(2)}
+                {winner.passCount}/{GOLDEN_TRIANGLE_RULES} passed | COB {winner.metrics.cob.toFixed(1)}% | Sharpe {winner.metrics.fundSharpe.toFixed(2)}
               </p>
             </div>
           </CardContent>
@@ -272,20 +276,20 @@ export function ComparePage() {
                 <RadarChart data={radarData}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="metric" />
-                  <PolarRadiusAxis domain={[0, 100]} />
-                  {results.map((_, i) => (
+                  <PolarRadiusAxis domain={DOMAIN_0_100} />
+                  {results.map((result, i) => (
                     <Radar
-                      key={i}
+                      key={result.fundName}
                       name={`fund${i}`}
                       dataKey={`fund${i}`}
-                      stroke={COLORS[i % COLORS.length]}
-                      fill={COLORS[i % COLORS.length]}
-                      fillOpacity={0.15}
+                      stroke={seriesColor(i)}
+                      fill={seriesColor(i)}
+                      fillOpacity={RADAR_FILL_OPACITY}
                       isAnimationActive
                     />
                   ))}
                   <ChartLegend content={ChartLegendContent} />
-                  <ChartTooltip content={ChartTooltipContent} />
+                  <ChartTooltip cursor={{ fill: 'var(--muted)', opacity: 0.45 }} content={<ChartTooltipContent />} />
                 </RadarChart>
               </ChartContainer>
             </CardContent>

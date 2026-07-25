@@ -1,6 +1,9 @@
 import { parseNavDate, dateKey } from '@/lib/utils'
 import type { NavPoint, RollingReturnRow } from './types'
 
+const MILLIS_PER_DAY = 1000 * 60 * 60 * 24
+const MAX_NAV_GAP_DAYS = 7
+
 export function buildNavSeries(rows: RollingReturnRow[]): NavPoint[] {
   const navMap = new Map<string, number>()
 
@@ -33,8 +36,8 @@ export function computeDailyReturns(series: NavPoint[]): number[] {
   for (let i = 1; i < series.length; i++) {
     const prev = series[i - 1]
     const curr = series[i]
-    const days = (curr.date.getTime() - prev.date.getTime()) / (1000 * 60 * 60 * 24)
-    if (days > 0 && days <= 7) {
+    const days = (curr.date.getTime() - prev.date.getTime()) / MILLIS_PER_DAY
+    if (days > 0 && days <= MAX_NAV_GAP_DAYS) {
       returns.push(curr.nav / prev.nav - 1)
     }
   }
@@ -70,17 +73,4 @@ export function stdDev(values: number[]) {
   const avg = mean(values)
   const variance = values.reduce((sum, v) => sum + (v - avg) ** 2, 0) / values.length
   return Math.sqrt(variance)
-}
-
-export function covariance(a: number[], b: number[]) {
-  if (a.length !== b.length || !a.length) return 0
-  const meanA = mean(a)
-  const meanB = mean(b)
-  return a.reduce((sum, val, i) => sum + (val - meanA) * (b[i] - meanB), 0) / a.length
-}
-
-export function variance(values: number[]) {
-  if (values.length < 2) return 0
-  const avg = mean(values)
-  return values.reduce((sum, v) => sum + (v - avg) ** 2, 0) / values.length
 }

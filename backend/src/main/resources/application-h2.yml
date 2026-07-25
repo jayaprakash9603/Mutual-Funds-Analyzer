@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./backend/data/mfa;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+  flyway:
+    locations: classpath:db/migration/h2
+
+features:
+  platform:
+    persistence:
+      type: h2

@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchSchemes } from '@/api/client'
-
-const MIN_QUERY_LENGTH = 3
-const DEBOUNCE_MS = 400
+import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_QUERY_LENGTH } from '@/lib/constants'
 
 export function useFundSearch(query: string, category: string, enabled = true) {
   const [schemes, setSchemes] = useState<string[]>([])
@@ -13,7 +11,7 @@ export function useFundSearch(query: string, category: string, enabled = true) {
   useEffect(() => {
     const trimmed = query.trim()
 
-    if (!enabled || trimmed.length < MIN_QUERY_LENGTH) {
+    if (!enabled || trimmed.length < SEARCH_MIN_QUERY_LENGTH) {
       setSchemes([])
       setError(null)
       setLoading(false)
@@ -45,7 +43,7 @@ export function useFundSearch(query: string, category: string, enabled = true) {
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
-    }, DEBOUNCE_MS)
+    }, SEARCH_DEBOUNCE_MS)
 
     return () => {
       clearTimeout(timer)

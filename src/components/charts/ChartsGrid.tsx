@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Label,
   Line,
   LineChart,
   Pie,
@@ -23,18 +24,16 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  CHART_TOOLTIP_CURSOR,
   type ChartConfig,
 } from '@/components/ui/chart'
 import type { AnalysisInput, GoldenTriangleResult } from '@/lib/analytics/types'
-import type { ManualInputsForm } from '@/api/schemas'
 import {
   getRollingReturnComparison,
   getSharpeComparison,
@@ -48,61 +47,60 @@ import {
   getRollingReturnTimeline,
   getPerformanceWaterfall,
   getFundScoreDoughnut,
-  getExpenseRatioComparison,
   getRiskMeterData,
   getVolatilityChart,
   getRollingReturnHistogram,
   getConsistencyScoreChart,
 } from '@/lib/analytics/chartData'
-
-const MARGIN_X = { left: 8, right: 8 }
-const MARGIN_LEFT = { left: 8 }
-const DOMAIN_0_100: [number, number] = [0, 100]
+import { CHART_GUIDES } from '@/lib/analytics/chartGuide'
+import {
+  AXIS_LINE,
+  DOMAIN_0_100,
+  GRID_STROKE,
+  MARGIN_LEFT,
+  MARGIN_X,
+  TICK_LINE,
+  TICK_MD,
+  TICK_SM,
+  xLabel,
+  yLabel,
+} from '@/lib/chartAxes'
+import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/chartColors'
+import { ChartShell, chartHeightForGuide } from '@/components/charts/ChartShell'
 
 const lineConfig = {
-  fund: { label: 'Fund', color: '#16a34a' },
-  benchmark: { label: 'Benchmark', color: '#ea580c' },
+  fund: { label: 'Fund', color: CHART_COLORS.fund },
+  benchmark: { label: 'Benchmark', color: CHART_COLORS.benchmark },
 } satisfies ChartConfig
+
+const cobConfig = { cob: { label: 'COB', color: CHART_COLORS.fund } } satisfies ChartConfig
+const sharpeConfig = { value: { label: 'Sharpe', color: CHART_COLORS.fund } } satisfies ChartConfig
+const alphaConfig = { value: { label: 'Alpha %', color: CHART_COLORS.fund } } satisfies ChartConfig
+const scatterConfig = { return: { label: 'Return', color: CHART_COLORS.fund } } satisfies ChartConfig
+const drawdownConfig = { drawdown: { label: 'Drawdown', color: CHART_COLORS.red } } satisfies ChartConfig
+const heatmapConfig = { return: { label: 'Return', color: CHART_COLORS.fund } } satisfies ChartConfig
+const timelineConfig = { value: { label: 'Rolling Return', color: CHART_COLORS.fund } } satisfies ChartConfig
+const waterfallConfig = { value: { label: 'Contribution', color: CHART_COLORS.fund } } satisfies ChartConfig
+const doughnutConfig = { value: { label: 'Score', color: CHART_COLORS.fund } } satisfies ChartConfig
+const riskMeterConfig = { value: { label: 'Risk', color: CHART_COLORS.red } } satisfies ChartConfig
+const volatilityConfig = { volatility: { label: 'Volatility', color: CHART_COLORS.amber } } satisfies ChartConfig
+const histogramConfig = { count: { label: 'Frequency', color: CHART_COLORS.fund } } satisfies ChartConfig
+const consistencyConfig = { score: { label: 'Score', color: CHART_COLORS.fund } } satisfies ChartConfig
+
+const SCATTER_BUBBLE_RANGE: [number, number] = [120, 480]
+const AREA_FILL_OPACITY = 0.2
+const BENCHMARK_FILL_OPACITY = 0.15
+const RADAR_FUND_FILL_OPACITY = 0.3
+const RADAR_BENCHMARK_FILL_OPACITY = 0.2
+const DENSE_TICK_INTERVAL = 2
 
 interface ChartsGridProps {
   input: AnalysisInput
   result: GoldenTriangleResult
-  manual?: ManualInputsForm
   loading?: boolean
 }
 
-function ChartShell({
-  title,
-  children,
-  loading,
-  empty,
-}: {
-  title: string
-  children: React.ReactNode
-  loading?: boolean
-  empty?: boolean
-}) {
-  return (
-    <Card className="glass glass-hover overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="aspect-video w-full" />
-        ) : empty ? (
-          <p className="flex aspect-video items-center justify-center text-sm text-muted-foreground">
-            No data available
-          </p>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-export function ChartsGrid({ input, result, manual, loading }: ChartsGridProps) {
+export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
   const seriesData = useMemo(
     () => ({
       rolling: getRollingReturnComparison(input),
@@ -131,9 +129,10 @@ export function ChartsGrid({ input, result, manual, loading }: ChartsGridProps) 
     [result],
   )
 
-  const expenseData = useMemo(
-    () => getExpenseRatioComparison(manual?.expenseRatio, manual?.benchmarkExpenseRatio),
-    [manual?.expenseRatio, manual?.benchmarkExpenseRatio],
+  const cob = result.metrics.cob
+  const cobGauge = useMemo(
+    () => [{ name: 'COB', value: cob, fill: cobColor(cob) }],
+    [cob],
   )
 
   const {
@@ -158,235 +157,308 @@ export function ChartsGrid({ input, result, manual, loading }: ChartsGridProps) 
   } = metricData
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <ChartShell title="Rolling Return Comparison" loading={loading}>
-        <ChartContainer config={lineConfig} className="aspect-video">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <ChartShell guide={CHART_GUIDES.rollingComparison} loading={loading}>
+        <ChartContainer config={lineConfig} className={chartHeightForGuide(CHART_GUIDES.rollingComparison)}>
           <LineChart data={rollingData} margin={MARGIN_X}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Rolling window', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
             <ChartLegend content={ChartLegendContent} />
-            <Line type="monotone" dataKey="fund" stroke="#16a34a" dot={false} strokeWidth={2} isAnimationActive />
-            <Line type="monotone" dataKey="benchmark" stroke="#ea580c" dot={false} strokeWidth={2} isAnimationActive />
+            <Line type="monotone" dataKey="fund" stroke={CHART_COLORS.fund} dot={false} strokeWidth={2.5} isAnimationActive={false} />
+            <Line
+              type="monotone"
+              dataKey="benchmark"
+              stroke={CHART_COLORS.benchmark}
+              strokeDasharray="6 4"
+              dot={false}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
           </LineChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="COB Gauge" loading={loading}>
-        <ChartContainer config={{ cob: { label: 'COB', color: '#16a34a' } }} className="mx-auto aspect-square max-h-[280px]">
-          <RadialBarChart data={[{ name: 'COB', value: result.metrics.cob, fill: result.metrics.cob > 70 ? '#16a34a' : result.metrics.cob > 50 ? '#f59e0b' : '#dc2626' }]} innerRadius="60%" outerRadius="100%" startAngle={180} endAngle={0}>
+      <ChartShell
+        guide={CHART_GUIDES.cobGauge}
+        loading={loading}
+        footer={<p className="text-center font-mono text-3xl font-semibold tracking-tight">{cob.toFixed(1)}%</p>}
+      >
+        <ChartContainer config={cobConfig} className={chartHeightForGuide(CHART_GUIDES.cobGauge)}>
+          <RadialBarChart data={cobGauge} innerRadius="60%" outerRadius="100%" startAngle={180} endAngle={0}>
             <RadialBar dataKey="value" cornerRadius={8} background />
-            <ChartTooltip content={ChartTooltipContent} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
           </RadialBarChart>
         </ChartContainer>
-        <p className="text-center text-2xl font-semibold">{result.metrics.cob.toFixed(1)}%</p>
       </ChartShell>
 
-      <ChartShell title="Sharpe Comparison" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Sharpe', color: '#16a34a' } }} className="aspect-video">
+      <ChartShell guide={CHART_GUIDES.sharpeComparison} loading={loading}>
+        <ChartContainer config={sharpeConfig} className={chartHeightForGuide(CHART_GUIDES.sharpeComparison)}>
           <BarChart data={sharpeData} layout="vertical" margin={MARGIN_LEFT}>
-            <CartesianGrid horizontal={false} />
-            <XAxis type="number" tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={80} />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="value" radius={6} isAnimationActive>
-              {sharpeData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
+            <CartesianGrid horizontal={false} stroke={GRID_STROKE} />
+            <XAxis type="number" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD}>
+              <Label {...xLabel('Sharpe ratio', -4)} />
+            </XAxis>
+            <YAxis type="category" dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} width={88} tick={TICK_MD} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="value" radius={6} isAnimationActive={false}>
+              {sharpeData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
               ))}
             </Bar>
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Fund vs Benchmark Returns" loading={loading}>
-        <ChartContainer config={lineConfig} className="aspect-video">
-          <AreaChart data={returnsArea}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
+      <ChartShell guide={CHART_GUIDES.returnsArea} loading={loading}>
+        <ChartContainer config={lineConfig} className={chartHeightForGuide(CHART_GUIDES.returnsArea)}>
+          <AreaChart data={returnsArea} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Date', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
             <ChartLegend content={ChartLegendContent} />
-            <Area type="monotone" dataKey="fund" stroke="var(--color-fund)" fill="var(--color-fund)" fillOpacity={0.2} isAnimationActive />
-            <Area type="monotone" dataKey="benchmark" stroke="var(--color-benchmark)" fill="var(--color-benchmark)" fillOpacity={0.15} isAnimationActive />
+            <Area type="monotone" dataKey="fund" stroke="var(--color-fund)" fill="var(--color-fund)" fillOpacity={AREA_FILL_OPACITY} isAnimationActive={false} />
+            <Area
+              type="monotone"
+              dataKey="benchmark"
+              stroke="var(--color-benchmark)"
+              fill="var(--color-benchmark)"
+              fillOpacity={BENCHMARK_FILL_OPACITY}
+              strokeDasharray="6 4"
+              isAnimationActive={false}
+            />
           </AreaChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Alpha Comparison" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Alpha %', color: '#16a34a' } }} className="aspect-video">
-          <BarChart data={alphaData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="value" fill="#16a34a" radius={6} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.alphaComparison} loading={loading}>
+        <ChartContainer config={alphaConfig} className={chartHeightForGuide(CHART_GUIDES.alphaComparison)}>
+          <BarChart data={alphaData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Entity', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Alpha (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="value" fill={CHART_COLORS.fund} radius={6} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Risk vs Return" loading={loading}>
-        <ChartContainer config={{ return: { label: 'Return', color: '#16a34a' } }} className="aspect-video">
-          <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="risk" name="Risk" unit="%" tickLine={false} axisLine={false} />
-            <YAxis type="number" dataKey="return" name="Return" unit="%" tickLine={false} axisLine={false} />
-            <ZAxis type="number" dataKey="size" range={[100, 400]} />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Scatter data={scatterData} fill="#16a34a" isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.riskReturn} loading={loading}>
+        <ChartContainer config={scatterConfig} className={chartHeightForGuide(CHART_GUIDES.riskReturn)}>
+          <ScatterChart margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis type="number" dataKey="risk" name="Risk" unit="%" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Risk (%)', -4)} />
+            </XAxis>
+            <YAxis type="number" dataKey="return" name="Return" unit="%" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ZAxis type="number" dataKey="size" range={SCATTER_BUBBLE_RANGE} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Scatter data={scatterData} fill={CHART_COLORS.fund} isAnimationActive={false} />
           </ScatterChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Maximum Drawdown" loading={loading}>
-        <ChartContainer config={{ drawdown: { label: 'Drawdown', color: '#dc2626' } }} className="aspect-video">
-          <AreaChart data={drawdownData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Area type="monotone" dataKey="drawdown" stroke="#dc2626" fill="#dc2626" fillOpacity={0.2} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.maxDrawdown} loading={loading}>
+        <ChartContainer config={drawdownConfig} className={chartHeightForGuide(CHART_GUIDES.maxDrawdown)}>
+          <AreaChart data={drawdownData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Date', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Drawdown (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Area type="monotone" dataKey="drawdown" stroke={CHART_COLORS.red} fill={CHART_COLORS.red} fillOpacity={AREA_FILL_OPACITY} isAnimationActive={false} />
           </AreaChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Radar Chart" loading={loading}>
-        <ChartContainer config={lineConfig} className="mx-auto aspect-square max-h-[280px]">
+      <ChartShell guide={CHART_GUIDES.radar} loading={loading}>
+        <ChartContainer config={lineConfig} className={chartHeightForGuide(CHART_GUIDES.radar)}>
           <RadarChart data={radarData}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="metric" />
-            <PolarRadiusAxis angle={30} domain={DOMAIN_0_100} />
-            <Radar name="Fund" dataKey="fund" stroke="var(--color-fund)" fill="var(--color-fund)" fillOpacity={0.3} isAnimationActive />
-            <Radar name="Benchmark" dataKey="benchmark" stroke="var(--color-benchmark)" fill="var(--color-benchmark)" fillOpacity={0.2} isAnimationActive />
+            <PolarAngleAxis dataKey="metric" tick={TICK_MD} />
+            <PolarRadiusAxis angle={30} domain={DOMAIN_0_100} tick={TICK_SM} />
+            <Radar name="Fund" dataKey="fund" stroke="var(--color-fund)" fill="var(--color-fund)" fillOpacity={RADAR_FUND_FILL_OPACITY} isAnimationActive={false} />
+            <Radar
+              name="Benchmark"
+              dataKey="benchmark"
+              stroke="var(--color-benchmark)"
+              fill="var(--color-benchmark)"
+              fillOpacity={RADAR_BENCHMARK_FILL_OPACITY}
+              strokeDasharray="4 3"
+              isAnimationActive={false}
+            />
             <ChartLegend content={ChartLegendContent} />
-            <ChartTooltip content={ChartTooltipContent} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
           </RadarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Monthly Performance Heatmap" loading={loading}>
-        <ChartContainer config={{ return: { label: 'Return', color: '#16a34a' } }} className="aspect-video">
-          <BarChart data={heatmapData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} interval={2} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="return" fill="#16a34a" radius={2} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.monthlyHeatmap} loading={loading}>
+        <ChartContainer config={heatmapConfig} className={chartHeightForGuide(CHART_GUIDES.monthlyHeatmap)}>
+          <BarChart data={heatmapData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="month" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={-45} textAnchor="end" height={60} interval={DENSE_TICK_INTERVAL} tick={TICK_MD}>
+              <Label {...xLabel('Month', -8)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent format="percent" />} />
+            <Bar dataKey="return" radius={2} maxBarSize={36} isAnimationActive={false}>
+              {heatmapData.map((entry) => (
+                <Cell key={entry.month} fill={signedReturnColor(entry.return)} />
+              ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Annual Returns" loading={loading}>
-        <ChartContainer config={lineConfig} className="aspect-video">
-          <BarChart data={annualData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
+      <ChartShell guide={CHART_GUIDES.annualReturns} loading={loading}>
+        <ChartContainer config={lineConfig} className={chartHeightForGuide(CHART_GUIDES.annualReturns)}>
+          <BarChart data={annualData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="year" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Year', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
             <ChartLegend content={ChartLegendContent} />
-            <Bar dataKey="fund" fill="var(--color-fund)" radius={4} isAnimationActive />
-            <Bar dataKey="benchmark" fill="var(--color-benchmark)" radius={4} isAnimationActive />
+            <Bar dataKey="fund" fill="var(--color-fund)" radius={4} isAnimationActive={false} />
+            <Bar dataKey="benchmark" fill="var(--color-benchmark)" radius={4} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Rolling Return Timeline" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Rolling Return', color: '#16a34a' } }} className="aspect-video">
-          <LineChart data={timelineData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Line type="monotone" dataKey="value" stroke="#16a34a" dot={false} strokeWidth={2} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.rollingTimeline} loading={loading}>
+        <ChartContainer config={timelineConfig} className={chartHeightForGuide(CHART_GUIDES.rollingTimeline)}>
+          <LineChart data={timelineData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Rolling window', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Return (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Line type="monotone" dataKey="value" stroke={CHART_COLORS.fund} dot={false} strokeWidth={2.5} isAnimationActive={false} />
           </LineChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Performance Waterfall" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Contribution', color: '#16a34a' } }} className="aspect-video">
-          <BarChart data={waterfallData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="value" fill="#16a34a" radius={6} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.waterfall} loading={loading}>
+        <ChartContainer config={waterfallConfig} className={chartHeightForGuide(CHART_GUIDES.waterfall)}>
+          <BarChart data={waterfallData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Metric', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Contribution (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="value" fill={CHART_COLORS.fund} radius={6} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Fund Score Doughnut" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Score', color: '#16a34a' } }} className="mx-auto aspect-square max-h-[280px]">
+      <ChartShell guide={CHART_GUIDES.scoreDoughnut} loading={loading}>
+        <ChartContainer config={doughnutConfig} className={chartHeightForGuide(CHART_GUIDES.scoreDoughnut)}>
           <PieChart>
-            <ChartTooltip content={ChartTooltipContent} />
-            <Pie data={doughnutData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={4} isAnimationActive>
-              {doughnutData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Pie data={doughnutData} dataKey="value" nameKey="name" innerRadius={70} outerRadius={110} paddingAngle={4} isAnimationActive={false}>
+              {doughnutData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
               ))}
             </Pie>
           </PieChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Expense Ratio Comparison" loading={loading} empty={expenseData.length === 0}>
-        <ChartContainer config={{ value: { label: 'Expense Ratio', color: '#ea580c' } }} className="aspect-video">
-          <BarChart data={expenseData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="value" fill="#ea580c" radius={6} isAnimationActive />
-          </BarChart>
-        </ChartContainer>
-      </ChartShell>
-
-      <ChartShell title="Risk Meter" loading={loading}>
-        <ChartContainer config={{ value: { label: 'Risk', color: '#dc2626' } }} className="aspect-video">
-          <BarChart data={riskMeterData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis domain={DOMAIN_0_100} tickLine={false} axisLine={false} />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="value" radius={6} isAnimationActive>
-              {riskMeterData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
+      <ChartShell guide={CHART_GUIDES.riskMeter} loading={loading}>
+        <ChartContainer config={riskMeterConfig} className={chartHeightForGuide(CHART_GUIDES.riskMeter)}>
+          <BarChart data={riskMeterData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Risk level', -4)} />
+            </XAxis>
+            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+              <Label {...yLabel('Score')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="value" radius={6} isAnimationActive={false}>
+              {riskMeterData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
               ))}
             </Bar>
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Volatility Chart" loading={loading}>
-        <ChartContainer config={{ volatility: { label: 'Volatility', color: '#f59e0b' } }} className="aspect-video">
-          <LineChart data={volatilityData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickLine={false} axisLine={false} unit="%" />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Line type="monotone" dataKey="volatility" stroke="#f59e0b" dot={false} strokeWidth={2} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.volatility} loading={loading}>
+        <ChartContainer config={volatilityConfig} className={chartHeightForGuide(CHART_GUIDES.volatility)}>
+          <LineChart data={volatilityData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Date', -4)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+              <Label {...yLabel('Volatility (%)')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Line type="monotone" dataKey="volatility" stroke={CHART_COLORS.amber} dot={false} strokeWidth={2.5} isAnimationActive={false} />
           </LineChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Rolling Return Distribution" loading={loading}>
-        <ChartContainer config={{ count: { label: 'Frequency', color: '#16a34a' } }} className="aspect-video">
-          <BarChart data={histogramData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="range" tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} interval={2} />
-            <YAxis tickLine={false} axisLine={false} />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="count" fill="#16a34a" radius={2} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.distribution} loading={loading}>
+        <ChartContainer config={histogramConfig} className={chartHeightForGuide(CHART_GUIDES.distribution)}>
+          <BarChart data={histogramData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="range" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={-45} textAnchor="end" height={60} interval={DENSE_TICK_INTERVAL} tick={TICK_MD}>
+              <Label {...xLabel('Return range (%)', -8)} />
+            </XAxis>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+              <Label {...yLabel('Frequency')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="count" fill={CHART_COLORS.fund} radius={2} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell title="Consistency Score" loading={loading}>
-        <ChartContainer config={{ score: { label: 'Score', color: '#16a34a' } }} className="aspect-video">
-          <BarChart data={consistencyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis domain={DOMAIN_0_100} tickLine={false} axisLine={false} />
-            <ChartTooltip content={ChartTooltipContent} />
-            <Bar dataKey="score" fill="#16a34a" radius={6} isAnimationActive />
+      <ChartShell guide={CHART_GUIDES.consistency} loading={loading}>
+        <ChartContainer config={consistencyConfig} className={chartHeightForGuide(CHART_GUIDES.consistency)}>
+          <BarChart data={consistencyData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Metric', -4)} />
+            </XAxis>
+            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+              <Label {...yLabel('Score')} />
+            </YAxis>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Bar dataKey="score" fill={CHART_COLORS.fund} radius={6} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>

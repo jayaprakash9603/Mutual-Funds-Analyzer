@@ -36,16 +36,115 @@ export type RollingReturnsResponse = {
   benchmark: RollingReturnRow[]
 }
 
-export const manualInputsSchema = z.object({
-  expenseRatio: z.number().min(0).max(10).optional(),
-  benchmarkExpenseRatio: z.number().min(0).max(10).optional(),
-  aum: z.number().min(0).optional(),
-  fundRating: z.number().min(1).max(5).optional(),
-  fundRollingAvgOverride: z.number().optional(),
-  benchmarkRollingAvgOverride: z.number().optional(),
-  cobOverride: z.number().min(0).max(100).optional(),
-  fundSharpeOverride: z.number().optional(),
-  benchmarkSharpeOverride: z.number().optional(),
+export const ruleResultSchema = z.object({
+  id: z.enum(['rollingReturn', 'cob', 'sharpe']),
+  label: z.string(),
+  passed: z.boolean(),
+  fundValue: z.number(),
+  benchmarkValue: z.number(),
+  description: z.string(),
 })
 
-export type ManualInputsForm = z.infer<typeof manualInputsSchema>
+export const fundMetricsSchema = z.object({
+  fundRollingAvg: z.number(),
+  benchmarkRollingAvg: z.number(),
+  fundRollingMax: z.number(),
+  fundRollingMin: z.number(),
+  benchmarkRollingMax: z.number(),
+  benchmarkRollingMin: z.number(),
+  cob: z.number(),
+  fundSharpe: z.number(),
+  benchmarkSharpe: z.number(),
+  fundAnnReturn: z.number(),
+  benchmarkAnnReturn: z.number(),
+  fundVolatility: z.number(),
+  benchmarkVolatility: z.number(),
+  alpha: z.number(),
+  beta: z.number(),
+  sortino: z.number(),
+  treynor: z.number(),
+  informationRatio: z.number(),
+  maxDrawdown: z.number(),
+  benchmarkMaxDrawdown: z.number(),
+  totalReturn: z.number(),
+  benchmarkTotalReturn: z.number(),
+  riskLevel: z.string(),
+  fundAgeYears: z.number(),
+  consistencyScore: z.number(),
+})
+
+export const goldenTriangleResultSchema = z.object({
+  rules: z.array(ruleResultSchema),
+  passCount: z.number(),
+  overallRating: z.enum(['Passed', 'Average', 'Weak', 'Avoid']),
+  passed: z.boolean(),
+  metrics: fundMetricsSchema,
+  fundName: z.string(),
+  benchmarkName: z.string(),
+  category: z.string(),
+  period: z.string(),
+})
+
+export type GoldenTriangleResult = z.infer<typeof goldenTriangleResultSchema>
+
+export const timelineEventSchema = z.object({
+  title: z.string(),
+  date: z.string(),
+  value: z.string(),
+  explanation: z.string(),
+  sortKey: z.number(),
+})
+
+export type TimelineEvent = z.infer<typeof timelineEventSchema>
+
+export const analysisResponseSchema = z.object({
+  result: goldenTriangleResultSchema,
+  insights: z.array(z.string()),
+  timeline: z.array(timelineEventSchema),
+  data: z.object({
+    fund: z.array(rollingReturnRowSchema),
+    benchmark: z.array(rollingReturnRowSchema),
+  }),
+})
+
+export type AnalysisResponse = z.infer<typeof analysisResponseSchema>
+
+export const compareResponseSchema = z.object({
+  results: z.array(goldenTriangleResultSchema),
+})
+
+export const featureFlagsSchema = z.record(z.string(), z.boolean())
+
+export const seriesStatsSchema = z.object({
+  avg: z.number(),
+  max: z.number(),
+  min: z.number(),
+  stdDev: z.number(),
+  count: z.number(),
+})
+
+export const periodComparisonRowSchema = z.object({
+  period: z.string(),
+  fundName: z.string(),
+  benchmarkName: z.string(),
+  fund: seriesStatsSchema,
+  benchmark: seriesStatsSchema,
+  cob: z.number(),
+  totalRecords: z.number(),
+})
+
+export const fundIndexComparisonSchema = z.object({
+  scheme: z.string(),
+  fundName: z.string(),
+  benchmarkName: z.string(),
+  category: z.string(),
+  rows: z.array(periodComparisonRowSchema),
+  missingPeriods: z.array(z.string()),
+  computedAt: z.string(),
+  stale: z.boolean(),
+  partial: z.boolean(),
+})
+
+export type SeriesStats = z.infer<typeof seriesStatsSchema>
+export type PeriodComparisonRow = z.infer<typeof periodComparisonRowSchema>
+export type FundIndexComparison = z.infer<typeof fundIndexComparisonSchema>

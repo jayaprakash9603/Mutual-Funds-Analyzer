@@ -12,9 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Local environment
+.env
+.env.*
+!.env.example
+
 # Test and automation artifacts
 .playwright-mcp
 .screenshots
+coverage/
+
+# Local DB / binary dumps
+*.mv.db
+*.trace.db
+*.pdf
 
 # Editor directories and files
 .vscode/*
@@ -25,4 +36,8 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+# Maven / Java
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/data/
+

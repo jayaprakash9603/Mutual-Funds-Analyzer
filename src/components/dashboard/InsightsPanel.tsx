@@ -10,6 +10,14 @@ interface InsightsPanelProps {
   insights: string[]
 }
 
+const STAGGER_SECONDS = 0.08
+
+function ratingVariant(rating: string) {
+  if (rating === INSIGHT_RATINGS.Passed) return 'success'
+  if (rating === INSIGHT_RATINGS.Avoid) return 'danger'
+  return 'warning'
+}
+
 export function InsightsPanel({ result, insights }: InsightsPanelProps) {
   const rating = INSIGHT_RATINGS[result.overallRating as keyof typeof INSIGHT_RATINGS] ?? result.overallRating
 
@@ -20,21 +28,17 @@ export function InsightsPanel({ result, insights }: InsightsPanelProps) {
           <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
           <CardTitle>AI Insights</CardTitle>
         </div>
-        <Badge
-          variant={
-            rating === 'Excellent' ? 'success' : rating === 'Avoid' ? 'danger' : 'warning'
-          }
-        >
+        <Badge variant={ratingVariant(rating)}>
           {rating}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         {insights.map((insight, i) => (
           <motion.p
-            key={insight}
+            key={`${i}-${insight}`}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.08 }}
+            transition={{ delay: i * STAGGER_SECONDS }}
             className="text-sm leading-relaxed text-muted-foreground"
           >
             {insight}

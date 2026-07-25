@@ -1,0 +1,21 @@
+# Shared by the mysql, h2, postgres and jpa profiles via spring.profiles.group.
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
+  datasource:
+    hikari:
+      initialization-fail-timeout: -1
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+features:
+  platform:
+    persistence:
+      enabled: true

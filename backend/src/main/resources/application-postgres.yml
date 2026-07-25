@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:mfa}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    locations: classpath:db/migration/postgresql
+
+features:
+  platform:
+    persistence:
+      type: postgres

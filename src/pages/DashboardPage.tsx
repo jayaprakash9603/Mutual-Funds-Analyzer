@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type LazyExoticComponent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ChevronDown, Download, Share2, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,20 +8,44 @@ import { FundSelector } from '@/components/dashboard/FundSelector'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { GoldenTriangleResultCard } from '@/components/dashboard/GoldenTriangleResultCard'
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
-import { RiskMeter, PerformanceTimeline } from '@/components/dashboard/RiskMeter'
-import { ManualInputsSection } from '@/components/dashboard/ManualInputsSection'
+import { RiskMeter } from '@/components/dashboard/RiskMeter'
+import { PerformanceTimeline } from '@/components/dashboard/PerformanceTimeline'
+import { FundIndexMatrixTable } from '@/components/dashboard/FundIndexMatrixTable'
 import { RollingReturnsPanel } from '@/components/charts/RollingReturnsPanel'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
+import { useFundIndexMatrix } from '@/hooks/useFundIndexMatrix'
 import { useAppContext } from '@/context/AppContext'
-import { getStatCards, getPerformanceTimeline } from '@/lib/analytics/chartData'
-import type { ManualInputsForm } from '@/api/schemas'
+import { getStatCards } from '@/lib/analytics/chartData'
+import { FeatureGate } from '@/components/common/FeatureGate'
 import { DEFAULT_PERIOD, type Period } from '@/lib/constants'
+import type { AnalysisInput, GoldenTriangleResult } from '@/lib/analytics/types'
 import { exportAnalysisPdf, shareAnalysis } from '@/lib/export'
 
-const ChartsGrid = lazy(() =>
-  import('@/components/charts/ChartsGrid').then((m) => ({ default: m.ChartsGrid })),
-)
+type ChartsGridProps = {
+  input: AnalysisInput
+  result: GoldenTriangleResult
+  loading?: boolean
+}
+
+function lazyChartsGrid() {
+  return import('@/components/charts/ChartsGrid')
+    .then((m) => ({ default: m.ChartsGrid as ComponentType<ChartsGridProps> }))
+    .catch(() =>
+      import(/* @vite-ignore */ `@/components/charts/ChartsGrid?retry=${Date.now()}`).then((m) => ({
+        default: m.ChartsGrid as ComponentType<ChartsGridProps>,
+      })),
+    )
+}
+
+const ChartsGrid = lazy(lazyChartsGrid) as LazyExoticComponent<ComponentType<ChartsGridProps>>
+
+const STAT_SKELETON_KEYS = placeholderKeys('stat', 12)
+const CHART_SKELETON_KEYS = placeholderKeys('chart', 8)
+
+function placeholderKeys(prefix: string, count: number) {
+  return Array.from({ length: count }, (_, i) => `${prefix}-${i}`)
+}
 
 function AnalysisSkeleton() {
   return (
@@ -32,13 +56,13 @@ function AnalysisSkeleton() {
         Analyzing fund data...
       </div>
       <Skeleton className="h-[560px] w-full rounded-xl" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        {Array.from({ length: 14 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+        {STAT_SKELETON_KEYS.map((key) => (
+          <Skeleton key={key} className="h-24 rounded-xl" />
         ))}
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-72 rounded-xl" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Skeleton className="h-72 rounded-xl lg:col-span-2" />
         <Skeleton className="h-72 rounded-xl" />
       </div>
     </div>
@@ -51,11 +75,15 @@ export function DashboardPage() {
   const [scheme, setScheme] = useState<string | null>(initialScheme)
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD)
   const [category, setCategory] = useState('All')
-  const [manual, setManual] = useState<ManualInputsForm>({})
   const [showAllCharts, setShowAllCharts] = useState(false)
   const { addRecentAnalysis } = useAppContext()
 
-  const { data, result, insights, loading, error } = useFundAnalysis(scheme, period, undefined, manual)
+  const { data, result, insights, timeline, loading, error } = useFundAnalysis(scheme, period)
+  const {
+    data: matrixData,
+    loading: matrixLoading,
+    error: matrixError,
+  } = useFundIndexMatrix(scheme)
 
   useEffect(() => {
     if (result) addRecentAnalysis(result)
@@ -63,13 +91,8 @@ export function DashboardPage() {
 
   const statCards = useMemo(() => {
     if (!result) return []
-    return getStatCards(result, manual)
-  }, [result, manual])
-
-  const timeline = useMemo(() => {
-    if (!result || !data) return []
-    return getPerformanceTimeline(result, data.fund)
-  }, [result, data])
+    return getStatCards(result)
+  }, [result])
 
   const chartInput = useMemo(
     () => (data ? { fund: data.fund, benchmark: data.benchmark, period } : null),
@@ -77,7 +100,7 @@ export function DashboardPage() {
   )
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Fund Analysis Dashboard</h1>
@@ -85,24 +108,28 @@ export function DashboardPage() {
         </div>
         {result && (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => exportAnalysisPdf(result, insights).then(() => toast.success('PDF exported'))}
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Export PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => shareAnalysis(result).then(() => toast.success('Link copied'))}
-            >
-              <Share2 className="h-4 w-4" aria-hidden="true" />
-              Share
-            </Button>
+            <FeatureGate name="ui.exportPdf">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => exportAnalysisPdf(result, insights).then(() => toast.success('PDF exported'))}
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Export PDF
+              </Button>
+            </FeatureGate>
+            <FeatureGate name="ui.share">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => shareAnalysis(result).then(() => toast.success('Link copied'))}
+              >
+                <Share2 className="h-4 w-4" aria-hidden="true" />
+                Share
+              </Button>
+            </FeatureGate>
           </div>
         )}
       </div>
@@ -115,12 +142,6 @@ export function DashboardPage() {
         category={category}
         onCategoryChange={setCategory}
         benchmarkName={result?.benchmarkName}
-      />
-
-      <ManualInputsSection
-        values={manual}
-        onChange={setManual}
-        fundAgeYears={result?.metrics.fundAgeYears}
       />
 
       {loading && <AnalysisSkeleton />}
@@ -138,40 +159,60 @@ export function DashboardPage() {
         </div>
       )}
 
+      {scheme && (
+        <FeatureGate name="ui.fundIndexMatrixTable">
+          <ErrorBoundary title="Unable to render the fund index comparison table">
+            <FundIndexMatrixTable data={matrixData} loading={matrixLoading} error={matrixError} />
+          </ErrorBoundary>
+        </FeatureGate>
+      )}
+
       {!loading && result && data && chartInput && (
         <>
-          <ErrorBoundary title="Unable to render the rolling returns chart">
-            <RollingReturnsPanel
-              input={chartInput}
-              fundName={result.fundName}
-              benchmarkName={result.benchmarkName}
-            />
-          </ErrorBoundary>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-            {statCards.map((card, i) => (
-              <StatCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                display={card.display}
-                suffix={card.suffix}
-                format={card.format as 'percent' | 'decimal' | 'text'}
-                index={i}
+          <FeatureGate name="ui.rollingReturnsPanel">
+            <ErrorBoundary title="Unable to render the rolling returns chart">
+              <RollingReturnsPanel
+                input={chartInput}
+                fundName={result.fundName}
+                benchmarkName={result.benchmarkName}
               />
-            ))}
+            </ErrorBoundary>
+          </FeatureGate>
+
+          <FeatureGate name="ui.statCards">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+              {statCards.map((card, i) => (
+                <StatCard
+                  key={card.label}
+                  label={card.label}
+                  value={card.value}
+                  display={card.display}
+                  suffix={card.suffix}
+                  format={card.format as 'percent' | 'decimal' | 'text'}
+                  index={i}
+                />
+              ))}
+            </div>
+          </FeatureGate>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <GoldenTriangleResultCard result={result} />
+            </div>
+            <FeatureGate name="ui.riskMeter">
+              <RiskMeter result={result} />
+            </FeatureGate>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <GoldenTriangleResultCard result={result} />
+          <FeatureGate name="ui.insightsPanel">
             <InsightsPanel result={result} insights={insights} />
-          </div>
+          </FeatureGate>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <RiskMeter result={result} />
+          <FeatureGate name="ui.performanceTimeline">
             <PerformanceTimeline events={timeline} />
-          </div>
+          </FeatureGate>
 
+          <FeatureGate name="ui.additionalCharts">
           <section className="rounded-xl border border-border/60 bg-card/30">
             <button
               type="button"
@@ -181,7 +222,7 @@ export function DashboardPage() {
             >
               <span>
                 Additional Analytics Charts
-                <span className="ml-2 text-sm font-normal text-muted-foreground">(18 charts)</span>
+                <span className="ml-2 text-sm font-normal text-muted-foreground">(17 charts)</span>
               </span>
               <ChevronDown
                 className={`h-5 w-5 shrink-0 transition-transform ${showAllCharts ? 'rotate-180' : ''}`}
@@ -192,25 +233,24 @@ export function DashboardPage() {
               <div className="border-t border-border/60 p-4">
                 <Suspense
                   fallback={
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-72 rounded-xl" />
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                      {CHART_SKELETON_KEYS.map((key, index) => (
+                        <Skeleton
+                          key={key}
+                          className={`w-full rounded-xl ${index % 3 === 0 ? 'h-[520px] lg:col-span-2' : 'h-[480px]'}`}
+                        />
                       ))}
                     </div>
                   }
                 >
                   <ErrorBoundary title="Unable to render the analytics charts">
-                    <ChartsGrid
-                      input={chartInput}
-                      result={result}
-                      manual={manual}
-                      loading={loading}
-                    />
+                    <ChartsGrid input={chartInput} result={result} loading={loading} />
                   </ErrorBoundary>
                 </Suspense>
               </div>
             )}
           </section>
+          </FeatureGate>
         </>
       )}
     </div>

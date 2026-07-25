@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/context/ThemeProvider'
 import { AppProvider } from '@/context/AppContext'
+import { FeatureFlagProvider, useFeature } from '@/context/FeatureFlagProvider'
 import { Navbar } from '@/components/layout/Navbar'
 import { CommandPalette, useCommandPalette } from '@/components/layout/CommandPalette'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
@@ -12,6 +13,7 @@ const LandingPage = lazy(() => import('@/pages/LandingPage').then((m) => ({ defa
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const ComparePage = lazy(() => import('@/pages/ComparePage').then((m) => ({ default: m.ComparePage })))
 const MethodPage = lazy(() => import('@/pages/MethodPage').then((m) => ({ default: m.MethodPage })))
+const FundReportPage = lazy(() => import('@/pages/FundReportPage'))
 
 function PageLoader() {
   return (
@@ -25,6 +27,11 @@ function PageLoader() {
 
 function AppShell() {
   const { open, setOpen } = useCommandPalette()
+  const showCommandPalette = useFeature('ui.commandPalette')
+  const showLanding = useFeature('ui.landingPage')
+  const showCompare = useFeature('ui.comparePage')
+  const showMethod = useFeature('ui.methodPage')
+  const showFundReport = useFeature('ui.fundReportPage')
 
   return (
     <>
@@ -33,15 +40,17 @@ function AppShell() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={showLanding ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/compare" element={<ComparePage />} />
-              <Route path="/method" element={<MethodPage />} />
+              <Route path="/fund" element={showFundReport ? <FundReportPage /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/fund/:scheme" element={showFundReport ? <FundReportPage /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/compare" element={showCompare ? <ComparePage /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/method" element={showMethod ? <MethodPage /> : <Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
       </main>
-      <CommandPalette open={open} onOpenChange={setOpen} />
+      {showCommandPalette && <CommandPalette open={open} onOpenChange={setOpen} />}
       <Toaster richColors position="bottom-right" />
     </>
   )
@@ -50,11 +59,13 @@ function AppShell() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppProvider>
-        <BrowserRouter>
-          <AppShell />
-        </BrowserRouter>
-      </AppProvider>
+      <FeatureFlagProvider>
+        <AppProvider>
+          <BrowserRouter>
+            <AppShell />
+          </BrowserRouter>
+        </AppProvider>
+      </FeatureFlagProvider>
     </ThemeProvider>
   )
 }

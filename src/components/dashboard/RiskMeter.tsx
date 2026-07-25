@@ -2,28 +2,34 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { GoldenTriangleResult } from '@/lib/analytics/types'
+import { RISK_LEVELS, VOLATILITY_ELEVATED, VOLATILITY_HIGH } from '@/lib/constants'
 
 interface RiskMeterProps {
   result: GoldenTriangleResult
 }
 
-const riskColors: Record<string, 'success' | 'secondary' | 'warning' | 'danger'> = {
-  'Very Low': 'success',
-  Low: 'success',
-  Medium: 'warning',
-  High: 'danger',
-  'Very High': 'danger',
+type BadgeVariant = 'success' | 'warning' | 'danger'
+
+const MAX_METER_PERCENT = 100
+const METER_SCALE = 4
+
+function badgeVariant(label: string): BadgeVariant {
+  const level = RISK_LEVELS.find((entry) => entry.label === label)
+  if (!level) return 'warning'
+  if (level.maxVol <= VOLATILITY_ELEVATED) return 'success'
+  if (level.maxVol <= VOLATILITY_HIGH) return 'warning'
+  return 'danger'
 }
 
 export function RiskMeter({ result }: RiskMeterProps) {
   const vol = result.metrics.fundVolatility
-  const pct = Math.min(100, vol * 4)
+  const pct = Math.min(MAX_METER_PERCENT, vol * METER_SCALE)
 
   return (
     <Card className="glass">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Risk Analysis</CardTitle>
-        <Badge variant={riskColors[result.metrics.riskLevel] ?? 'secondary'}>
+        <Badge variant={badgeVariant(result.metrics.riskLevel)}>
           {result.metrics.riskLevel}
         </Badge>
       </CardHeader>
@@ -45,38 +51,6 @@ export function RiskMeter({ result }: RiskMeterProps) {
             Annualised volatility: {vol.toFixed(2)}%
           </p>
         </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-interface PerformanceTimelineProps {
-  events: { title: string; date: string; description: string }[]
-}
-
-export function PerformanceTimeline({ events }: PerformanceTimelineProps) {
-  return (
-    <Card className="glass">
-      <CardHeader>
-        <CardTitle>Performance Timeline</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol className="relative space-y-6 border-l border-border pl-6">
-          {events.map((event, i) => (
-            <motion.li
-              key={event.title}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="relative"
-            >
-              <span className="absolute -left-[1.65rem] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" />
-              <p className="text-xs font-medium uppercase tracking-wide text-primary">{event.date}</p>
-              <p className="mt-1 font-medium">{event.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{event.description}</p>
-            </motion.li>
-          ))}
-        </ol>
       </CardContent>
     </Card>
   )

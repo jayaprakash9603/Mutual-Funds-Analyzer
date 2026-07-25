@@ -1,4 +1,6 @@
 import { format } from 'date-fns'
+import { CHART_COLORS, volatilityColor } from '@/lib/chartColors'
+import { MAX_CHART_POINTS, TRADING_DAYS } from '@/lib/constants'
 import { downsample, parseNavDate } from '@/lib/utils'
 import {
   alignRollingReturns,
@@ -8,35 +10,53 @@ import {
   mean,
   stdDev,
 } from './navSeries'
-import type { AnalysisInput, GoldenTriangleResult, RollingReturnRow } from './types'
+import type { AnalysisInput, GoldenTriangleResult } from './types'
+
+const MONTH_FORMAT = 'MMM yyyy'
+const PERCENT = 100
+const GOLDEN_TRIANGLE_RULES = 3
+
+/** Scales that turn a raw metric into a 0-100 radar axis. */
+const RADAR_ROLLING_RETURN_CEILING = 30
+const RADAR_SHARPE_SCALE = 40
+const RADAR_ALPHA_SCALE = 5
+const RADAR_ALPHA_MIDPOINT = 50
+const RADAR_VOLATILITY_PENALTY = 3
+const RADAR_BENCHMARK_BASELINE = 70
+
+const HEATMAP_MONTHS = 36
+const TRADING_DAYS_PER_MONTH = 21
+const MAX_NAV_GAP_DAYS = 7
+const MILLIS_PER_DAY = 1000 * 60 * 60 * 24
+const ANNUAL_RETURN_YEARS = 12
+const VOLATILITY_WINDOW_DAYS = 63
+const HISTOGRAM_BINS = 20
+const RISK_METER_SCALE = 4
+const SCATTER_BUBBLE_SCALE = 100
+const SCATTER_BUBBLE_BASE = 50
+const SCATTER_NAME_MAX_CHARS = 20
+const WATERFALL_SHARPE_SCALE = 2
+const CONSISTENCY_SHARPE_SCALE = 30
+const CONSISTENCY_RETURN_SCALE = 5
+const CONSISTENCY_MIDPOINT = 50
 
 function formatDateLabel(dateStr: string) {
-  return format(parseNavDate(dateStr), 'MMM yyyy')
+  return format(parseNavDate(dateStr), MONTH_FORMAT)
 }
 
 export function getRollingReturnComparison(input: AnalysisInput) {
   const aligned = alignRollingReturns(input.fund, input.benchmark)
-  const sampled = downsample(aligned, 400)
-  return sampled.map((p) => ({
-    date: format(p.date, 'MMM yyyy'),
+  return downsample(aligned, MAX_CHART_POINTS).map((p) => ({
+    date: format(p.date, MONTH_FORMAT),
     fund: p.fundReturn,
     benchmark: p.benchmarkReturn,
   }))
 }
 
-export function getCobGaugeData(result: GoldenTriangleResult) {
-  const cob = result.metrics.cob
-  const color = cob > 70 ? '#16a34a' : cob > 50 ? '#f59e0b' : '#dc2626'
-  return [
-    { name: 'COB', value: cob, fill: color },
-    { name: 'Remaining', value: Math.max(0, 100 - cob), fill: '#e2e8f0' },
-  ]
-}
-
 export function getSharpeComparison(result: GoldenTriangleResult) {
   return [
-    { name: 'Fund', value: result.metrics.fundSharpe, fill: '#16a34a' },
-    { name: 'Benchmark', value: result.metrics.benchmarkSharpe, fill: '#ea580c' },
+    { name: 'Fund', value: result.metrics.fundSharpe, fill: CHART_COLORS.fund },
+    { name: 'Benchmark', value: result.metrics.benchmarkSharpe, fill: CHART_COLORS.benchmark },
   ]
 }
 
@@ -46,11 +66,10 @@ export function getReturnsAreaChart(input: AnalysisInput) {
   const common = getCommonNavSeries(fundNav, benchmarkNav)
   const baseFund = common[0]?.fundNav ?? 1
   const baseBench = common[0]?.benchmarkNav ?? 1
-  const sampled = downsample(common, 400)
-  return sampled.map((p) => ({
-    date: format(p.date, 'MMM yyyy'),
-    fund: ((p.fundNav / baseFund) - 1) * 100,
-    benchmark: ((p.benchmarkNav / baseBench) - 1) * 100,
+  return downsample(common, MAX_CHART_POINTS).map((p) => ({
+    date: format(p.date, MONTH_FORMAT),
+    fund: ((p.fundNav / baseFund) - 1) * PERCENT,
+    benchmark: ((p.benchmarkNav / baseBench) - 1) * PERCENT,
   }))
 }
 
@@ -63,10 +82,10 @@ export function getAlphaComparison(result: GoldenTriangleResult) {
 
 export function getRiskReturnScatter(results: GoldenTriangleResult[]) {
   return results.map((r) => ({
-    name: r.fundName.split(' - ')[0].slice(0, 20),
+    name: r.fundName.split(' - ')[0].slice(0, SCATTER_NAME_MAX_CHARS),
     return: r.metrics.fundAnnReturn,
     risk: r.metrics.fundVolatility,
-    size: r.passCount * 100 + 50,
+    size: r.passCount * SCATTER_BUBBLE_SCALE + SCATTER_BUBBLE_BASE,
   }))
 }
 
@@ -76,22 +95,42 @@ export function getMaxDrawdownArea(input: AnalysisInput) {
   const data = fundNav.map((p) => {
     peak = Math.max(peak, p.nav)
     return {
-      date: format(p.date, 'MMM yyyy'),
-      drawdown: ((p.nav / peak) - 1) * 100,
+      date: format(p.date, MONTH_FORMAT),
+      drawdown: ((p.nav / peak) - 1) * PERCENT,
     }
   })
-  return downsample(data, 400)
+  return downsample(data, MAX_CHART_POINTS)
 }
 
 export function getRadarData(result: GoldenTriangleResult) {
   const m = result.metrics
+  const scaled = (value: number, ceiling: number) => Math.min(PERCENT, (value / ceiling) * PERCENT)
+  const capped = (value: number) => Math.min(PERCENT, value)
+  const floored = (value: number) => Math.max(0, value)
+
   return [
-    { metric: 'Rolling Return', fund: Math.min(100, (m.fundRollingAvg / 30) * 100), benchmark: Math.min(100, (m.benchmarkRollingAvg / 30) * 100) },
-    { metric: 'COB', fund: m.cob, benchmark: 70 },
-    { metric: 'Sharpe', fund: Math.min(100, m.fundSharpe * 40), benchmark: Math.min(100, m.benchmarkSharpe * 40) },
-    { metric: 'Alpha', fund: Math.min(100, Math.max(0, m.alpha * 5 + 50)), benchmark: 50 },
-    { metric: 'Risk', fund: Math.max(0, 100 - m.fundVolatility * 3), benchmark: Math.max(0, 100 - m.benchmarkVolatility * 3) },
-    { metric: 'Consistency', fund: m.consistencyScore, benchmark: 70 },
+    {
+      metric: 'Rolling Return',
+      fund: scaled(m.fundRollingAvg, RADAR_ROLLING_RETURN_CEILING),
+      benchmark: scaled(m.benchmarkRollingAvg, RADAR_ROLLING_RETURN_CEILING),
+    },
+    { metric: 'COB', fund: m.cob, benchmark: RADAR_BENCHMARK_BASELINE },
+    {
+      metric: 'Sharpe',
+      fund: capped(m.fundSharpe * RADAR_SHARPE_SCALE),
+      benchmark: capped(m.benchmarkSharpe * RADAR_SHARPE_SCALE),
+    },
+    {
+      metric: 'Alpha',
+      fund: capped(floored(m.alpha * RADAR_ALPHA_SCALE + RADAR_ALPHA_MIDPOINT)),
+      benchmark: RADAR_ALPHA_MIDPOINT,
+    },
+    {
+      metric: 'Risk',
+      fund: floored(PERCENT - m.fundVolatility * RADAR_VOLATILITY_PENALTY),
+      benchmark: floored(PERCENT - m.benchmarkVolatility * RADAR_VOLATILITY_PENALTY),
+    },
+    { metric: 'Consistency', fund: m.consistencyScore, benchmark: RADAR_BENCHMARK_BASELINE },
   ]
 }
 
@@ -102,8 +141,8 @@ export function getMonthlyHeatmap(input: AnalysisInput) {
   for (let i = 1; i < fundNav.length; i++) {
     const prev = fundNav[i - 1]
     const curr = fundNav[i]
-    const days = (curr.date.getTime() - prev.date.getTime()) / (1000 * 60 * 60 * 24)
-    if (days > 0 && days <= 7) {
+    const days = (curr.date.getTime() - prev.date.getTime()) / MILLIS_PER_DAY
+    if (days > 0 && days <= MAX_NAV_GAP_DAYS) {
       const key = format(curr.date, 'yyyy-MM')
       const existing = monthly.get(key) ?? []
       existing.push(curr.nav / prev.nav - 1)
@@ -112,10 +151,10 @@ export function getMonthlyHeatmap(input: AnalysisInput) {
   }
 
   return Array.from(monthly.entries())
-    .slice(-36)
+    .slice(-HEATMAP_MONTHS)
     .map(([month, returns]) => ({
       month,
-      return: mean(returns) * 100 * 21,
+      return: mean(returns) * PERCENT * TRADING_DAYS_PER_MONTH,
     }))
 }
 
@@ -141,13 +180,15 @@ export function getAnnualReturns(input: AnalysisInput) {
   }
 
   return Array.from(years.entries())
-    .filter(([, v]) => v.fundStart && v.fundEnd && v.benchStart && v.benchEnd)
-    .map(([year, v]) => ({
-      year: String(year),
-      fund: ((v.fundEnd! / v.fundStart!) - 1) * 100,
-      benchmark: ((v.benchEnd! / v.benchStart!) - 1) * 100,
-    }))
-    .slice(-12)
+    .flatMap(([year, v]) => {
+      if (!v.fundStart || !v.fundEnd || !v.benchStart || !v.benchEnd) return []
+      return [{
+        year: String(year),
+        fund: ((v.fundEnd / v.fundStart) - 1) * PERCENT,
+        benchmark: ((v.benchEnd / v.benchStart) - 1) * PERCENT,
+      }]
+    })
+    .slice(-ANNUAL_RETURN_YEARS)
 }
 
 export function getRollingReturnTimeline(input: AnalysisInput) {
@@ -156,7 +197,7 @@ export function getRollingReturnTimeline(input: AnalysisInput) {
       date: formatDateLabel(r.nav_date),
       value: r.scheme_rolling_returns,
     })),
-    400,
+    MAX_CHART_POINTS,
   )
 }
 
@@ -165,111 +206,19 @@ export function getPerformanceWaterfall(result: GoldenTriangleResult) {
   return [
     { name: 'Benchmark Return', value: m.benchmarkAnnReturn },
     { name: 'Alpha Contribution', value: m.alpha },
-    { name: 'Risk Adjustment', value: (m.fundSharpe - m.benchmarkSharpe) * 2 },
+    { name: 'Risk Adjustment', value: (m.fundSharpe - m.benchmarkSharpe) * WATERFALL_SHARPE_SCALE },
     { name: 'Fund Return', value: m.fundAnnReturn, isTotal: true },
   ]
 }
 
 export function getFundScoreDoughnut(result: GoldenTriangleResult) {
-  const passed = result.passCount
-  const failed = 3 - passed
   return [
-    { name: 'Passed', value: passed, fill: '#16a34a' },
-    { name: 'Failed', value: failed, fill: '#dc2626' },
+    { name: 'Passed', value: result.passCount, fill: CHART_COLORS.fund },
+    { name: 'Failed', value: GOLDEN_TRIANGLE_RULES - result.passCount, fill: CHART_COLORS.red },
   ]
 }
 
-export function getExpenseRatioComparison(
-  expenseRatio?: number,
-  benchmarkExpenseRatio?: number,
-) {
-  if (expenseRatio === undefined) return []
-  return [
-    { name: 'Fund', value: expenseRatio },
-    { name: 'Benchmark', value: benchmarkExpenseRatio ?? 0 },
-  ]
-}
-
-export function getRiskMeterData(result: GoldenTriangleResult) {
-  const vol = result.metrics.fundVolatility
-  return [{ name: 'Risk', value: Math.min(100, vol * 4), fill: vol > 18 ? '#dc2626' : vol > 12 ? '#f59e0b' : '#16a34a' }]
-}
-
-export function getVolatilityChart(input: AnalysisInput) {
-  const fundNav = buildNavSeries(input.fund)
-  const returns = computeDailyReturns(fundNav)
-  const window = 63
-  const data: { date: string; volatility: number }[] = []
-
-  for (let i = window; i < fundNav.length; i++) {
-    const slice = returns.slice(i - window, i)
-    data.push({
-      date: format(fundNav[i].date, 'MMM yyyy'),
-      volatility: stdDev(slice) * Math.sqrt(252) * 100,
-    })
-  }
-
-  return downsample(data, 400)
-}
-
-export function getRollingReturnHistogram(input: AnalysisInput) {
-  const returns = input.fund.map((r) => r.scheme_rolling_returns)
-  const min = Math.min(...returns)
-  const max = Math.max(...returns)
-  const bins = 20
-  const step = (max - min) / bins || 1
-  const histogram = Array.from({ length: bins }, (_, i) => ({
-    range: `${(min + i * step).toFixed(1)}-${(min + (i + 1) * step).toFixed(1)}`,
-    count: 0,
-  }))
-
-  for (const r of returns) {
-    const idx = Math.min(bins - 1, Math.floor((r - min) / step))
-    histogram[idx].count++
-  }
-
-  return histogram
-}
-
-export function getConsistencyScoreChart(result: GoldenTriangleResult) {
-  return [
-    { name: 'COB', score: result.metrics.cob },
-    { name: 'Sharpe Edge', score: Math.max(0, (result.metrics.fundSharpe - result.metrics.benchmarkSharpe) * 30 + 50) },
-    { name: 'Return Edge', score: Math.max(0, (result.metrics.fundRollingAvg - result.metrics.benchmarkRollingAvg) * 5 + 50) },
-    { name: 'Overall', score: result.metrics.consistencyScore },
-  ]
-}
-
-export function getPerformanceTimeline(result: GoldenTriangleResult, fund: RollingReturnRow[]) {
-  const firstDate = fund[0] ? parseNavDate(fund[0].nav_date) : new Date()
-  const midIdx = Math.floor(fund.length / 2)
-  const latest = fund[fund.length - 1]
-
-  return [
-    {
-      title: 'Fund Inception Data',
-      date: format(firstDate, 'MMM yyyy'),
-      description: 'Earliest rolling return window available in dataset',
-    },
-    {
-      title: 'Mid-Period Performance',
-      date: midIdx >= 0 && fund[midIdx] ? formatDateLabel(fund[midIdx].nav_date) : 'N/A',
-      description: `Rolling return at mid-point: ${fund[midIdx]?.scheme_rolling_returns.toFixed(2)}%`,
-    },
-    {
-      title: 'Sharpe Analysis',
-      date: format(new Date(), 'MMM yyyy'),
-      description: `Fund Sharpe ${result.metrics.fundSharpe.toFixed(2)} vs Benchmark ${result.metrics.benchmarkSharpe.toFixed(2)}`,
-    },
-    {
-      title: 'Current Golden Triangle Score',
-      date: latest ? formatDateLabel(latest.nav_date) : 'Now',
-      description: `${result.passCount}/3 rules passed — ${result.overallRating}`,
-    },
-  ]
-}
-
-export function getStatCards(result: GoldenTriangleResult, manual?: { expenseRatio?: number; aum?: number; fundRating?: number }) {
+export function getStatCards(result: GoldenTriangleResult) {
   const m = result.metrics
   return [
     { label: 'Total Returns', value: m.totalReturn, suffix: '%', format: 'percent' },
@@ -284,7 +233,59 @@ export function getStatCards(result: GoldenTriangleResult, manual?: { expenseRat
     { label: 'Treynor', value: m.treynor, suffix: '', format: 'decimal' },
     { label: 'Max Drawdown', value: m.maxDrawdown, suffix: '%', format: 'percent' },
     { label: 'Risk Level', value: 0, display: m.riskLevel, format: 'text' },
-    { label: 'Expense Ratio', value: manual?.expenseRatio ?? 0, display: manual?.expenseRatio !== undefined ? `${manual.expenseRatio}%` : 'Not provided', format: 'text' },
-    { label: 'Fund Rating', value: manual?.fundRating ?? 0, display: manual?.fundRating !== undefined ? `${manual.fundRating}/5` : 'Not provided', format: 'text' },
+  ]
+}
+
+export function getRiskMeterData(result: GoldenTriangleResult) {
+  const vol = result.metrics.fundVolatility
+  return [{
+    name: 'Risk',
+    value: Math.min(PERCENT, vol * RISK_METER_SCALE),
+    fill: volatilityColor(vol),
+  }]
+}
+
+export function getVolatilityChart(input: AnalysisInput) {
+  const fundNav = buildNavSeries(input.fund)
+  const returns = computeDailyReturns(fundNav)
+  const data: { date: string; volatility: number }[] = []
+
+  for (let i = VOLATILITY_WINDOW_DAYS; i < fundNav.length; i++) {
+    const slice = returns.slice(i - VOLATILITY_WINDOW_DAYS, i)
+    data.push({
+      date: format(fundNav[i].date, MONTH_FORMAT),
+      volatility: stdDev(slice) * Math.sqrt(TRADING_DAYS) * PERCENT,
+    })
+  }
+
+  return downsample(data, MAX_CHART_POINTS)
+}
+
+export function getRollingReturnHistogram(input: AnalysisInput) {
+  const returns = input.fund.map((r) => r.scheme_rolling_returns)
+  const min = Math.min(...returns)
+  const max = Math.max(...returns)
+  const step = (max - min) / HISTOGRAM_BINS || 1
+  const histogram = Array.from({ length: HISTOGRAM_BINS }, (_, i) => ({
+    range: `${(min + i * step).toFixed(1)}-${(min + (i + 1) * step).toFixed(1)}`,
+    count: 0,
+  }))
+
+  for (const r of returns) {
+    const idx = Math.min(HISTOGRAM_BINS - 1, Math.floor((r - min) / step))
+    histogram[idx].count++
+  }
+
+  return histogram
+}
+
+export function getConsistencyScoreChart(result: GoldenTriangleResult) {
+  const m = result.metrics
+  const edge = (diff: number, scale: number) => Math.max(0, diff * scale + CONSISTENCY_MIDPOINT)
+  return [
+    { name: 'COB', score: m.cob },
+    { name: 'Sharpe Edge', score: edge(m.fundSharpe - m.benchmarkSharpe, CONSISTENCY_SHARPE_SCALE) },
+    { name: 'Return Edge', score: edge(m.fundRollingAvg - m.benchmarkRollingAvg, CONSISTENCY_RETURN_SCALE) },
+    { name: 'Overall', score: m.consistencyScore },
   ]
 }

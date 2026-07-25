@@ -26,6 +26,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-brand: var(--brand);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -36,6 +37,8 @@
 
 :root {
   --radius: 0.75rem;
+  /* Report green used by the rolling-returns tables and headings. */
+  --brand: #1a8354;
   --background: oklch(0.985 0.002 240);
   --foreground: oklch(0.18 0.02 240);
   --card: oklch(1 0 0 / 0.72);

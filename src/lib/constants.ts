@@ -1,10 +1,31 @@
-export const RISK_FREE_RATE = 0.06
 export const TRADING_DAYS = 252
 export const DEFAULT_START_DATE = '01-01-2013'
 export const DEFAULT_PERIOD = '5 Year'
 
 export const PERIODS = ['1 Year', '3 Year', '5 Year', '7 Year', '10 Year'] as const
 export type Period = (typeof PERIODS)[number]
+
+export const MATRIX_PERIODS = ['1 Year', '3 Year', '5 Year', '7 Year', '10 Year', '15 Year'] as const
+
+/** Chart series are downsampled to this many points before rendering. */
+export const MAX_CHART_POINTS = 400
+
+/** Chance of beating the benchmark, in percent, above which a fund reads as strong / moderate. */
+export const COB_STRONG = 70
+export const COB_MODERATE = 50
+
+/** Annualised volatility, in percent, above which risk reads as high / elevated. */
+export const VOLATILITY_HIGH = 18
+export const VOLATILITY_ELEVATED = 12
+
+/** Fund search waits for this many characters and this idle gap before hitting the API. */
+export const SEARCH_MIN_QUERY_LENGTH = 3
+export const SEARCH_DEBOUNCE_MS = 400
+
+export const MAX_COMPARE_FUNDS = 5
+
+/** Tailwind's sm breakpoint, used by the media query hook to pick chart heights. */
+export const MOBILE_BREAKPOINT_PX = 639
 
 export const CATEGORIES = [
   { label: 'All', value: 'All' },
@@ -31,17 +52,10 @@ export const SORT_OPTIONS = [
 
 export type SortOption = (typeof SORT_OPTIONS)[number]['value']
 
-export const OVERALL_RATINGS = {
-  3: { label: 'Passed', color: 'emerald' },
-  2: { label: 'Average', color: 'amber' },
-  1: { label: 'Weak', color: 'orange' },
-  0: { label: 'Avoid', color: 'red' },
-} as const
-
 export const RISK_LEVELS = [
   { label: 'Very Low', maxVol: 8 },
-  { label: 'Low', maxVol: 12 },
-  { label: 'Medium', maxVol: 18 },
+  { label: 'Low', maxVol: VOLATILITY_ELEVATED },
+  { label: 'Medium', maxVol: VOLATILITY_HIGH },
   { label: 'High', maxVol: 25 },
   { label: 'Very High', maxVol: Infinity },
 ] as const

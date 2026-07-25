@@ -24,6 +24,12 @@ function useChart() {
   return context
 }
 
+/** Theme-aware hover band for bar/area charts (works in light + dark). */
+export const CHART_TOOLTIP_CURSOR = {
+  fill: 'var(--muted)',
+  opacity: 0.45,
+} as const
+
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> & {
@@ -40,7 +46,10 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          'flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border/50',
+          'flex aspect-video justify-center text-xs',
+          '[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground',
+          '[&_.recharts-cartesian-grid_line]:stroke-border',
+          '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted',
           className,
         )}
         {...props}
@@ -61,27 +70,90 @@ ChartContainer.displayName = 'ChartContainer'
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-function ChartTooltipContent(props: unknown) {
-  const { active, payload, label } = props as {
-    active?: boolean
-    payload?: ReadonlyArray<{ name?: string; value?: number; color?: string; dataKey?: string | number }>
-    label?: string
+type TooltipPayloadItem = {
+  name?: string
+  value?: number | string
+  color?: string
+  dataKey?: string | number
+  payload?: Record<string, unknown>
+}
+
+type ChartTooltipContentProps = {
+  active?: boolean
+  payload?: ReadonlyArray<TooltipPayloadItem>
+  label?: string | number
+  /** percent = always %; number = plain; auto = infer from dataKey */
+  format?: 'percent' | 'number' | 'auto'
+  className?: string
+}
+
+function formatTooltipValue(value: unknown, dataKey: string, format: ChartTooltipContentProps['format']) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return String(value ?? '—')
   }
+
+  const mode =
+    format === 'percent' || format === 'number'
+      ? format
+      : /percent|drawdown|cagr|return|volatility|alpha|cob/i.test(dataKey)
+        ? 'percent'
+        : 'number'
+
+  if (mode === 'percent') {
+    return `${value.toFixed(2)}%`
+  }
+  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+}
+
+function valueToneClass(value: unknown) {
+  if (typeof value !== 'number' || Number.isNaN(value) || value === 0) {
+    return 'text-popover-foreground'
+  }
+  if (value < 0) return 'text-red-600 dark:text-red-400'
+  return 'text-emerald-700 dark:text-emerald-400'
+}
+
+function ChartTooltipContent({
+  active,
+  payload,
+  label,
+  format = 'auto',
+  className,
+}: ChartTooltipContentProps) {
   const { config } = useChart()
   if (!active || !payload?.length) return null
 
   return (
-    <div className="rounded-xl border border-border/50 bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
-      {label && <p className="mb-1 font-medium">{label}</p>}
-      {payload.map((item) => {
-        const key = String(item.dataKey ?? item.name ?? 'value')
-        return (
-          <div key={key} className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground">{config[key]?.label ?? item.name ?? key}</span>
-            <span className="font-mono font-medium tabular-nums">{item.value}</span>
-          </div>
-        )
-      })}
+    <div
+      className={cn(
+        'z-50 min-w-[9rem] rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md',
+        className,
+      )}
+    >
+      {label != null && label !== '' && (
+        <p className="mb-1.5 font-semibold text-foreground">{label}</p>
+      )}
+      <div className="space-y-1">
+        {payload.map((item) => {
+          const key = String(item.dataKey ?? item.name ?? 'value')
+          const numeric = typeof item.value === 'number' ? item.value : Number(item.value)
+          return (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{ backgroundColor: item.color ?? config[key]?.color }}
+                  aria-hidden="true"
+                />
+                {config[key]?.label ?? item.name ?? key}
+              </span>
+              <span className={cn('font-mono font-medium tabular-nums', valueToneClass(numeric))}>
+                {formatTooltipValue(item.value, key, format)}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

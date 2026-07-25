@@ -1,0 +1,27 @@
+package in.goldentriangle.mfa.adapter.in.web.dto;
+
+import java.time.Instant;
+import java.util.List;
+
+public record FundReportDto(
+        String scheme,
+        FundProfileDto profile,
+        GoldenTriangleResultDto goldenTriangle,
+        TrailingReturnsDto trailingReturns,
+        RollingReturnsReportDto rollingReturns,
+        BenchmarkComparisonDto benchmarkComparison,
+        ProbabilityDto probability,
+        RiskReportDto risk,
+        ConsistencyDto consistency,
+        DrawdownReportDto drawdown,
+        SipReportDto sip,
+        LumpsumReportDto lumpsum,
+        TaxReportDto tax,
+        ExpenseReportDto expense,
+        QualityScoreDto qualityScore,
+        List<String> insights,
+        ProsConsDto prosCons,
+        InvestorFitDto investorFit,
+        RecommendationDto recommendation,
+        Instant computedAt) {
+}

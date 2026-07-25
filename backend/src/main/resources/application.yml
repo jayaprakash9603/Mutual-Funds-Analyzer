@@ -1,0 +1,97 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mutual-funds-analyzer
+  profiles:
+    default: mysql
+    # Every relational profile also activates "relational", which carries the JPA settings and the
+    # Mongo autoconfigure exclusions they all share.
+    group:
+      mysql: relational
+      h2: relational
+      postgres: relational
+      jpa: relational
+  # Nothing persistence-related autoconfigures unless a profile opts back in.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+features:
+  analysis:
+    enabled: true
+    compare: true
+    insights: true
+    timeline: true
+    persistResults: false
+    fundIndexMatrix: true
+    incrementalAggregates: true
+    fundReport: true
+    peerComparison: true
+  ui:
+    landingPage: true
+    methodPage: true
+    comparePage: true
+    commandPalette: true
+    favorites: true
+    recentAnalyses: true
+    themeToggle: true
+    statCards: true
+    rollingReturnsPanel: true
+    fundIndexMatrixTable: true
+    riskMeter: true
+    insightsPanel: true
+    performanceTimeline: true
+    additionalCharts: true
+    exportPdf: true
+    share: true
+    fundReportPage: true
+  platform:
+    cache:
+      enabled: true
+      ttl: 1h
+      maxSize: 10000
+    rateLimit:
+      enabled: false
+      perMinute: 60
+    persistence:
+      enabled: false
+      type: none
+    openapi:
+      enabled: true
+  upstream:
+    host: analysis.investt.in
+    basePath: /mutual-funds-research
+    timeout: 60s
+    defaultStartDate: 01-01-2013
+
+analytics:
+  riskFreeRate: 0.06
+  tradingDays: 252
+  refreshAfter: 7d
+  matrixPoolSize: 6
+  matrixQueueCapacity: 24
+  matrixPeriods:
+    - 1 Year
+    - 3 Year
+    - 5 Year
+    - 7 Year
+    - 10 Year
+    - 15 Year
+
+report:
+  earliestStartDate: 01-01-1995
+  inflationRate: 7.0
+
+springdoc:
+  api-docs:
+    enabled: ${features.platform.openapi.enabled:true}
+  swagger-ui:
+    enabled: ${features.platform.openapi.enabled:true}

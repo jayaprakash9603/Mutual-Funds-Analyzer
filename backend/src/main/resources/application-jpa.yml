@@ -1,0 +1,12 @@
+# Vendor-neutral in-memory profile, used for tests and demos.
+spring:
+  datasource:
+    url: jdbc:h2:mem:mfa;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+  flyway:
+    locations: classpath:db/migration/h2
+
+features:
+  platform:
+    persistence:
+      type: jpa
