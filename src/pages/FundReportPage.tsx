@@ -26,38 +26,19 @@ import {
 } from '@/components/ui/chart'
 import { AXIS_LINE, GRID_STROKE, MARGIN_X, TICK_LINE, TICK_MD, ZERO_LINE_STROKE, xLabel, yLabel } from '@/lib/chartAxes'
 import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/chartColors'
-import { DEFAULT_PERIOD, type Period } from '@/lib/constants'
 import { formatPercent } from '@/lib/utils'
 import { useFundReport } from '@/features/fund-report/hooks/useFundReport'
 import { useFundReportMatrix } from '@/features/fund-report/hooks/useFundReportMatrix'
 import { useSectionNav } from '@/features/fund-report/hooks/useSectionNav'
 import { HeatMatrix, HeatMatrixSkeleton } from '@/features/fund-report/components/HeatMatrix'
+import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/components/ReportSectionNav'
 import { GaugeMeter, ProbabilityBar, VerdictBadge } from '@/features/fund-report/components/ReportVisuals'
 import { MetricTile, SectionShell, UnavailableNotice } from '@/features/fund-report/components/SectionShell'
 import { fetchPeerComparison } from '@/features/fund-report/api'
 import type { FundReport } from '@/features/fund-report/schemas'
 import type { GoldenTriangleResult } from '@/api/schemas'
 
-const SECTIONS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'golden-triangle', label: 'Score' },
-  { id: 'returns', label: 'Returns' },
-  { id: 'rolling', label: 'Rolling' },
-  { id: 'benchmark', label: 'Benchmark' },
-  { id: 'probability', label: 'Probability' },
-  { id: 'risk', label: 'Risk' },
-  { id: 'portfolio', label: 'Portfolio' },
-  { id: 'consistency', label: 'Consistency' },
-  { id: 'sip', label: 'SIP' },
-  { id: 'lumpsum', label: 'Lump Sum' },
-  { id: 'drawdown', label: 'Drawdown' },
-  { id: 'tax', label: 'Tax' },
-  { id: 'expense', label: 'Expense' },
-  { id: 'peers', label: 'Peers' },
-  { id: 'quality', label: 'Quality' },
-  { id: 'insights', label: 'Insights' },
-  { id: 'verdict', label: 'Verdict' },
-] as const
+const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 
 const consistencyChartConfig = {
   returnPercent: { label: 'Return', color: CHART_COLORS.fund },
@@ -75,13 +56,11 @@ export function FundReportPage() {
   const { scheme: routeScheme } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
-  const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD)
-  const [category, setCategory] = useState('All')
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
 
   const { data, loading, error } = useFundReport(scheme || null)
   const { data: matrix, loading: matrixLoading } = useFundReportMatrix(scheme || null, matrixMode, !!scheme)
-  const activeSection = useSectionNav(SECTIONS.map((s) => s.id))
+  const activeSection = useSectionNav(SECTION_IDS)
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])
 
@@ -95,33 +74,15 @@ export function FundReportPage() {
       </header>
 
       <FundSelector
+        mode="fund-only"
         selectedScheme={scheme}
         onSelectScheme={(s) => {
           setScheme(s)
           setSearchParams({ scheme: s })
         }}
-        period={period}
-        onPeriodChange={setPeriod}
-        category={category}
-        onCategoryChange={setCategory}
-        benchmarkName={data?.profile.benchmarkName}
       />
 
-      <nav className="sticky top-16 z-20 -mx-1 overflow-x-auto rounded-xl border border-border/60 bg-card/80 p-2 backdrop-blur-xl">
-        <div className="flex gap-1">
-          {SECTIONS.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                activeSection === s.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              {s.label}
-            </a>
-          ))}
-        </div>
-      </nav>
+      <ReportSectionNav activeSection={activeSection} />
 
       {loading && (
         <div className="space-y-4">
@@ -187,24 +148,51 @@ export function FundReportPage() {
             </div>
           </SectionShell>
 
-          <SectionShell id="rolling" title="Rolling Returns" description="Historical rolling window statistics.">
-            <div className="grid gap-4 lg:grid-cols-2">
+          <SectionShell
+            id="rolling"
+            title="Rolling Returns"
+            description="Avg / max / min across each rolling window length available for this fund."
+          >
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {data.rollingReturns.periods.map((p) => (
-                <div key={p.periodLabel} className="rounded-lg border p-4">
-                  <h4 className="mb-2 font-semibold">{p.periodLabel}</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span>Avg: {formatPercent(p.average)}</span>
-                    <span>Max: {formatPercent(p.maximum)}</span>
-                    <span>Min: {formatPercent(p.minimum)}</span>
-                    <span>Median: {formatPercent(p.median)}</span>
-                    <span>&gt;10%: {p.percentAbove10.toFixed(0)}%</span>
-                    <span>Negative: {p.percentNegative.toFixed(0)}%</span>
+                <div key={p.periodLabel} className="rounded-xl border border-border bg-muted/20 p-4">
+                  <h4 className="mb-3 text-base font-semibold tracking-tight">{p.periodLabel}</h4>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                    <span className="text-muted-foreground">Avg</span>
+                    <span className="text-right font-mono font-medium">{formatPercent(p.average)}</span>
+                    <span className="text-muted-foreground">Max</span>
+                    <span className="text-right font-mono font-medium text-emerald-700 dark:text-emerald-400">
+                      {formatPercent(p.maximum)}
+                    </span>
+                    <span className="text-muted-foreground">Min</span>
+                    <span
+                      className={`text-right font-mono font-medium ${
+                        p.minimum < 0 ? 'text-red-600 dark:text-red-400' : ''
+                      }`}
+                    >
+                      {formatPercent(p.minimum)}
+                    </span>
+                    <span className="text-muted-foreground">Median</span>
+                    <span className="text-right font-mono font-medium">{formatPercent(p.median)}</span>
+                    <span className="text-muted-foreground">&gt;10%</span>
+                    <span className="text-right font-mono font-medium">{p.percentAbove10.toFixed(0)}%</span>
+                    <span className="text-muted-foreground">Negative</span>
+                    <span
+                      className={`text-right font-mono font-medium ${
+                        p.percentNegative > 0 ? 'text-red-600 dark:text-red-400' : ''
+                      }`}
+                    >
+                      {p.percentNegative.toFixed(0)}%
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Consistency score: <strong>{data.rollingReturns.consistencyScore.toFixed(0)}/100</strong>
+            {data.rollingReturns.periods.length === 0 && (
+              <p className="text-sm text-muted-foreground">No rolling return periods available for this fund yet.</p>
+            )}
+            <p className="mt-4 text-sm text-muted-foreground">
+              Consistency score: <strong className="text-foreground">{data.rollingReturns.consistencyScore.toFixed(0)}/100</strong>
             </p>
           </SectionShell>
 
@@ -424,21 +412,27 @@ export function FundReportPage() {
 
           <PeerSection scheme={scheme} category={data.profile.category} />
 
-          <SectionShell id="quality" title="Fund Quality Score">
+          <SectionShell
+            id="quality"
+            title="Fund Quality Score"
+            description="Scored from known NAV metrics only — Standard Deviation and Beta Risk Level replace expense and diversification when those are unavailable."
+          >
             <div className="flex w-full flex-col items-center gap-8 lg:flex-row lg:items-stretch lg:gap-10">
               <div className="flex shrink-0 flex-col items-center justify-center lg:w-56">
                 <GaugeMeter score={data.qualityScore.score} label="Overall Quality" />
               </div>
               <div className="grid w-full flex-1 gap-3 sm:grid-cols-2">
-                {data.qualityScore.components.map((c) => (
-                  <div
-                    key={c.name}
-                    className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm"
-                  >
-                    <span>{c.name}</span>
-                    <span className="font-mono text-base font-medium">{c.score}/100</span>
-                  </div>
-                ))}
+                {data.qualityScore.components
+                  .filter((c) => c.name !== 'Expense Ratio' && c.name !== 'Diversification')
+                  .map((c) => (
+                    <div
+                      key={c.name}
+                      className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm"
+                    >
+                      <span>{c.name}</span>
+                      <span className="font-mono text-base font-medium">{c.score}/100</span>
+                    </div>
+                  ))}
               </div>
             </div>
           </SectionShell>

@@ -5,11 +5,14 @@ import in.goldentriangle.mfa.domain.model.report.QualityScoreReport;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class QualityScoreCalculator {
 
-    public QualityScoreReport compute(FundMetrics metrics, Optional<Double> expenseRatio) {
+    /**
+     * Scores only metrics we can compute from NAV / rolling data.
+     * Expense ratio and diversification are omitted — metadata is not available.
+     */
+    public QualityScoreReport compute(FundMetrics metrics) {
         List<QualityScoreReport.ComponentScore> components = new ArrayList<>();
 
         int returnsScore = scoreReturn(metrics.totalReturn(), 50, 100);
@@ -25,18 +28,13 @@ public class QualityScoreCalculator {
         components.add(new QualityScoreReport.ComponentScore("Consistency", consistencyScore, 0.15));
 
         int stdDevScore = scoreInverse(metrics.fundVolatility(), 10, 25);
-        components.add(new QualityScoreReport.ComponentScore("Std Dev", stdDevScore, 0.13));
+        components.add(new QualityScoreReport.ComponentScore("Standard Deviation", stdDevScore, 0.13));
 
-        int betaScore = scoreInverse(Math.abs(metrics.beta()), 0.85, 1.45);
-        components.add(new QualityScoreReport.ComponentScore("Beta", betaScore, 0.12));
+        int betaRiskScore = scoreInverse(Math.abs(metrics.beta()), 0.85, 1.45);
+        components.add(new QualityScoreReport.ComponentScore("Beta Risk Level", betaRiskScore, 0.12));
 
         int benchmarkScore = (int) Math.min(100, metrics.cob());
         components.add(new QualityScoreReport.ComponentScore("Benchmark Outperformance", benchmarkScore, 0.18));
-
-        expenseRatio.ifPresent(ratio -> {
-            int expenseScore = scoreInverse(ratio, 0.5, 2.0);
-            components.add(new QualityScoreReport.ComponentScore("Expense Ratio", expenseScore, 0.08));
-        });
 
         double weighted = 0;
         double totalWeight = 0;

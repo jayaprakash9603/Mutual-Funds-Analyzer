@@ -98,9 +98,7 @@ public class FundReportEngine {
                 metadata.flatMap(m -> Optional.of(m.expenseRatio())),
                 100_000,
                 metrics.fundAnnReturn());
-        QualityScoreReport quality = qualityScoreCalculator.compute(
-                metrics,
-                metadata.map(FundMetadata::expenseRatio));
+        QualityScoreReport quality = qualityScoreCalculator.compute(metrics);
         List<String> insights = goldenTriangleEvaluator.generateInsights(goldenTriangle);
         ProsConsReport prosCons = verdictEngine.prosCons(goldenTriangle, metrics);
         InvestorFitReport investorFit = verdictEngine.investorFit(goldenTriangle, metrics);

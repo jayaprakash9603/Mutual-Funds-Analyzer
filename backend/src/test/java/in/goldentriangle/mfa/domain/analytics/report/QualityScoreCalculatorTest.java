@@ -4,7 +4,6 @@ import in.goldentriangle.mfa.domain.model.FundMetrics;
 import in.goldentriangle.mfa.domain.model.report.QualityScoreReport;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,30 +16,22 @@ class QualityScoreCalculatorTest {
     private final QualityScoreCalculator calculator = new QualityScoreCalculator();
 
     @Test
-    void scoresKnownMetricsIncludingStdDevAndBeta() {
-        QualityScoreReport report = calculator.compute(sampleMetrics(), Optional.empty());
+    void scoresKnownMetricsIncludingStdDevAndBetaRiskLevel() {
+        QualityScoreReport report = calculator.compute(sampleMetrics());
 
         Set<String> names = report.components().stream()
                 .map(QualityScoreReport.ComponentScore::name)
                 .collect(Collectors.toSet());
 
-        assertTrue(names.contains("Std Dev"));
-        assertTrue(names.contains("Beta"));
+        assertTrue(names.contains("Standard Deviation"));
+        assertTrue(names.contains("Beta Risk Level"));
         assertFalse(names.contains("Expense Ratio"));
         assertFalse(names.contains("Diversification"));
         assertFalse(names.contains("Risk"));
+        assertFalse(names.contains("Std Dev"));
+        assertFalse(names.contains("Beta"));
+        assertEquals(7, report.components().size());
         assertTrue(report.score() >= 0 && report.score() <= 100);
-    }
-
-    @Test
-    void includesExpenseRatioOnlyWhenKnown() {
-        QualityScoreReport withoutExpense = calculator.compute(sampleMetrics(), Optional.empty());
-        QualityScoreReport withExpense = calculator.compute(sampleMetrics(), Optional.of(0.8));
-
-        assertFalse(withoutExpense.components().stream().anyMatch(c -> c.name().equals("Expense Ratio")));
-        assertTrue(withExpense.components().stream().anyMatch(c -> c.name().equals("Expense Ratio")));
-        assertEquals(7, withoutExpense.components().size());
-        assertEquals(8, withExpense.components().size());
     }
 
     private static FundMetrics sampleMetrics() {

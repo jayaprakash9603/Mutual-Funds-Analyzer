@@ -121,7 +121,8 @@ class FundReportServiceTest {
                 reportProperties,
                 upstreamProperties,
                 cachePort,
-                clock);
+                clock,
+                Runnable::run);
     }
 
     @Test

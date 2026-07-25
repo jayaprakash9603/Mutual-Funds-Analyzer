@@ -19,28 +19,36 @@ import { cn } from '@/lib/utils'
 interface FundSelectorProps {
   selectedScheme: string | null
   onSelectScheme: (scheme: string) => void
-  period: Period
-  onPeriodChange: (period: Period) => void
-  category: string
-  onCategoryChange: (category: string) => void
+  /** Analyze page: full controls. Report page: fund search only. */
+  mode?: 'full' | 'fund-only'
+  period?: Period
+  onPeriodChange?: (period: Period) => void
+  category?: string
+  onCategoryChange?: (category: string) => void
   benchmarkName?: string
 }
 
 export function FundSelector({
   selectedScheme,
   onSelectScheme,
+  mode = 'full',
   period,
   onPeriodChange,
-  category,
+  category = 'All',
   onCategoryChange,
   benchmarkName,
 }: FundSelectorProps) {
+  const fundOnly = mode === 'fund-only'
   const [query, setQuery] = useState(selectedScheme ?? '')
   const [showResults, setShowResults] = useState(false)
   const searchEnabled = showResults && query !== selectedScheme
-  const { schemes, loading } = useFundSearch(query, category, searchEnabled)
+  const { schemes, loading } = useFundSearch(query, fundOnly ? 'All' : category, searchEnabled)
   const { toggleFavorite, isFavorite } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setQuery(selectedScheme ?? '')
+  }, [selectedScheme])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -55,11 +63,11 @@ export function FundSelector({
   return (
     <Card className="glass">
       <CardHeader>
-        <CardTitle>Fund Selection</CardTitle>
+        <CardTitle>{fundOnly ? 'Select Fund' : 'Fund Selection'}</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 md:col-span-2" ref={containerRef}>
-          <Label htmlFor="fund-search">Select Mutual Fund</Label>
+      <CardContent className={fundOnly ? 'space-y-2' : 'grid gap-4 md:grid-cols-2'}>
+        <div className={fundOnly ? 'space-y-2' : 'space-y-2 md:col-span-2'} ref={containerRef}>
+          <Label htmlFor="fund-search">Mutual Fund</Label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -117,49 +125,61 @@ export function FundSelector({
               </ul>
             )}
           </div>
+          {fundOnly && (
+            <p className="text-xs text-muted-foreground">
+              Category, benchmark, and rolling periods are shown in the report below after you select a fund.
+            </p>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <Label>Category Filter</Label>
-          <Select value={category} onValueChange={onCategoryChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!fundOnly && (
+          <>
+            <div className="space-y-2">
+              <Label>Category Filter</Label>
+              <Select value={category} onValueChange={onCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-2">
-          <Label>Rolling Return Period</Label>
-          <Select value={period} onValueChange={(v) => onPeriodChange(v as Period)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIODS.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-2">
+              <Label>Rolling Return Period</Label>
+              <Select
+                value={period}
+                onValueChange={(v) => onPeriodChange?.(v as Period)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIODS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <Label>Benchmark (auto-resolved)</Label>
-          <Input
-            readOnly
-            value={benchmarkName ?? 'Select a fund to resolve benchmark'}
-            className="bg-muted/40"
-            aria-readonly="true"
-          />
-        </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Benchmark (auto-resolved)</Label>
+              <Input
+                readOnly
+                value={benchmarkName ?? 'Select a fund to resolve benchmark'}
+                className="bg-muted/40"
+                aria-readonly="true"
+              />
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

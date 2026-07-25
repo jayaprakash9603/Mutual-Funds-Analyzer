@@ -312,6 +312,19 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
         </ChartContainer>
       </ChartShell>
 
+      <ChartShell guide={CHART_GUIDES.scoreDoughnut} loading={loading}>
+        <ChartContainer config={doughnutConfig} className={chartHeightForGuide(CHART_GUIDES.scoreDoughnut)}>
+          <PieChart>
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
+            <Pie data={doughnutData} dataKey="value" nameKey="name" innerRadius={70} outerRadius={110} paddingAngle={4} isAnimationActive={false}>
+              {doughnutData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+      </ChartShell>
+
       <ChartShell guide={CHART_GUIDES.monthlyHeatmap} loading={loading}>
         <ChartContainer config={heatmapConfig} className={chartHeightForGuide(CHART_GUIDES.monthlyHeatmap)}>
           <BarChart data={heatmapData} margin={MARGIN_X}>
@@ -382,16 +395,19 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
         </ChartContainer>
       </ChartShell>
 
-      <ChartShell guide={CHART_GUIDES.scoreDoughnut} loading={loading}>
-        <ChartContainer config={doughnutConfig} className={chartHeightForGuide(CHART_GUIDES.scoreDoughnut)}>
-          <PieChart>
+      <ChartShell guide={CHART_GUIDES.consistency} loading={loading}>
+        <ChartContainer config={consistencyConfig} className={chartHeightForGuide(CHART_GUIDES.consistency)}>
+          <BarChart data={consistencyData} margin={MARGIN_X}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
+              <Label {...xLabel('Metric', -4)} />
+            </XAxis>
+            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+              <Label {...yLabel('Score')} />
+            </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
-            <Pie data={doughnutData} dataKey="value" nameKey="name" innerRadius={70} outerRadius={110} paddingAngle={4} isAnimationActive={false}>
-              {doughnutData.map((entry) => (
-                <Cell key={entry.name} fill={entry.fill} />
-              ))}
-            </Pie>
-          </PieChart>
+            <Bar dataKey="score" fill={CHART_COLORS.fund} radius={6} isAnimationActive={false} />
+          </BarChart>
         </ChartContainer>
       </ChartShell>
 
@@ -443,22 +459,6 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
             <Bar dataKey="count" fill={CHART_COLORS.fund} radius={2} isAnimationActive={false} />
-          </BarChart>
-        </ChartContainer>
-      </ChartShell>
-
-      <ChartShell guide={CHART_GUIDES.consistency} loading={loading}>
-        <ChartContainer config={consistencyConfig} className={chartHeightForGuide(CHART_GUIDES.consistency)}>
-          <BarChart data={consistencyData} margin={MARGIN_X}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
-              <Label {...xLabel('Metric', -4)} />
-            </XAxis>
-            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
-              <Label {...yLabel('Score')} />
-            </YAxis>
-            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
-            <Bar dataKey="score" fill={CHART_COLORS.fund} radius={6} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </ChartShell>

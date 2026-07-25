@@ -138,7 +138,14 @@ export const CHART_GUIDES = {
       'Rising volatility means a choppier ride ahead historically. Compare spikes to market stress periods on the drawdown chart.',
     useCase:
       'Decide SIP vs lump sum: higher recent volatility often favours staggered deployment for nervous investors.',
-    wide: true,
+  },
+  consistency: {
+    title: 'Consistency Score',
+    summary: 'Composite scores for beating the benchmark, Sharpe edge, and rolling strength.',
+    explanation:
+      'Each bar is a normalised consistency pillar. Balanced high bars beat a single spiked metric with weak companions.',
+    useCase:
+      'Prefer funds that score evenly when building a core portfolio sleeve meant to be held for 5+ years.',
   },
   distribution: {
     title: 'Rolling Return Distribution',
@@ -148,13 +155,5 @@ export const CHART_GUIDES = {
     useCase:
       'Probability framing: estimate how often you might have seen returns above/below a target CAGR.',
     wide: true,
-  },
-  consistency: {
-    title: 'Consistency Score',
-    summary: 'Composite scores for beating the benchmark, Sharpe edge, and rolling strength.',
-    explanation:
-      'Each bar is a normalised consistency pillar. Balanced high bars beat a single spiked metric with weak companions.',
-    useCase:
-      'Prefer funds that score evenly when building a core portfolio sleeve meant to be held for 5+ years.',
   },
 } as const satisfies Record<string, ChartGuide>

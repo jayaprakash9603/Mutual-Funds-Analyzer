@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export function useSectionNav(sectionIds: string[]) {
   const [active, setActive] = useState(sectionIds[0] ?? '')
+  const idsKey = useMemo(() => sectionIds.join('|'), [sectionIds])
 
   useEffect(() => {
+    const ids = idsKey.split('|').filter(Boolean)
+    if (ids.length === 0) return
+
+    setActive((prev) => (ids.includes(prev) ? prev : ids[0]))
+
     const observers: IntersectionObserver[] = []
-    sectionIds.forEach((id) => {
+    ids.forEach((id) => {
       const el = document.getElementById(id)
       if (!el) return
       const observer = new IntersectionObserver(
@@ -18,7 +24,7 @@ export function useSectionNav(sectionIds: string[]) {
       observers.push(observer)
     })
     return () => observers.forEach((o) => o.disconnect())
-  }, [sectionIds])
+  }, [idsKey])
 
   return active
 }
