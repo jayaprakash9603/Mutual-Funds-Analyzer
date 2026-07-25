@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Area,
@@ -85,19 +85,26 @@ export function FundReportPage() {
       <ReportSectionNav activeSection={activeSection} />
 
       {loading && (
-        <div className="space-y-4">
+        <div className="space-y-4" aria-busy="true" aria-live="polite">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            Loading report for selected fund…
+          </div>
           <Skeleton className="h-40 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       )}
-      {error && <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">{error}</div>}
+      {error && !loading && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">{error}</div>
+      )}
       {!scheme && !loading && (
         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
           Search and select a fund to generate the full report.
         </div>
       )}
 
-      {data && (
+      {data && !loading && (
         <div className="space-y-6">
           <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -483,8 +490,14 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
   const [peers, setPeers] = useState<Awaited<ReturnType<typeof fetchPeerComparison>> | null>(null)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    setPeers(null)
+    setLoading(false)
+  }, [scheme, category])
+
   const load = () => {
     if (!scheme) return
+    setPeers(null)
     setLoading(true)
     fetchPeerComparison(scheme, category || 'All')
       .then(setPeers)
