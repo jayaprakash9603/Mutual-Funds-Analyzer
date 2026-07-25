@@ -49,12 +49,23 @@ export function signedReturnColor(value: number) {
   return value < 0 ? CHART_COLORS.red : CHART_COLORS.fund
 }
 
-/** FundsIndia-style heatmap bands: >=10%, 7-10%, 0-7%, <0% */
+/**
+ * Heatmap bands tuned for readable contrast in light + dark UI.
+ * Pair each fill with {@link bandTextColor} (never white-on-light-gray).
+ */
 export const RETURN_BAND_COLORS = {
-  STRONG: CHART_COLORS.fund,
-  MODERATE: CHART_COLORS.amber,
-  WEAK: '#cbd5e1',
-  NEGATIVE: CHART_COLORS.red,
+  STRONG: '#15803d',
+  MODERATE: '#f59e0b',
+  WEAK: '#94a3b8',
+  NEGATIVE: '#dc2626',
+} as const
+
+/** Dark ink on pale/amber bands; white on saturated green/red. */
+export const RETURN_BAND_TEXT = {
+  STRONG: '#ffffff',
+  MODERATE: '#1c1917',
+  WEAK: '#0f172a',
+  NEGATIVE: '#ffffff',
 } as const
 
 export function bandColor(band: string | null | undefined) {
@@ -69,5 +80,20 @@ export function bandColor(band: string | null | undefined) {
       return RETURN_BAND_COLORS.NEGATIVE
     default:
       return 'transparent'
+  }
+}
+
+export function bandTextColor(band: string | null | undefined) {
+  switch (band) {
+    case 'STRONG':
+      return RETURN_BAND_TEXT.STRONG
+    case 'MODERATE':
+      return RETURN_BAND_TEXT.MODERATE
+    case 'WEAK':
+      return RETURN_BAND_TEXT.WEAK
+    case 'NEGATIVE':
+      return RETURN_BAND_TEXT.NEGATIVE
+    default:
+      return 'inherit'
   }
 }
