@@ -225,9 +225,19 @@ public class FundReportMapper {
         return new PeerComparisonDto(
                 report.peers().stream()
                         .map(r -> new PeerComparisonDto.PeerRowDto(
-                                r.scheme(), r.return5Y(), r.sharpe(), r.maxDrawdown(),
-                                r.consistencyScore(), r.metadataAvailable()))
+                                r.scheme(),
+                                r.average(),
+                                r.maximum(),
+                                r.minimum(),
+                                r.stdDev(),
+                                r.cob(),
+                                r.totalRecords(),
+                                r.sharpe(),
+                                r.maxDrawdown(),
+                                r.consistencyScore(),
+                                r.selected()))
                         .toList(),
-                report.highlights());
+                report.highlights(),
+                report.periodLabel());
     }
 }

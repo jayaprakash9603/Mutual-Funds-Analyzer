@@ -4,14 +4,20 @@ import java.util.List;
 
 public record PeerComparisonReport(
         List<PeerRow> peers,
-        List<String> highlights) {
+        List<String> highlights,
+        String periodLabel) {
 
     public record PeerRow(
             String scheme,
-            double return5Y,
+            double average,
+            double maximum,
+            double minimum,
+            double stdDev,
+            double cob,
+            int totalRecords,
             double sharpe,
             double maxDrawdown,
             double consistencyScore,
-            boolean metadataAvailable) {
+            boolean selected) {
     }
 }

@@ -195,13 +195,19 @@ export type MatrixReport = z.infer<typeof matrixReportSchema>
 export const peerComparisonSchema = z.object({
   peers: z.array(z.object({
     scheme: z.string(),
-    return5Y: z.number(),
+    average: z.number(),
+    maximum: z.number(),
+    minimum: z.number(),
+    stdDev: z.number(),
+    cob: z.number(),
+    totalRecords: z.number(),
     sharpe: z.number(),
     maxDrawdown: z.number(),
     consistencyScore: z.number(),
-    metadataAvailable: z.boolean(),
+    selected: z.boolean(),
   })),
   highlights: z.array(z.string()),
+  periodLabel: z.string(),
 })
 
 export type PeerComparison = z.infer<typeof peerComparisonSchema>

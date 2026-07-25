@@ -35,6 +35,7 @@ import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/compon
 import { GaugeMeter, ProbabilityBar, VerdictBadge } from '@/features/fund-report/components/ReportVisuals'
 import { MetricTile, SectionShell, UnavailableNotice } from '@/features/fund-report/components/SectionShell'
 import { fetchPeerComparison } from '@/features/fund-report/api'
+import { PeerComparisonTable } from '@/features/fund-report/components/PeerComparisonTable'
 import type { FundReport } from '@/features/fund-report/schemas'
 import type { GoldenTriangleResult } from '@/api/schemas'
 
@@ -514,58 +515,37 @@ export function FundReportPage() {
 function PeerSection({ scheme, category }: { scheme: string; category: string }) {
   const [peers, setPeers] = useState<Awaited<ReturnType<typeof fetchPeerComparison>> | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setPeers(null)
     setLoading(false)
+    setError(null)
   }, [scheme, category])
 
   const load = () => {
     if (!scheme) return
     setPeers(null)
+    setError(null)
     setLoading(true)
     fetchPeerComparison(scheme, category || 'All')
       .then(setPeers)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load peer comparison'))
       .finally(() => setLoading(false))
   }
 
   return (
     <SectionShell id="peers" title="Peer Comparison" description="Top funds in the same category.">
-      <button type="button" onClick={load} className="mb-4 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground">
+      <button
+        type="button"
+        onClick={load}
+        disabled={loading || !scheme}
+        className="mb-4 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+      >
         {loading ? 'Loading…' : 'Load peer comparison'}
       </button>
-      {peers && (
-        <>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {peers.highlights.map((h) => (
-              <Badge key={h} variant="outline">{h}</Badge>
-            ))}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2">Fund</th>
-                  <th>5Y Return</th>
-                  <th>Sharpe</th>
-                  <th>Max DD</th>
-                  <th>Consistency</th>
-                </tr>
-              </thead>
-              <tbody>
-                {peers.peers.map((p) => (
-                  <tr key={p.scheme} className="border-b border-border/40">
-                    <td className="max-w-xs truncate py-2">{p.scheme}</td>
-                    <td>{formatPercent(p.return5Y)}</td>
-                    <td>{p.sharpe.toFixed(2)}</td>
-                    <td>{formatPercent(p.maxDrawdown)}</td>
-                    <td style={{ color: cobColor(p.consistencyScore) }}>{p.consistencyScore.toFixed(0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+      {(loading || peers || error) && (
+        <PeerComparisonTable data={peers} loading={loading} error={error} />
       )}
     </SectionShell>
   )
