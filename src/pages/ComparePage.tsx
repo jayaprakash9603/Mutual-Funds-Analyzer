@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table'
-import { Loader2, Plus, Trophy, X } from 'lucide-react'
+import { Loader2, Trophy, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { FundSearchDropdown } from '@/components/dashboard/FundSearchDropdown'
 import { useFundSearch } from '@/hooks/useFundSearch'
 import { fetchComparison } from '@/api/client'
 import { getRadarData } from '@/lib/analytics/chartData'
@@ -56,11 +57,31 @@ function seriesColor(index: number) {
 export function ComparePage() {
   const [funds, setFunds] = useState<string[]>([])
   const [query, setQuery] = useState('')
+  const [showResults, setShowResults] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
   const [results, setResults] = useState<GoldenTriangleResult[]>([])
   const [loading, setLoading] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('cob')
   const [sorting, setSorting] = useState<SortingState>([])
-  const { schemes } = useFundSearch(query, 'All')
+  const searchEnabled = showResults && query.trim().length >= SEARCH_SUGGESTION_MIN_CHARS
+  const { schemes, loading: searchLoading } = useFundSearch(query, 'All', searchEnabled)
+  const inputWrapRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setActiveIndex(0)
+  }, [query, schemes])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const target = e.target as Node
+      if (inputWrapRef.current?.contains(target)) return
+      if (listRef.current?.contains(target)) return
+      setShowResults(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const addFund = (scheme: string) => {
     if (funds.length >= MAX_COMPARE_FUNDS) {
@@ -70,6 +91,7 @@ export function ComparePage() {
     if (funds.includes(scheme)) return
     setFunds((prev) => [...prev, scheme])
     setQuery('')
+    setShowResults(false)
   }
 
   const removeFund = (scheme: string) => {
@@ -163,28 +185,47 @@ export function ComparePage() {
           <CardTitle>Add Funds to Compare</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
+          <div className="relative" ref={inputWrapRef}>
             <Input
               placeholder="Search funds to add..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setShowResults(true)
+              }}
+              onFocus={() => setShowResults(true)}
+              onKeyDown={(e) => {
+                if (!showResults || query.trim().length < SEARCH_SUGGESTION_MIN_CHARS) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  if (schemes.length) setActiveIndex((i) => (i + 1) % schemes.length)
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  if (schemes.length) setActiveIndex((i) => (i - 1 + schemes.length) % schemes.length)
+                } else if (e.key === 'Enter' && schemes[activeIndex]) {
+                  e.preventDefault()
+                  addFund(schemes[activeIndex])
+                } else if (e.key === 'Escape') {
+                  setShowResults(false)
+                }
+              }}
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={searchEnabled}
+              aria-controls="fund-search-results"
             />
-            {query.length >= SEARCH_SUGGESTION_MIN_CHARS && schemes.length > 0 && (
-              <ul className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-xl border bg-popover p-1 shadow-lg">
-                {schemes.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
-                      onClick={() => addFund(s)}
-                    >
-                      <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span className="line-clamp-2">{s}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <FundSearchDropdown
+              open={searchEnabled}
+              anchorRef={inputWrapRef}
+              query={query}
+              schemes={schemes}
+              loading={searchLoading}
+              selectedScheme={null}
+              activeIndex={activeIndex}
+              onActiveIndexChange={setActiveIndex}
+              onSelect={addFund}
+              listRef={listRef}
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">
