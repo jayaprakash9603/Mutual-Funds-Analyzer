@@ -80,6 +80,10 @@ public class ReportDataCoordinator {
         });
     }
 
+    public Optional<Instant> resolveLiveWatermark(String scheme) {
+        return navHistoryPort.latestNavWatermark(scheme);
+    }
+
     public String resolveStartDate(String startDate) {
         if (startDate == null || startDate.isBlank()) {
             return reportProperties.earliestStartDate();
@@ -88,20 +92,35 @@ public class ReportDataCoordinator {
     }
 
     private PreparedReport buildPrepared(String scheme, String startDate) {
+        boolean snapshotsEnabled = featureFlags.getAnalysis().isPersistFundReport();
+        Optional<FundReportSnapshot> stored = snapshotsEnabled
+                ? reportSnapshotPort.find(scheme, startDate)
+                : Optional.empty();
+        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+
+        if (stored.isPresent()
+                && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
+                && watermarkMatches(stored.get().watermarkNavDate(), liveWatermark)) {
+            return new PreparedReport(
+                    stored.get().report(),
+                    stored.get().watermarkNavDate(),
+                    stored.get().computedAt(),
+                    true);
+        }
+
         CompletableFuture<Optional<FundMetadata>> metadataFuture =
                 CompletableFuture.supplyAsync(() -> fundMetadataPort.fetch(scheme), upstreamExecutor);
         NavHistory history = navHistoryPort.fetch(scheme, startDate);
         Instant lastNavDate = history.lastNavDate();
-        boolean snapshotsEnabled = featureFlags.getAnalysis().isPersistFundReport();
-
-        Optional<FundReportSnapshot> stored = snapshotsEnabled
-                ? reportSnapshotPort.find(scheme, startDate)
-                : Optional.empty();
 
         if (stored.isPresent()
                 && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
                 && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
-            return new PreparedReport(stored.get().report(), lastNavDate, stored.get().computedAt(), true);
+            return new PreparedReport(
+                    stored.get().report(),
+                    lastNavDate,
+                    stored.get().computedAt(),
+                    true);
         }
 
         RollingReturnsData rollingData = rollingReturnsAssembler.assembleFromHistory(history, scheme, startDate);
@@ -126,6 +145,13 @@ public class ReportDataCoordinator {
                     stored.map(FundReportSnapshot::version).orElse(0L)));
         }
         return new PreparedReport(report, lastNavDate, computedAt, false);
+    }
+
+    private static boolean watermarkMatches(Instant storedWatermark, Optional<Instant> liveWatermark) {
+        if (storedWatermark == null) {
+            return false;
+        }
+        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
     }
 
     public record PreparedReport(

@@ -51,6 +51,7 @@ import {
   hasDecadeHistory,
 } from '../charts/BearMarketDecadeChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
+import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
@@ -144,9 +145,20 @@ export function FundReportSections({
         title="Golden Triangle Score"
         description="Rolling return, COB, and Sharpe vs benchmark."
       >
-        <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
-          {(data) => <GoldenTriangleResultCard result={toGoldenTriangle(data.goldenTriangle)} />}
-        </ReportGroupBoundary>
+        <div className="space-y-6">
+          {scheme ? (
+            <FundReportReturnsChart
+              scheme={scheme}
+              fundName={fundName}
+              benchmarkName={benchmarkName}
+              indexedNav={risk.data?.drawdown.indexedNav}
+              indexedNavLoading={risk.loading && risk.data == null}
+            />
+          ) : null}
+          <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
+            {(data) => <GoldenTriangleResultCard result={toGoldenTriangle(data.goldenTriangle)} />}
+          </ReportGroupBoundary>
+        </div>
       </SectionShell>
 
       <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">

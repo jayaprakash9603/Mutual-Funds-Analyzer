@@ -9,7 +9,6 @@ import in.goldentriangle.mfa.domain.model.FundReportSectionSnapshot;
 import in.goldentriangle.mfa.domain.model.ReportFreshness;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.ReportSectionGroup;
-import in.goldentriangle.mfa.domain.model.report.FundReport;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportAssessmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportInvestmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportOverviewSection;
@@ -17,6 +16,7 @@ import in.goldentriangle.mfa.domain.model.report.section.FundReportPerformanceSe
 import in.goldentriangle.mfa.domain.model.report.section.FundReportRiskSection;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportSectionUseCase;
 import in.goldentriangle.mfa.domain.port.out.FundReportSectionSnapshotPort;
+import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
 
     private final ReportDataCoordinator reportDataCoordinator;
     private final FundReportSectionSnapshotPort sectionSnapshotPort;
+    private final NavHistoryPort navHistoryPort;
     private final FeatureGuard featureGuard;
     private final ObjectMapper objectMapper;
     private final Executor computeExecutor;
@@ -41,12 +42,14 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
     public FundReportSectionService(
             ReportDataCoordinator reportDataCoordinator,
             FundReportSectionSnapshotPort sectionSnapshotPort,
+            NavHistoryPort navHistoryPort,
             FeatureGuard featureGuard,
             ObjectMapper objectMapper,
             @Qualifier("computeExecutor") Executor computeExecutor,
             SingleFlightCoordinator singleFlightCoordinator) {
         this.reportDataCoordinator = reportDataCoordinator;
         this.sectionSnapshotPort = sectionSnapshotPort;
+        this.navHistoryPort = navHistoryPort;
         this.featureGuard = featureGuard;
         this.objectMapper = objectMapper;
         this.computeExecutor = computeExecutor;
@@ -55,70 +58,37 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
 
     @Override
     public ReportSectionEnvelope<FundReportOverviewSection> getOverview(String scheme, String startDate) {
-        return loadSection(
-                ReportSectionGroup.OVERVIEW,
-                scheme,
-                startDate,
-                FundReportOverviewSection.class,
-                FundReportSectionExtractor::overview);
+        return loadSection(ReportSectionGroup.OVERVIEW, scheme, startDate, FundReportOverviewSection.class);
     }
 
     @Override
     public ReportSectionEnvelope<FundReportPerformanceSection> getPerformance(String scheme, String startDate) {
-        return loadSection(
-                ReportSectionGroup.PERFORMANCE,
-                scheme,
-                startDate,
-                FundReportPerformanceSection.class,
-                FundReportSectionExtractor::performance);
+        return loadSection(ReportSectionGroup.PERFORMANCE, scheme, startDate, FundReportPerformanceSection.class);
     }
 
     @Override
     public ReportSectionEnvelope<FundReportRiskSection> getRisk(String scheme, String startDate) {
-        return loadSection(
-                ReportSectionGroup.RISK,
-                scheme,
-                startDate,
-                FundReportRiskSection.class,
-                FundReportSectionExtractor::risk);
+        return loadSection(ReportSectionGroup.RISK, scheme, startDate, FundReportRiskSection.class);
     }
 
     @Override
     public ReportSectionEnvelope<FundReportInvestmentSection> getInvestment(String scheme, String startDate) {
-        return loadSection(
-                ReportSectionGroup.INVESTMENT,
-                scheme,
-                startDate,
-                FundReportInvestmentSection.class,
-                FundReportSectionExtractor::investment);
+        return loadSection(ReportSectionGroup.INVESTMENT, scheme, startDate, FundReportInvestmentSection.class);
     }
 
     @Override
     public ReportSectionEnvelope<FundReportAssessmentSection> getAssessment(String scheme, String startDate) {
-        return loadSection(
-                ReportSectionGroup.ASSESSMENT,
-                scheme,
-                startDate,
-                FundReportAssessmentSection.class,
-                FundReportSectionExtractor::assessment);
-    }
-
-    @FunctionalInterface
-    private interface SectionExtractor<T> {
-        T extract(FundReport report);
+        return loadSection(ReportSectionGroup.ASSESSMENT, scheme, startDate, FundReportAssessmentSection.class);
     }
 
     private <T> ReportSectionEnvelope<T> loadSection(
             ReportSectionGroup group,
             String scheme,
             String startDate,
-            Class<T> payloadType,
-            SectionExtractor<T> extractor) {
+            Class<T> payloadType) {
         featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
         String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
-        ReportDataCoordinator.PreparedReport prepared =
-                reportDataCoordinator.prepare(scheme, resolvedStart);
-        Instant currentWatermark = prepared.lastNavDate();
+        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
 
         Optional<FundReportSectionSnapshot> stored =
                 sectionSnapshotPort.find(scheme, resolvedStart, group);
@@ -126,7 +96,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         if (stored.isPresent() && stored.get().schemaVersion() == ReportDataCoordinator.REPORT_SCHEMA_VERSION) {
             T payload = FundReportSectionSnapshotMapper.readPayload(
                     stored.get().payloadJson(), payloadType, objectMapper);
-            if (Objects.equals(stored.get().watermarkNavDate(), currentWatermark)) {
+            if (isFresh(stored.get().watermarkNavDate(), liveWatermark)) {
                 return envelope(payload, ReportFreshness.FRESH, stored.get());
             }
             scheduleRefresh(group, scheme, resolvedStart, stored.get().version());
@@ -136,44 +106,60 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             return envelope(payload, freshness, stored.get());
         }
 
-        T payload = computeAndPersist(group, scheme, resolvedStart, prepared, extractor);
+        ReportDataCoordinator.PreparedReport prepared =
+                reportDataCoordinator.prepare(scheme, resolvedStart);
+        T payload = materializeSection(group, scheme, resolvedStart, prepared, payloadType);
         FundReportSectionSnapshot saved = sectionSnapshotPort.find(scheme, resolvedStart, group)
                 .orElseThrow(() -> new IllegalStateException("Section snapshot missing after save"));
         return envelope(payload, ReportFreshness.FRESH, saved);
     }
 
-    private <T> T computeAndPersist(
+    private static boolean isFresh(Instant storedWatermark, Optional<Instant> liveWatermark) {
+        if (storedWatermark == null) {
+            return false;
+        }
+        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    }
+
+    private <T> T materializeSection(
             ReportSectionGroup group,
             String scheme,
             String startDate,
             ReportDataCoordinator.PreparedReport prepared,
-            SectionExtractor<T> extractor) {
-        String flightKey = "section-compute:" + scheme + ":" + startDate + ":" + group.name();
-        return singleFlightCoordinator.run(flightKey, () -> {
+            Class<T> payloadType) {
+        String batchKey = "section-batch:" + scheme + ":" + startDate;
+        return singleFlightCoordinator.run(batchKey, () -> {
+            materializeAllSections(scheme, startDate, prepared);
+            FundReportSectionSnapshot snapshot = sectionSnapshotPort.find(scheme, startDate, group)
+                    .orElseThrow(() -> new IllegalStateException("Section snapshot missing after batch save"));
+            return FundReportSectionSnapshotMapper.readPayload(
+                    snapshot.payloadJson(), payloadType, objectMapper);
+        });
+    }
+
+    private void materializeAllSections(
+            String scheme,
+            String startDate,
+            ReportDataCoordinator.PreparedReport prepared) {
+        for (ReportSectionGroup group : ReportSectionGroup.values()) {
             Optional<FundReportSectionSnapshot> existing =
                     sectionSnapshotPort.find(scheme, startDate, group);
             if (existing.isPresent()
                     && existing.get().schemaVersion() == ReportDataCoordinator.REPORT_SCHEMA_VERSION
                     && Objects.equals(existing.get().watermarkNavDate(), prepared.lastNavDate())) {
-                return FundReportSectionSnapshotMapper.readPayload(
-                        existing.get().payloadJson(), inferType(group), objectMapper);
+                continue;
             }
-            T payload = extractor.extract(prepared.report());
-            persistSection(group, scheme, startDate, payload, prepared, existing.map(FundReportSectionSnapshot::version).orElse(0L));
-            return payload;
-        });
+            Object payload = FundReportSectionExtractor.extract(group, prepared.report());
+            persistSection(
+                    group,
+                    scheme,
+                    startDate,
+                    payload,
+                    prepared,
+                    existing.map(FundReportSectionSnapshot::version).orElse(0L));
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> Class<T> inferType(ReportSectionGroup group) {
-        return (Class<T>) switch (group) {
-            case OVERVIEW -> FundReportOverviewSection.class;
-            case PERFORMANCE -> FundReportPerformanceSection.class;
-            case RISK -> FundReportRiskSection.class;
-            case INVESTMENT -> FundReportInvestmentSection.class;
-            case ASSESSMENT -> FundReportAssessmentSection.class;
-        };
-    }
 
     private void scheduleRefresh(
             ReportSectionGroup group,
@@ -189,8 +175,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
                 singleFlightCoordinator.run(key, () -> {
                     ReportDataCoordinator.PreparedReport prepared =
                             reportDataCoordinator.prepare(scheme, startDate);
-                    Object payload = FundReportSectionExtractor.extract(group, prepared.report());
-                    persistSection(group, scheme, startDate, payload, prepared, version);
+                    materializeAllSections(scheme, startDate, prepared);
                     return null;
                 });
             } finally {

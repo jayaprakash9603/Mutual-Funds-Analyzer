@@ -72,6 +72,16 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate));
     }
 
+    @Override
+    public Optional<Instant> latestNavWatermark(String scheme) {
+        try {
+            int code = schemeResolver.resolveCode(scheme);
+            return navStore.findMeta(code).map(NavSeriesMeta::watermarkNavDate);
+        } catch (RuntimeException ex) {
+            return Optional.empty();
+        }
+    }
+
     private NavHistory load(String scheme, int code, String startDateUsed) {
         LoadedSeries loaded = ensureSeries(scheme, code, startDateUsed);
         List<NavPoint> fundNav = NavStoreMapper.filterFromStart(loaded.fundNav(), startDateUsed);

@@ -74,11 +74,13 @@ export function useProgressiveFundReport(
 ): UseProgressiveFundReportResult {
   const progressiveEnabled = useFeature('analysis.fundReportProgressive')
   const [useLegacy, setUseLegacy] = useState(false)
+  const [secondaryWave, setSecondaryWave] = useState(false)
   const legacyFallbackTriggered = useRef(false)
 
   useEffect(() => {
     legacyFallbackTriggered.current = false
     setUseLegacy(false)
+    setSecondaryWave(false)
   }, [scheme, startDate, progressiveEnabled])
 
   const progressiveActive = progressiveEnabled && !useLegacy
@@ -90,24 +92,34 @@ export function useProgressiveFundReport(
     fetchSection: (s, d, signal) => fetchFundReportOverview(s, { startDate: d, signal }),
   })
 
+  useEffect(() => {
+    if (!progressiveActive) return
+    if (overview.data && !overview.loading) {
+      setSecondaryWave(true)
+      return
+    }
+    const timer = window.setTimeout(() => setSecondaryWave(true), 120)
+    return () => window.clearTimeout(timer)
+  }, [progressiveActive, overview.data, overview.loading, scheme, startDate])
+
   const performance = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive,
+    enabled: progressiveActive && secondaryWave,
     fetchSection: (s, d, signal) => fetchFundReportPerformance(s, { startDate: d, signal }),
   })
 
   const risk = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive,
+    enabled: progressiveActive && secondaryWave,
     fetchSection: (s, d, signal) => fetchFundReportRisk(s, { startDate: d, signal }),
   })
 
   const investment = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive,
+    enabled: progressiveActive && secondaryWave,
     fetchSection: (s, d, signal) => fetchFundReportInvestment(s, { startDate: d, signal }),
   })
 
