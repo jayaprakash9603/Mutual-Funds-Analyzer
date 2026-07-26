@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.config.ReportProperties;
 import in.goldentriangle.mfa.domain.analytics.report.FundReportEngine;
 import in.goldentriangle.mfa.domain.analytics.report.MatrixRecoveryAnalyzer;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
+import in.goldentriangle.mfa.domain.model.FundReportSnapshot;
 import in.goldentriangle.mfa.domain.model.MatrixSnapshot;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.FundMetadata;
@@ -18,6 +19,7 @@ import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.FundMetadataPort;
+import in.goldentriangle.mfa.domain.port.out.FundReportSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.MatrixSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,14 +37,15 @@ public class FundReportService implements GetFundReportUseCase {
 
     /** Bumped when rolling stats add stdDev + count per period. */
     private static final String REPORT_CACHE_PREFIX = "fund-report:v8:";
-    /** Bumped when matrix adds recovery analysis and DB snapshot reuse. */
-    private static final String MATRIX_CACHE_PREFIX = "fund-report-matrix:v4:";
+    /** Bumped when matrix caches recovery analysis with snapshot reuse. */
+    private static final String MATRIX_CACHE_PREFIX = "fund-report-matrix:v5:";
 
     private final NavHistoryPort navHistoryPort;
     private final FundRollingReturnsAssembler rollingReturnsAssembler;
     private final FundMetadataPort fundMetadataPort;
     private final FundReportEngine fundReportEngine;
     private final MatrixSnapshotPort matrixSnapshotPort;
+    private final FundReportSnapshotPort reportSnapshotPort;
     private final FeatureGuard featureGuard;
     private final FeatureFlags featureFlags;
     private final ReportProperties reportProperties;
@@ -56,6 +59,7 @@ public class FundReportService implements GetFundReportUseCase {
             FundMetadataPort fundMetadataPort,
             FundReportEngine fundReportEngine,
             MatrixSnapshotPort matrixSnapshotPort,
+            FundReportSnapshotPort reportSnapshotPort,
             FeatureGuard featureGuard,
             FeatureFlags featureFlags,
             ReportProperties reportProperties,
@@ -67,6 +71,7 @@ public class FundReportService implements GetFundReportUseCase {
         this.fundMetadataPort = fundMetadataPort;
         this.fundReportEngine = fundReportEngine;
         this.matrixSnapshotPort = matrixSnapshotPort;
+        this.reportSnapshotPort = reportSnapshotPort;
         this.featureGuard = featureGuard;
         this.featureFlags = featureFlags;
         this.reportProperties = reportProperties;
@@ -89,10 +94,9 @@ public class FundReportService implements GetFundReportUseCase {
         String resolvedStart = resolveStartDate(startDate);
         String cacheKey = MATRIX_CACHE_PREFIX + scheme + ":" + resolvedStart + ":" + mode.name();
         CachedMatrix cached = cachePort.getOrLoad(cacheKey, CachedMatrix.class, () -> buildMatrix(scheme, resolvedStart, mode));
-        MatrixRecoveryAnalysis recovery = MatrixRecoveryAnalyzer.analyze(cached.report());
         return new MatrixReportBundle(
                 cached.report(),
-                recovery,
+                cached.recovery(),
                 cached.lastNavDate(),
                 cached.computedAt(),
                 cached.fromSnapshot());
@@ -107,42 +111,70 @@ public class FundReportService implements GetFundReportUseCase {
                 ? matrixSnapshotPort.find(scheme, mode, startDate)
                 : Optional.empty();
 
+        MatrixReport report;
+        Instant computedAt;
+        boolean fromSnapshot;
+
         if (stored.isPresent() && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
-            return new CachedMatrix(
-                    stored.get().report(),
-                    lastNavDate,
-                    stored.get().computedAt(),
-                    true);
+            report = stored.get().report();
+            computedAt = stored.get().computedAt();
+            fromSnapshot = true;
+        } else {
+            report = fundReportEngine.buildMatrix(history, mode);
+            computedAt = Instant.now(clock);
+            fromSnapshot = false;
+            if (snapshotsEnabled) {
+                matrixSnapshotPort.save(new MatrixSnapshot(
+                        scheme,
+                        mode,
+                        startDate,
+                        report,
+                        lastNavDate,
+                        computedAt,
+                        stored.map(MatrixSnapshot::version).orElse(0L)));
+            }
         }
 
-        MatrixReport report = fundReportEngine.buildMatrix(history, mode);
-        Instant computedAt = Instant.now(clock);
-        if (snapshotsEnabled) {
-            matrixSnapshotPort.save(new MatrixSnapshot(
-                    scheme,
-                    mode,
-                    startDate,
-                    report,
-                    lastNavDate,
-                    computedAt,
-                    stored.map(MatrixSnapshot::version).orElse(0L)));
-        }
-        return new CachedMatrix(report, lastNavDate, computedAt, false);
+        MatrixRecoveryAnalysis recovery = MatrixRecoveryAnalyzer.analyze(report);
+        return new CachedMatrix(report, recovery, lastNavDate, computedAt, fromSnapshot);
     }
 
     private FundReport buildReport(String scheme, String startDate) {
         CompletableFuture<Optional<FundMetadata>> metadataFuture =
                 CompletableFuture.supplyAsync(() -> fundMetadataPort.fetch(scheme), matrixExecutor);
         NavHistory history = navHistoryPort.fetch(scheme, startDate);
+        Instant lastNavDate = history.lastNavDate();
+        boolean snapshotsEnabled = featureFlags.getAnalysis().isPersistFundReport();
+
+        Optional<FundReportSnapshot> stored = snapshotsEnabled
+                ? reportSnapshotPort.find(scheme, startDate)
+                : Optional.empty();
+
+        if (stored.isPresent() && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
+            return stored.get().report();
+        }
+
         RollingReturnsData rollingData = rollingReturnsAssembler.assembleFromHistory(history, scheme, startDate);
         if (rollingData.fund().isEmpty()) {
             throw new NoDataFoundException("No rolling return data found for " + scheme);
         }
-        return fundReportEngine.build(
+        Instant computedAt = Instant.now(clock);
+        FundReport report = fundReportEngine.build(
                 history,
                 rollingData,
                 metadataFuture.join(),
-                Instant.now(clock));
+                computedAt);
+
+        if (snapshotsEnabled) {
+            reportSnapshotPort.save(new FundReportSnapshot(
+                    scheme,
+                    startDate,
+                    report,
+                    lastNavDate,
+                    computedAt,
+                    stored.map(FundReportSnapshot::version).orElse(0L)));
+        }
+        return report;
     }
 
     private String resolveStartDate(String startDate) {
@@ -154,6 +186,7 @@ public class FundReportService implements GetFundReportUseCase {
 
     private record CachedMatrix(
             MatrixReport report,
+            MatrixRecoveryAnalysis recovery,
             Instant lastNavDate,
             Instant computedAt,
             boolean fromSnapshot) {

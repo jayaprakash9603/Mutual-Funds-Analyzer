@@ -134,11 +134,6 @@ export function FundReportPage() {
               <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} />
               <MetricTile label="Data Range" value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`} />
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {!data.profile.expenseRatio && <UnavailableNotice label="Expense ratio" />}
-              {!data.profile.aum && <UnavailableNotice label="AUM" />}
-              {!data.profile.fundManager && <UnavailableNotice label="Fund manager" />}
-            </div>
           </SectionShell>
 
           <SectionShell id="golden-triangle" title="Golden Triangle Score" description="Rolling return, COB, and Sharpe vs benchmark.">
@@ -297,6 +292,17 @@ export function FundReportPage() {
                 )}
               </TabsContent>
             </Tabs>
+            <div className="mt-5 grid w-full grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+              {data.lumpsum.scenarios.map((s) => (
+                <MetricTile
+                  key={s.principal}
+                  size="lg"
+                  label={`₹${(s.principal / 100000).toFixed(s.principal >= 100000 ? 0 : 1)}${s.principal >= 100000 ? 'L' : 'k'}`}
+                  value={`₹${s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                  hint={`${s.moneyMultiplied.toFixed(2)}x · CAGR ${s.cagr.toFixed(1)}%`}
+                />
+              ))}
+            </div>
           </SectionShell>
 
           <SectionShell

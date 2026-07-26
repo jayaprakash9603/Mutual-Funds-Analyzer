@@ -34,6 +34,7 @@ features:
     fundIndexMatrix: true
     incrementalAggregates: true
     incrementalMatrixSnapshots: true
+    persistFundReport: true
     fundReport: true
     peerComparison: true
   ui:

@@ -30,6 +30,7 @@ import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.MatrixMode;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.FundMetadataPort;
+import in.goldentriangle.mfa.domain.port.out.FundReportSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.MatrixSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +101,7 @@ class FundReportServiceTest {
         ReportProperties reportProperties = new ReportProperties();
         FeatureFlags featureFlags = new FeatureFlags();
         MatrixSnapshotPort matrixSnapshotPort = mock(MatrixSnapshotPort.class);
+        FundReportSnapshotPort reportSnapshotPort = mock(FundReportSnapshotPort.class);
 
         when(metadataPort.fetch(any())).thenReturn(Optional.empty());
 
@@ -114,6 +116,7 @@ class FundReportServiceTest {
                 metadataPort,
                 engine,
                 matrixSnapshotPort,
+                reportSnapshotPort,
                 featureGuard,
                 featureFlags,
                 reportProperties,

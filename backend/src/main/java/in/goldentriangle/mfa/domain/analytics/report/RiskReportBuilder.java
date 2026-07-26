@@ -28,7 +28,16 @@ public class RiskReportBuilder {
     public RiskReport build(RollingReturnsData data, String periodLabel) {
         AnalysisInput input = new AnalysisInput(data.fund(), data.benchmark(), periodLabel);
         FundMetrics metrics = metricsCalculator.compute(input);
+        List<NavPoint> fundNav = NavSeriesBuilder.buildNavSeries(data.fund());
+        DrawdownReport drawdown = drawdownCalculator.compute(fundNav);
+        return build(data, periodLabel, metrics, drawdown);
+    }
 
+    public RiskReport build(
+            RollingReturnsData data,
+            String periodLabel,
+            FundMetrics metrics,
+            DrawdownReport drawdown) {
         List<NavPoint> fundNav = NavSeriesBuilder.buildNavSeries(data.fund());
         List<NavPoint> benchNav = NavSeriesBuilder.buildNavSeries(data.benchmark());
         var common = NavSeriesBuilder.getCommonNavSeries(fundNav, benchNav);
@@ -42,8 +51,7 @@ public class RiskReportBuilder {
         double rSquared = rSquared(fundDaily.subList(0, minLen), benchDaily.subList(0, minLen));
         double trackingError = trackingError(fundDaily.subList(0, minLen), benchDaily.subList(0, minLen));
         double ulcer = ulcerIndex(fundNav);
-        DrawdownReport dd = drawdownCalculator.compute(fundNav);
-        double calmar = dd.biggestCrash() == 0 ? 0 : metrics.fundAnnReturn() / dd.biggestCrash();
+        double calmar = drawdown.biggestCrash() == 0 ? 0 : metrics.fundAnnReturn() / drawdown.biggestCrash();
         double var95 = valueAtRisk(fundDaily, 0.05);
         Capture capture = captureRatios(fundDaily.subList(0, minLen), benchDaily.subList(0, minLen));
 
@@ -57,7 +65,7 @@ public class RiskReportBuilder {
                 metrics.alpha(),
                 rSquared,
                 metrics.maxDrawdown(),
-                dd.recoveryTimeYears(),
+                drawdown.recoveryTimeYears(),
                 capture.downside(),
                 capture.upside(),
                 metrics.informationRatio(),

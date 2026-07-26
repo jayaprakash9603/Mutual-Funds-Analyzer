@@ -119,7 +119,7 @@ public class FundReportEngine {
                 rolling,
                 benchmark,
                 probabilityCalculator.compute(rollingData),
-                riskReportBuilder.build(rollingData, periodLabel),
+                riskReportBuilder.build(rollingData, periodLabel, metrics, drawdown),
                 consistency,
                 drawdown,
                 sip,
