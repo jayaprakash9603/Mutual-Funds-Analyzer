@@ -14,6 +14,7 @@ import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
@@ -92,12 +93,18 @@ public class ReportConfig {
     }
 
     @Bean
+    AllTimeHighsCalculator allTimeHighsCalculator() {
+        return new AllTimeHighsCalculator();
+    }
+
+    @Bean
     FundReportEngine fundReportEngine(
             GoldenTriangleEvaluator goldenTriangleEvaluator,
             TrailingReturnsCalculator trailingReturnsCalculator,
             RollingBandCalculator rollingBandCalculator,
             DrawdownCalculator drawdownCalculator,
             BestDaysCalculator bestDaysCalculator,
+            AllTimeHighsCalculator allTimeHighsCalculator,
             ProbabilityCalculator probabilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
@@ -113,6 +120,7 @@ public class ReportConfig {
                 rollingBandCalculator,
                 drawdownCalculator,
                 bestDaysCalculator,
+                allTimeHighsCalculator,
                 probabilityCalculator,
                 riskReportBuilder,
                 sipCalculator,

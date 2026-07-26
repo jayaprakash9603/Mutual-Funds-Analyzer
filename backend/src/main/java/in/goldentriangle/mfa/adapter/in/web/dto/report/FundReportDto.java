@@ -16,6 +16,7 @@ public record FundReportDto(
         ConsistencyDto consistency,
         DrawdownReportDto drawdown,
         BestDaysReportDto bestDays,
+        AllTimeHighsReportDto allTimeHighs,
         SipReportDto sip,
         LumpsumReportDto lumpsum,
         TaxReportDto tax,

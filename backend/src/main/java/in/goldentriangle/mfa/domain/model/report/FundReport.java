@@ -11,6 +11,7 @@ import in.goldentriangle.mfa.domain.model.report.investment.ExpenseReport;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
+import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
@@ -33,6 +34,7 @@ public record FundReport(
         ConsistencyReport consistency,
         DrawdownReport drawdown,
         BestDaysReport bestDays,
+        AllTimeHighsReport allTimeHighs,
         SipReport sip,
         LumpsumReport lumpsum,
         TaxReport tax,

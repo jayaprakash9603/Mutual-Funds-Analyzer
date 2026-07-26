@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web.dto.section;
 
+import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
@@ -8,5 +9,6 @@ public record FundReportRiskDto(
         RiskReportDto risk,
         ConsistencyDto consistency,
         DrawdownReportDto drawdown,
-        BestDaysReportDto bestDays) {
+        BestDaysReportDto bestDays,
+        AllTimeHighsReportDto allTimeHighs) {
 }

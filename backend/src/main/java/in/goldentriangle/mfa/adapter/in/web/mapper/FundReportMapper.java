@@ -2,6 +2,7 @@ package in.goldentriangle.mfa.adapter.in.web.mapper;
 
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import in.goldentriangle.mfa.domain.model.RiskLevel;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
@@ -30,6 +31,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
+import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
@@ -82,6 +84,7 @@ public class FundReportMapper {
                 toDto(report.consistency()),
                 toDto(report.drawdown()),
                 toDto(report.bestDays()),
+                toDto(report.allTimeHighs()),
                 toDto(report.sip()),
                 toDto(report.lumpsum()),
                 toDto(report.tax()),
@@ -303,6 +306,24 @@ public class FundReportMapper {
                 report.headlineSummary());
     }
 
+    private AllTimeHighsReportDto toDto(AllTimeHighsReport report) {
+        return new AllTimeHighsReportDto(
+                report.periodLabel(),
+                report.series().stream()
+                        .map(p -> new AllTimeHighsReportDto.NavPointDto(p.date(), p.nav(), p.allTimeHigh()))
+                        .toList(),
+                report.yearlyMaxLevels().stream()
+                        .map(y -> new AllTimeHighsReportDto.YearlyMaxNavDto(
+                                y.year(), y.yearLabel(), y.maxNav(), y.allTimeHighYear()))
+                        .toList(),
+                new AllTimeHighsReportDto.AllTimeHighsSummaryDto(
+                        report.summary().totalAllTimeHighDays(),
+                        report.summary().calendarYears(),
+                        report.summary().yearsWithNewHigh(),
+                        report.summary().yearsWithNewHighPercent(),
+                        report.summary().headline()));
+    }
+
     public DrawdownPeersDto toDto(DrawdownPeersReport report) {
         return new DrawdownPeersDto(
                 report.thresholdRows().stream()
@@ -393,7 +414,8 @@ public class FundReportMapper {
                 toDto(section.risk()),
                 toDto(section.consistency()),
                 toDto(section.drawdown()),
-                toDto(section.bestDays()));
+                toDto(section.bestDays()),
+                toDto(section.allTimeHighs()));
     }
 
     public FundReportInvestmentDto toDto(FundReportInvestmentSection section) {

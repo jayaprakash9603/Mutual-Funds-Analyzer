@@ -186,6 +186,27 @@ export const fundReportSchema = z.object({
     }),
     headlineSummary: z.string(),
   }),
+  allTimeHighs: z.object({
+    periodLabel: z.string(),
+    series: z.array(z.object({
+      date: z.string(),
+      nav: z.number(),
+      allTimeHigh: z.boolean(),
+    })),
+    yearlyMaxLevels: z.array(z.object({
+      year: z.number(),
+      yearLabel: z.string(),
+      maxNav: z.number(),
+      allTimeHighYear: z.boolean(),
+    })),
+    summary: z.object({
+      totalAllTimeHighDays: z.number(),
+      calendarYears: z.number(),
+      yearsWithNewHigh: z.number(),
+      yearsWithNewHighPercent: z.number(),
+      headline: z.string(),
+    }),
+  }),
   sip: z.object({
     scenarios: z.array(z.object({
       monthlyAmount: z.number(),
@@ -268,6 +289,7 @@ export const fundReportRiskSchema = fundReportSchema.pick({
   consistency: true,
   drawdown: true,
   bestDays: true,
+  allTimeHighs: true,
 })
 export type FundReportRisk = z.infer<typeof fundReportRiskSchema>
 
@@ -339,6 +361,7 @@ export function splitFundReport(report: FundReport): {
       consistency: report.consistency,
       drawdown: report.drawdown,
       bestDays: report.bestDays,
+      allTimeHighs: report.allTimeHighs,
     },
     investment: {
       sip: report.sip,

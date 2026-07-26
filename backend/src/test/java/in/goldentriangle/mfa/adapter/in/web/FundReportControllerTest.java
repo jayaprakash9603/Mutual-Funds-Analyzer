@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
+import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
@@ -116,6 +117,9 @@ class FundReportControllerTest {
         var emptyBestDays = new BestDaysReportDto(
                 1_000_000, "", List.of(), List.of(), List.of(), List.of(),
                 new BestDaysReportDto.BestWorstProximityInsightDto(0, 10, 30, ""), "");
+        var emptyAllTimeHighs = new AllTimeHighsReportDto(
+                "", List.of(), List.of(),
+                new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, ""));
         return new FundReportDto(
                 scheme,
                 profile,
@@ -128,6 +132,7 @@ class FundReportControllerTest {
                 new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "Moderate"),
                 new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
                 emptyBestDays,
+                emptyAllTimeHighs,
                 new SipReportDto(List.of()),
                 new LumpsumReportDto(List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),

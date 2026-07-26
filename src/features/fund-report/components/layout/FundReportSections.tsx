@@ -54,6 +54,8 @@ import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
+import { AllTimeHighsChart } from '../charts/AllTimeHighsChart'
+import { AllTimeHighsYearTable } from '../charts/AllTimeHighsYearTable'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
@@ -553,6 +555,21 @@ export function FundReportSections({
             <div className="space-y-10">
               <MissingBestDaysChart bestDays={data.bestDays} fundName={fundName} />
               <BestDaysInCrashAnalysis bestDays={data.bestDays} fundName={fundName} />
+            </div>
+          )}
+        </ReportGroupBoundary>
+      </SectionShell>
+
+      <SectionShell
+        id="all-time-highs"
+        title="All-Time Highs"
+        description="When the fund’s NAV reached fresh peaks — and how often that happens in a normal growth journey."
+      >
+        <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
+          {(data) => (
+            <div className="space-y-10">
+              <AllTimeHighsChart allTimeHighs={data.allTimeHighs} fundName={fundName} />
+              <AllTimeHighsYearTable allTimeHighs={data.allTimeHighs} fundName={fundName} />
             </div>
           )}
         </ReportGroupBoundary>

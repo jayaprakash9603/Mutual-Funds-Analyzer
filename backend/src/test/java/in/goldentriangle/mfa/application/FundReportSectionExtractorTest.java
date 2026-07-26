@@ -13,6 +13,7 @@ import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
+import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
@@ -44,6 +45,7 @@ class FundReportSectionExtractorTest {
         var consistency = mock(ConsistencyReport.class);
         var drawdown = mock(DrawdownReport.class);
         var bestDays = mock(BestDaysReport.class);
+        var allTimeHighs = mock(AllTimeHighsReport.class);
         var sip = mock(SipReport.class);
         var lumpsum = mock(LumpsumReport.class);
         var tax = mock(TaxReport.class);
@@ -61,6 +63,7 @@ class FundReportSectionExtractorTest {
         when(report.consistency()).thenReturn(consistency);
         when(report.drawdown()).thenReturn(drawdown);
         when(report.bestDays()).thenReturn(bestDays);
+        when(report.allTimeHighs()).thenReturn(allTimeHighs);
         when(report.sip()).thenReturn(sip);
         when(report.lumpsum()).thenReturn(lumpsum);
         when(report.tax()).thenReturn(tax);
@@ -85,6 +88,7 @@ class FundReportSectionExtractorTest {
         assertSame(risk, riskSection.risk());
         assertSame(drawdown, riskSection.drawdown());
         assertSame(bestDays, riskSection.bestDays());
+        assertSame(allTimeHighs, riskSection.allTimeHighs());
         assertSame(sip, investment.sip());
         assertSame(golden, assessment.goldenTriangle());
         assertEquals(List.of("insight"), assessment.insights());
