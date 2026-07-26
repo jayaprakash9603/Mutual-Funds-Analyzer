@@ -28,6 +28,8 @@ import in.goldentriangle.mfa.domain.model.report.FundReport;
 import in.goldentriangle.mfa.domain.model.report.InvestorFitReport;
 import in.goldentriangle.mfa.domain.model.report.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.MatrixReportBundle;
+import in.goldentriangle.mfa.domain.model.report.MatrixRecoveryAnalysis;
 import in.goldentriangle.mfa.domain.model.report.ProbabilityReport;
 import in.goldentriangle.mfa.domain.model.report.ProsConsReport;
 import in.goldentriangle.mfa.domain.model.report.QualityScoreReport;
@@ -73,6 +75,54 @@ public class FundReportMapper {
                 report.computedAt());
     }
 
+    public MatrixReportDto toDto(MatrixReportBundle bundle) {
+        MatrixReport report = bundle.matrix();
+        return new MatrixReportDto(
+                report.mode().name(),
+                report.startLabels(),
+                report.holdingYears(),
+                report.summaryRows().stream()
+                        .map(r -> new MatrixReportDto.MatrixRowDto(r.label(), r.values()))
+                        .toList(),
+                report.dataRows().stream()
+                        .map(r -> new MatrixReportDto.MatrixDataRowDto(
+                                r.startLabel(),
+                                r.cells().stream()
+                                        .map(c -> new MatrixReportDto.MatrixCellDto(
+                                                c.holdingYears(),
+                                                c.value(),
+                                                c.band() == null ? null : c.band().name()))
+                                        .toList()))
+                        .toList(),
+                toDto(bundle.recovery()),
+                bundle.lastNavDate(),
+                bundle.computedAt(),
+                bundle.fromSnapshot());
+    }
+
+    private MatrixReportDto.MatrixRecoveryDto toDto(MatrixRecoveryAnalysis recovery) {
+        return new MatrixReportDto.MatrixRecoveryDto(
+                recovery.baselineHoldingYears(),
+                recovery.strongReturnThreshold(),
+                recovery.instancesBelowBaseline(),
+                recovery.recoveredByExtension(),
+                recovery.neverRecovered(),
+                recovery.recoveryRatePercent(),
+                recovery.maxExtensionYears(),
+                recovery.rows().stream()
+                        .map(r -> new MatrixReportDto.MatrixRecoveryDto.RecoveryRowDto(
+                                r.startLabel(),
+                                r.baselineReturn(),
+                                r.recoveryHoldingYears(),
+                                r.recoveryReturn(),
+                                r.recovered(),
+                                r.exception()))
+                        .toList(),
+                recovery.exceptionStartLabels(),
+                recovery.headline(),
+                recovery.summary());
+    }
+
     public MatrixReportDto toDto(MatrixReport report) {
         return new MatrixReportDto(
                 report.mode().name(),
@@ -90,7 +140,11 @@ public class FundReportMapper {
                                                 c.value(),
                                                 c.band() == null ? null : c.band().name()))
                                         .toList()))
-                        .toList());
+                        .toList(),
+                null,
+                null,
+                null,
+                false);
     }
 
     private FundProfileDto toDto(FundProfile profile) {
@@ -168,12 +222,14 @@ public class FundReportMapper {
     private DrawdownReportDto toDto(DrawdownReport report) {
         return new DrawdownReportDto(
                 report.biggestCrash(), report.recoveryTimeYears(), report.maximumLoss(), report.averageRecoveryYears(),
+                report.currentDrawdown(),
                 report.series().stream()
                         .map(p -> new DrawdownReportDto.DrawdownPointDto(p.date(), p.drawdownPercent()))
                         .toList(),
                 report.episodes().stream()
                         .map(e -> new DrawdownReportDto.DrawdownEpisodeDto(
-                                e.peakDate(), e.troughDate(), e.recoveryDate(), e.fallPercent(), e.recoveryYears()))
+                                e.peakDate(), e.troughDate(), e.recoveryDate(), e.fallPercent(), e.recoveryYears(),
+                                e.recovered()))
                         .toList());
     }
 

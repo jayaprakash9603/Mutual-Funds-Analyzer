@@ -7,6 +7,7 @@ public record DrawdownReportDto(
         double recoveryTimeYears,
         double maximumLoss,
         double averageRecoveryYears,
+        double currentDrawdown,
         List<DrawdownPointDto> series,
         List<DrawdownEpisodeDto> episodes) {
 
@@ -18,6 +19,7 @@ public record DrawdownReportDto(
             String troughDate,
             String recoveryDate,
             double fallPercent,
-            double recoveryYears) {
+            double recoveryYears,
+            boolean recovered) {
     }
 }

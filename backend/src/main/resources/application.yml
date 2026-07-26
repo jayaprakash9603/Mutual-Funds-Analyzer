@@ -33,6 +33,7 @@ features:
     persistResults: false
     fundIndexMatrix: true
     incrementalAggregates: true
+    incrementalMatrixSnapshots: true
     fundReport: true
     peerComparison: true
   ui:

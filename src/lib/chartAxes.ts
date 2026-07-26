@@ -47,3 +47,17 @@ export function yLabelRight(text: string) {
     style: AXIS_LABEL,
   }
 }
+
+/** Recharts `unit="%"` can corrupt negative tick labels — format ticks explicitly instead. */
+export function formatAxisPercentTick(value: number) {
+  if (!Number.isFinite(value)) return ''
+  return `${value.toFixed(0)}%`
+}
+
+export function drawdownYDomain(series: Array<{ drawdownPercent: number }>): [number, number] {
+  const values = series.map((point) => point.drawdownPercent).filter(Number.isFinite)
+  if (values.length === 0) return [-10, 0]
+  const min = Math.min(...values)
+  const padding = Math.max(2, Math.abs(min) * 0.05)
+  return [Math.floor(min - padding), 0]
+}

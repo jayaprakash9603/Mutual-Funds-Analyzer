@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.application;
 
+import in.goldentriangle.mfa.config.FeatureFlags;
 import in.goldentriangle.mfa.config.FeatureKeys;
 import in.goldentriangle.mfa.config.ReportProperties;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
@@ -29,6 +30,7 @@ import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.MatrixMode;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.FundMetadataPort;
+import in.goldentriangle.mfa.domain.port.out.MatrixSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,6 +98,8 @@ class FundReportServiceTest {
                 new MatrixCalculator());
 
         ReportProperties reportProperties = new ReportProperties();
+        FeatureFlags featureFlags = new FeatureFlags();
+        MatrixSnapshotPort matrixSnapshotPort = mock(MatrixSnapshotPort.class);
 
         when(metadataPort.fetch(any())).thenReturn(Optional.empty());
 
@@ -109,7 +113,9 @@ class FundReportServiceTest {
                 rollingReturnsAssembler,
                 metadataPort,
                 engine,
+                matrixSnapshotPort,
                 featureGuard,
+                featureFlags,
                 reportProperties,
                 cachePort,
                 clock);
@@ -125,9 +131,10 @@ class FundReportServiceTest {
 
     @Test
     void buildsMatrix() {
-        var matrix = service.getMatrix("Test Fund", "01-01-2020", MatrixMode.LUMPSUM);
-        assertNotNull(matrix);
-        assertEquals(MatrixMode.LUMPSUM, matrix.mode());
+        var bundle = service.getMatrix("Test Fund", "01-01-2020", MatrixMode.LUMPSUM);
+        assertNotNull(bundle);
+        assertEquals(MatrixMode.LUMPSUM, bundle.matrix().mode());
+        assertNotNull(bundle.recovery());
     }
 
     private RollingReturnsData sampleData() {

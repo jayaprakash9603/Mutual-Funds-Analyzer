@@ -109,6 +109,7 @@ export const fundReportSchema = z.object({
     recoveryTimeYears: z.number(),
     maximumLoss: z.number(),
     averageRecoveryYears: z.number(),
+    currentDrawdown: z.number().optional().default(0),
     series: z.array(z.object({ date: z.string(), drawdownPercent: z.number() })),
     episodes: z.array(z.object({
       peakDate: z.string(),
@@ -116,6 +117,7 @@ export const fundReportSchema = z.object({
       recoveryDate: z.string(),
       fallPercent: z.number(),
       recoveryYears: z.number(),
+      recovered: z.boolean().optional().default(true),
     })),
   }),
   sip: z.object({
@@ -188,6 +190,29 @@ export const matrixReportSchema = z.object({
       band: z.string().nullable(),
     })),
   })),
+  recovery: z.object({
+    baselineHoldingYears: z.number(),
+    strongReturnThreshold: z.number(),
+    instancesBelowBaseline: z.number(),
+    recoveredByExtension: z.number(),
+    neverRecovered: z.number(),
+    recoveryRatePercent: z.number(),
+    maxExtensionYears: z.number().nullable(),
+    rows: z.array(z.object({
+      startLabel: z.string(),
+      baselineReturn: z.number().nullable(),
+      recoveryHoldingYears: z.number().nullable(),
+      recoveryReturn: z.number().nullable(),
+      recovered: z.boolean(),
+      exception: z.boolean(),
+    })),
+    exceptionStartLabels: z.array(z.string()),
+    headline: z.string(),
+    summary: z.string(),
+  }).optional(),
+  lastNavDate: z.string().nullable().optional(),
+  computedAt: z.string().nullable().optional(),
+  fromSnapshot: z.boolean().optional(),
 })
 
 export type MatrixReport = z.infer<typeof matrixReportSchema>

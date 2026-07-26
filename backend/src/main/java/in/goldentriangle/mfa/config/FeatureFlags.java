@@ -43,6 +43,7 @@ public class FeatureFlags {
         private boolean persistResults = false;
         private boolean fundIndexMatrix = true;
         private boolean incrementalAggregates = true;
+        private boolean incrementalMatrixSnapshots = true;
         private boolean fundReport = true;
         private boolean peerComparison = true;
 
@@ -60,6 +61,10 @@ public class FeatureFlags {
         public void setFundIndexMatrix(boolean fundIndexMatrix) { this.fundIndexMatrix = fundIndexMatrix; }
         public boolean isIncrementalAggregates() { return incrementalAggregates; }
         public void setIncrementalAggregates(boolean incrementalAggregates) { this.incrementalAggregates = incrementalAggregates; }
+        public boolean isIncrementalMatrixSnapshots() { return incrementalMatrixSnapshots; }
+        public void setIncrementalMatrixSnapshots(boolean incrementalMatrixSnapshots) {
+            this.incrementalMatrixSnapshots = incrementalMatrixSnapshots;
+        }
         public boolean isFundReport() { return fundReport; }
         public void setFundReport(boolean fundReport) { this.fundReport = fundReport; }
         public boolean isPeerComparison() { return peerComparison; }

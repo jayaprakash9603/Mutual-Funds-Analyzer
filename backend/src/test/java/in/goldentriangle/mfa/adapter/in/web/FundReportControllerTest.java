@@ -23,7 +23,9 @@ import in.goldentriangle.mfa.adapter.in.web.dto.TrailingReturnsDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
 import in.goldentriangle.mfa.domain.model.report.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.MatrixRecoveryAnalysis;
 import in.goldentriangle.mfa.domain.model.report.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.MatrixReportBundle;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
 import in.goldentriangle.mfa.domain.port.out.FeatureFlagPort;
 import org.junit.jupiter.api.Test;
@@ -75,9 +77,23 @@ class FundReportControllerTest {
     void getMatrixReturnsMatrixReport() throws Exception {
         when(featureFlagPort.allFlags()).thenReturn(Map.of("analysis.fundReport", true));
         when(getFundReportUseCase.getMatrix(eq("Test Fund"), isNull(), eq(MatrixMode.LUMPSUM)))
-                .thenReturn(mock(MatrixReport.class));
-        when(fundReportMapper.toDto(any(MatrixReport.class))).thenReturn(
-                new MatrixReportDto("LUMPSUM", List.of("2010"), List.of(5), List.of(), List.of()));
+                .thenReturn(new MatrixReportBundle(
+                        mock(MatrixReport.class),
+                        MatrixRecoveryAnalysis.empty(),
+                        Instant.now(),
+                        Instant.now(),
+                        false));
+        when(fundReportMapper.toDto(any(MatrixReportBundle.class))).thenReturn(
+                new MatrixReportDto(
+                        "LUMPSUM",
+                        List.of("2010"),
+                        List.of(5),
+                        List.of(),
+                        List.of(),
+                        null,
+                        Instant.now(),
+                        Instant.now(),
+                        false));
 
         mockMvc.perform(get("/api/fund-report/matrix").param("scheme", "Test Fund").param("mode", "LUMPSUM"))
                 .andExpect(status().isOk())
@@ -102,7 +118,7 @@ class FundReportControllerTest {
                 new ProbabilityDto(0, 0, 0, 0, 0, 0),
                 emptyRisk,
                 new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "Moderate"),
-                new DrawdownReportDto(0, 0, 0, 0, List.of(), List.of()),
+                new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of()),
                 new SipReportDto(List.of()),
                 new LumpsumReportDto(List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),

@@ -3,10 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   Label,
   ReferenceLine,
   XAxis,
@@ -25,13 +22,18 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
-import { AXIS_LINE, GRID_STROKE, MARGIN_X, TICK_LINE, TICK_MD, ZERO_LINE_STROKE, xLabel, yLabel } from '@/lib/chartAxes'
-import { CHART_COLORS, signedReturnColor } from '@/lib/chartColors'
+import { AXIS_LINE, drawdownYDomain, formatAxisPercentTick, GRID_STROKE, MARGIN_X, TICK_LINE, TICK_MD, xLabel, yLabel, ZERO_LINE_STROKE } from '@/lib/chartAxes'
+import { CHART_COLORS } from '@/lib/chartColors'
 import { formatPercent } from '@/lib/utils'
 import { useFundReport } from '@/features/fund-report/hooks/useFundReport'
 import { useFundReportMatrix } from '@/features/fund-report/hooks/useFundReportMatrix'
 import { useSectionNav } from '@/features/fund-report/hooks/useSectionNav'
+import { DrawdownEpisodesTable } from '@/features/fund-report/components/DrawdownEpisodesTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '@/features/fund-report/components/HeatMatrix'
+import { RareInstancesMatrixTable } from '@/features/fund-report/components/RareInstancesMatrixTable'
+import { MultiplyProbabilityTable } from '@/features/fund-report/components/MultiplyProbabilityTable'
+import { FundIndexMatrixTable } from '@/components/fundsindia/FundIndexMatrixTable'
+import { useFundIndexMatrix } from '@/hooks/useFundIndexMatrix'
 import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/components/ReportSectionNav'
 import { GaugeMeter, ProbabilityBar, VerdictBadge } from '@/features/fund-report/components/ReportVisuals'
 import { MetricTile, SectionShell, UnavailableNotice } from '@/features/fund-report/components/SectionShell'
@@ -42,11 +44,8 @@ import type { GoldenTriangleResult } from '@/api/schemas'
 
 const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 
-const consistencyChartConfig = {
-  returnPercent: { label: 'Return', color: CHART_COLORS.fund },
-}
-
-const drawdownChartConfig = {
+import { AnnualStressAnalysis } from '@/features/fund-report/components/AnnualStressAnalysis'
+import { TrailingReturnsTable } from '@/features/fund-report/components/TrailingReturnsTable'
   drawdownPercent: { label: 'Drawdown', color: CHART_COLORS.red },
 }
 
@@ -61,7 +60,17 @@ export function FundReportPage() {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
 
   const { data, loading, error } = useFundReport(scheme || null)
+  const {
+    data: rollingMatrix,
+    loading: rollingMatrixLoading,
+    error: rollingMatrixError,
+  } = useFundIndexMatrix(scheme || null)
   const { data: matrix, loading: matrixLoading } = useFundReportMatrix(scheme || null, matrixMode, !!data)
+  const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
+    scheme || null,
+    'MULTIPLE',
+    !!data,
+  )
   const activeSection = useSectionNav(SECTION_IDS)
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])
@@ -135,78 +144,23 @@ export function FundReportPage() {
           </SectionShell>
 
           <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="py-2">Period</th>
-                    <th>Absolute</th>
-                    <th>CAGR</th>
-                    <th>₹10k →</th>
-                    <th>Multiplier</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.trailingReturns.periods.map((p) => (
-                    <tr key={p.label} className="border-b border-border/40">
-                      <td className="py-2 font-medium">{p.label}</td>
-                      <td>{formatPercent(p.absoluteReturn)}</td>
-                      <td>{formatPercent(p.cagr)}</td>
-                      <td>₹{p.growthOfTenThousand.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                      <td>{p.moneyMultiplied.toFixed(2)}x</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TrailingReturnsTable
+              periods={data.trailingReturns.periods}
+              fundName={data.profile.fundName}
+            />
           </SectionShell>
 
           <SectionShell
             id="rolling"
             title="Rolling Returns"
-            description="Avg / max / min across each rolling window length available for this fund."
+            description="Fund vs index rolling return comparison across 1Y, 3Y, 5Y, 7Y, and 10Y windows."
           >
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {data.rollingReturns.periods.map((p) => (
-                <div key={p.periodLabel} className="rounded-xl border border-border bg-muted/20 p-4">
-                  <h4 className="mb-3 text-base font-semibold tracking-tight">{p.periodLabel}</h4>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                    <span className="text-muted-foreground">Avg</span>
-                    <span className="text-right font-mono font-medium">{formatPercent(p.average)}</span>
-                    <span className="text-muted-foreground">Max</span>
-                    <span className="text-right font-mono font-medium text-emerald-700 dark:text-emerald-400">
-                      {formatPercent(p.maximum)}
-                    </span>
-                    <span className="text-muted-foreground">Min</span>
-                    <span
-                      className={`text-right font-mono font-medium ${
-                        p.minimum < 0 ? 'text-red-600 dark:text-red-400' : ''
-                      }`}
-                    >
-                      {formatPercent(p.minimum)}
-                    </span>
-                    <span className="text-muted-foreground">Median</span>
-                    <span className="text-right font-mono font-medium">{formatPercent(p.median)}</span>
-                    <span className="text-muted-foreground">&gt;10%</span>
-                    <span className="text-right font-mono font-medium">{p.percentAbove10.toFixed(0)}%</span>
-                    <span className="text-muted-foreground">Negative</span>
-                    <span
-                      className={`text-right font-mono font-medium ${
-                        p.percentNegative > 0 ? 'text-red-600 dark:text-red-400' : ''
-                      }`}
-                    >
-                      {p.percentNegative.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {data.rollingReturns.periods.length === 0 && (
-              <p className="text-sm text-muted-foreground">No rolling return periods available for this fund yet.</p>
-            )}
-            <p className="mt-4 text-sm text-muted-foreground">
-              Consistency score: <strong className="text-foreground">{data.rollingReturns.consistencyScore.toFixed(0)}/100</strong>
-            </p>
+            <FundIndexMatrixTable
+              data={rollingMatrix}
+              loading={rollingMatrixLoading}
+              error={rollingMatrixError}
+              consistencyScore={data.rollingReturns.consistencyScore}
+            />
           </SectionShell>
 
           <SectionShell id="benchmark" title="Benchmark Comparison">
@@ -218,8 +172,8 @@ export function FundReportPage() {
             <p className="mt-3 text-sm">{data.benchmarkComparison.explanation}</p>
           </SectionShell>
 
-          <SectionShell id="probability" title="Probability Analysis" description="Historical odds from rolling windows.">
-            <div className="grid gap-4 md:grid-cols-2">
+          <SectionShell id="probability" title="Probability Analysis" description="Historical odds from rolling windows and multiply targets.">
+            <div className="mb-6 grid gap-4 md:grid-cols-2">
               <ProbabilityBar label="Positive return" value={data.probability.positiveReturn} />
               <ProbabilityBar label="Beat inflation (~7%)" value={data.probability.beatInflation} />
               <ProbabilityBar label="Beat benchmark" value={data.probability.beatBenchmark} />
@@ -227,6 +181,15 @@ export function FundReportPage() {
               <ProbabilityBar label="Double money (7Y)" value={data.probability.doubleMoney} />
               <ProbabilityBar label="Triple money (7Y)" value={data.probability.tripleMoney} />
             </div>
+            {multipleMatrixLoading ? (
+              <Skeleton className="h-48 w-full rounded-xl" />
+            ) : multipleMatrix ? (
+              <MultiplyProbabilityTable
+                matrix={multipleMatrix}
+                fundName={data.profile.fundName}
+                benchmarkName={data.profile.benchmarkName}
+              />
+            ) : null}
           </SectionShell>
 
           <SectionShell id="risk" title="Risk Analysis">
@@ -248,8 +211,8 @@ export function FundReportPage() {
 
           <SectionShell
             id="consistency"
-            title="Performance Consistency"
-            description="Calendar-year returns — green years gained, red years lost. Hover a bar for the exact return."
+            title="Annual Drawdown vs Returns"
+            description="Each year's worst peak-to-trough fall compared with the calendar-year return — FundsIndia-style stress analysis."
           >
             <div className="mb-4 flex flex-wrap gap-2">
               <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-400">
@@ -260,51 +223,11 @@ export function FundReportPage() {
               </Badge>
               <Badge variant="outline">Rating: {data.consistency.consistencyRating}</Badge>
             </div>
-            <div className="w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
-              <ChartContainer config={consistencyChartConfig} className="aspect-auto h-[340px] w-full sm:h-[400px] lg:h-[440px]">
-                <BarChart data={data.consistency.calendarYears.slice(-15)} margin={MARGIN_X}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
-                  <XAxis
-                    dataKey="year"
-                    tickLine={TICK_LINE}
-                    axisLine={AXIS_LINE}
-                    tick={TICK_MD}
-                    height={44}
-                  >
-                    <Label {...xLabel('Year', -2)} />
-                  </XAxis>
-                  <YAxis
-                    tickLine={TICK_LINE}
-                    axisLine={AXIS_LINE}
-                    tick={TICK_MD}
-                    unit="%"
-                    width={52}
-                  >
-                    <Label {...yLabel('Return (%)')} />
-                  </YAxis>
-                  <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.35} strokeWidth={1.5} />
-                  <ChartTooltip
-                    cursor={CHART_TOOLTIP_CURSOR}
-                    content={<ChartTooltipContent format="percent" />}
-                  />
-                  <Bar dataKey="returnPercent" radius={[5, 5, 0, 0]} maxBarSize={48} isAnimationActive={false}>
-                    {data.consistency.calendarYears.slice(-15).map((row) => (
-                      <Cell key={row.year} fill={signedReturnColor(row.returnPercent)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-sm bg-emerald-600" aria-hidden="true" />
-                  Positive year
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-sm bg-red-600" aria-hidden="true" />
-                  Negative year
-                </span>
-              </div>
-            </div>
+            <AnnualStressAnalysis
+              calendarYears={data.consistency.calendarYears}
+              fundName={data.profile.fundName}
+              dataTo={data.profile.dataTo}
+            />
           </SectionShell>
 
           <SectionShell id="sip" title="SIP Analysis" description="Monthly SIP outcomes from daily NAV history (mfapi.in).">
@@ -355,7 +278,14 @@ export function FundReportPage() {
                 <TabsTrigger value="STP_6M">6M STP Matrix</TabsTrigger>
               </TabsList>
               <TabsContent value={matrixMode} className="mt-4 w-full">
-                {matrixLoading ? <HeatMatrixSkeleton /> : matrix ? <HeatMatrix data={matrix} /> : null}
+                {matrixLoading ? <HeatMatrixSkeleton /> : matrix ? (
+                  <>
+                    <HeatMatrix data={matrix} />
+                    {matrix.recovery ? (
+                      <RareInstancesMatrixTable matrix={matrix} recovery={matrix.recovery} />
+                    ) : null}
+                  </>
+                ) : null}
               </TabsContent>
             </Tabs>
             <div className="mt-5 grid w-full grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
@@ -376,17 +306,25 @@ export function FundReportPage() {
             title="Drawdown Analysis"
             description="Peak-to-trough losses over time. Deeper red areas mark harder market stress periods."
           >
-            <div className="mb-4 grid gap-3 md:grid-cols-4">
+            <div className="mb-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <MetricTile label="Biggest crash" value={formatPercent(-data.drawdown.biggestCrash)} metricKey="maxDrawdown" />
+              <MetricTile label="Maximum loss" value={formatPercent(-data.drawdown.maximumLoss)} />
+              <MetricTile
+                label="Current drawdown"
+                value={formatPercent(data.drawdown.currentDrawdown)}
+              />
               <MetricTile label="Recovery time" value={`${data.drawdown.recoveryTimeYears.toFixed(1)} yrs`} />
               <MetricTile label="Avg recovery" value={`${data.drawdown.averageRecoveryYears.toFixed(1)} yrs`} />
-              <MetricTile label="Episodes &gt;30%" value={String(data.drawdown.episodes.length)} />
+              <MetricTile
+                label="Episodes (≥10%)"
+                value={String(data.drawdown.episodes.length)}
+              />
             </div>
             <div className="w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
               <ChartContainer config={drawdownChartConfig} className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]">
                 <AreaChart
-                  data={data.drawdown.series.filter((_point, index) => index % 5 === 0)}
-                  margin={MARGIN_X}
+                  data={data.drawdown.series}
+                  margin={{ ...MARGIN_X, left: 48 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                   <XAxis
@@ -403,8 +341,10 @@ export function FundReportPage() {
                     tickLine={TICK_LINE}
                     axisLine={AXIS_LINE}
                     tick={TICK_MD}
-                    unit="%"
-                    width={52}
+                    tickFormatter={formatAxisPercentTick}
+                    width={48}
+                    domain={drawdownYDomain(data.drawdown.series)}
+                    type="number"
                   >
                     <Label {...yLabel('Drawdown (%)')} />
                   </YAxis>
@@ -425,6 +365,7 @@ export function FundReportPage() {
                 </AreaChart>
               </ChartContainer>
             </div>
+            <DrawdownEpisodesTable drawdown={data.drawdown} />
           </SectionShell>
 
           <SectionShell id="tax" title="Tax Analysis">

@@ -11,7 +11,7 @@ import { GoldenTriangleResultCard } from '@/components/dashboard/GoldenTriangleR
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
 import { RiskMeter } from '@/components/dashboard/RiskMeter'
 import { PerformanceTimeline } from '@/components/dashboard/PerformanceTimeline'
-import { FundIndexMatrixTable } from '@/components/dashboard/FundIndexMatrixTable'
+import { FundIndexMatrixTable } from '@/components/fundsindia/FundIndexMatrixTable'
 import { RollingReturnsPanel } from '@/components/charts/RollingReturnsPanel'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
