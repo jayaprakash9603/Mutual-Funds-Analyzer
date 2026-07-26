@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 
 import java.util.List;

@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
+import in.goldentriangle.mfa.domain.analytics.report.core.NavHistoryAssembler;
 import in.goldentriangle.mfa.domain.analytics.NavSeriesBuilder;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;

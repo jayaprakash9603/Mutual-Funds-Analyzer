@@ -1,9 +1,11 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.MatrixRecoveryAnalysis;
-import in.goldentriangle.mfa.domain.model.report.MatrixReport;
-import in.goldentriangle.mfa.domain.model.report.ReturnBand;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixRecoveryAnalyzer;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.ReturnBandClassifier;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.ReturnBand;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

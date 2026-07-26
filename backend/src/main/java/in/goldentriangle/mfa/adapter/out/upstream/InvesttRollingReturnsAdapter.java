@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.upstream;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import com.fasterxml.jackson.core.type.TypeReference;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;

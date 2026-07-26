@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.analytics.insight.InsightComposer;
 import in.goldentriangle.mfa.domain.analytics.rule.RuleEngine;
 import in.goldentriangle.mfa.domain.model.AnalysisInput;

@@ -1,10 +1,10 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.FundIndexComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.FundIndexComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.ApiMapper;
-import in.goldentriangle.mfa.config.ConditionalOnFeature;
-import in.goldentriangle.mfa.config.FeatureKeys;
-import in.goldentriangle.mfa.config.UpstreamProperties;
+import in.goldentriangle.mfa.config.feature.ConditionalOnFeature;
+import in.goldentriangle.mfa.config.feature.FeatureKeys;
+import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.port.in.GetFundIndexComparisonUseCase;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

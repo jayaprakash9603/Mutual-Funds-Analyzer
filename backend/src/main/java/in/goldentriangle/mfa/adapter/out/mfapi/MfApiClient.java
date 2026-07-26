@@ -2,7 +2,7 @@ package in.goldentriangle.mfa.adapter.out.mfapi;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.goldentriangle.mfa.config.MfApiProperties;
+import in.goldentriangle.mfa.config.properties.MfApiProperties;
 import in.goldentriangle.mfa.domain.exception.UpstreamUnavailableException;
 import org.springframework.stereotype.Component;
 

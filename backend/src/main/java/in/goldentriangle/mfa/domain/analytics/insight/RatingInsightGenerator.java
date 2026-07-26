@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.insight;
 
+import in.goldentriangle.mfa.domain.model.OverallRating;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 
 import java.util.Optional;

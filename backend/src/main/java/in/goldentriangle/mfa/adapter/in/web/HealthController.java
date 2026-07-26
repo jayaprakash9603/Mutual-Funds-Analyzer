@@ -1,6 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.HealthResponseDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.HealthResponseDto;
 import in.goldentriangle.mfa.domain.port.out.FeatureFlagPort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.TimelineEvent;

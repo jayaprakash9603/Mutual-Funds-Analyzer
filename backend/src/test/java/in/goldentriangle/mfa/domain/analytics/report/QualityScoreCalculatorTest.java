@@ -1,7 +1,8 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
+import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator;
 import in.goldentriangle.mfa.domain.model.FundMetrics;
-import in.goldentriangle.mfa.domain.model.report.QualityScoreReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;

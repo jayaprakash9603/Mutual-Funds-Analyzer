@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { FundSearchDropdown } from '@/components/dashboard/FundSearchDropdown'
+import { FundSearchDropdown } from '@/components/dashboard/search/FundSearchDropdown'
 import { useFundSearch } from '@/hooks/useFundSearch'
 import { fetchComparison } from '@/api/client'
 import { getRadarData } from '@/lib/analytics/chartData'
@@ -33,8 +33,8 @@ import {
   type Period,
   type SortOption,
 } from '@/lib/constants'
-import { CHART_SERIES } from '@/lib/chartColors'
-import { DOMAIN_0_100 } from '@/lib/chartAxes'
+import { CHART_SERIES } from '@/lib/charts/chartColors'
+import { DOMAIN_0_100 } from '@/lib/charts/chartAxes'
 import {
   ChartContainer,
   ChartTooltip,

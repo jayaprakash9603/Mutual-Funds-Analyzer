@@ -3,7 +3,7 @@ import { Info, Lightbulb } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { CHART_HEIGHT, CHART_HEIGHT_COMPACT, CHART_HEIGHT_WIDE } from '@/lib/chartAxes'
+import { CHART_HEIGHT, CHART_HEIGHT_COMPACT, CHART_HEIGHT_WIDE } from '@/lib/charts/chartAxes'
 import { cn } from '@/lib/utils'
 import type { ChartGuide } from '@/lib/analytics/chartGuide'
 

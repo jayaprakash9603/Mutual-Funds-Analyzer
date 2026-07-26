@@ -1,6 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.FundSchemeDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.FundSchemeDto;
 import in.goldentriangle.mfa.domain.port.in.SearchFundsUseCase;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;

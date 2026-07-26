@@ -1,8 +1,9 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
 import in.goldentriangle.mfa.domain.model.NavPoint;
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import org.junit.jupiter.api.Test;
 

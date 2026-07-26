@@ -1,45 +1,61 @@
 package in.goldentriangle.mfa.adapter.in.web.mapper;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.BenchmarkComparisonDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ConsistencyDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.DrawdownReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ExpenseReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundProfileDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.InvestorFitDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.LumpsumReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.MatrixReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.PeerComparisonDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ProbabilityDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ProsConsDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.QualityScoreDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RecommendationDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RiskReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RollingReturnsReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.SipReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.TaxReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.TrailingReturnsDto;
-import in.goldentriangle.mfa.domain.model.report.BenchmarkComparisonReport;
-import in.goldentriangle.mfa.domain.model.report.ConsistencyReport;
-import in.goldentriangle.mfa.domain.model.report.DrawdownReport;
-import in.goldentriangle.mfa.domain.model.report.ExpenseReport;
+import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
+import in.goldentriangle.mfa.domain.model.RiskLevel;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownPeersDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ExpenseReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundProfileDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportAssessmentDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportInvestmentDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportOverviewDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportPerformanceDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportRiskDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.InvestorFitDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.PeerComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ProbabilityDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ProsConsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.QualityScoreDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RecommendationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.section.ReportSectionEnvelopeDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RiskReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RollingReturnsReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
+import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
+import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
+import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
+import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownPeersReport;
+import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownReport;
+import in.goldentriangle.mfa.domain.model.report.investment.ExpenseReport;
 import in.goldentriangle.mfa.domain.model.report.FundProfile;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
-import in.goldentriangle.mfa.domain.model.report.InvestorFitReport;
-import in.goldentriangle.mfa.domain.model.report.LumpsumReport;
-import in.goldentriangle.mfa.domain.model.report.MatrixReport;
-import in.goldentriangle.mfa.domain.model.report.MatrixReportBundle;
-import in.goldentriangle.mfa.domain.model.report.MatrixRecoveryAnalysis;
-import in.goldentriangle.mfa.domain.model.report.ProbabilityReport;
-import in.goldentriangle.mfa.domain.model.report.ProsConsReport;
-import in.goldentriangle.mfa.domain.model.report.QualityScoreReport;
-import in.goldentriangle.mfa.domain.model.report.RecommendationReport;
-import in.goldentriangle.mfa.domain.model.report.ReturnBand;
-import in.goldentriangle.mfa.domain.model.report.RiskReport;
-import in.goldentriangle.mfa.domain.model.report.RollingReturnsReport;
-import in.goldentriangle.mfa.domain.model.report.SipReport;
-import in.goldentriangle.mfa.domain.model.report.TaxReport;
-import in.goldentriangle.mfa.domain.model.report.TrailingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.section.FundReportAssessmentSection;
+import in.goldentriangle.mfa.domain.model.report.section.FundReportInvestmentSection;
+import in.goldentriangle.mfa.domain.model.report.section.FundReportOverviewSection;
+import in.goldentriangle.mfa.domain.model.report.section.FundReportPerformanceSection;
+import in.goldentriangle.mfa.domain.model.report.section.FundReportRiskSection;
+import in.goldentriangle.mfa.domain.model.report.assessment.InvestorFitReport;
+import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
+import in.goldentriangle.mfa.domain.model.report.assessment.ProbabilityReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.ProsConsReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.RecommendationReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.ReturnBand;
+import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
+import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
+import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
+import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -230,14 +246,40 @@ public class FundReportMapper {
                         .map(e -> new DrawdownReportDto.DrawdownEpisodeDto(
                                 e.peakDate(), e.troughDate(), e.recoveryDate(), e.fallPercent(), e.recoveryYears(),
                                 e.recovered()))
+                        .toList(),
+                report.bearMarketDecades().stream()
+                        .map(d -> new DrawdownReportDto.BearMarketDecadeDto(
+                                d.decadeLabel(), d.percentOfDays(), d.daysInBearMarket(), d.totalDays(), d.partial()))
+                        .toList(),
+                report.thresholdRows().stream()
+                        .map(r -> new DrawdownReportDto.DrawdownThresholdRowDto(
+                                r.thresholdPercent(), r.fundPercentOfDays(), r.fundDaysBelow(),
+                                r.benchmarkPercentOfDays()))
+                        .toList(),
+                report.phases().stream()
+                        .map(p -> new DrawdownReportDto.DrawdownPhaseDto(
+                                p.type(), p.startDate(), p.endDate(), p.changePercent(), p.durationLabel(),
+                                p.durationYears(), p.ongoing()))
+                        .toList(),
+                report.indexedNav().stream()
+                        .map(p -> new DrawdownReportDto.NavIndexPointDto(p.date(), p.indexValue()))
                         .toList());
+    }
+
+    public DrawdownPeersDto toDto(DrawdownPeersReport report) {
+        return new DrawdownPeersDto(
+                report.thresholdRows().stream()
+                        .map(r -> new DrawdownPeersDto.DrawdownThresholdRowDto(
+                                r.thresholdPercent(), r.peerMedianPercentOfDays()))
+                        .toList(),
+                report.peerCount());
     }
 
     private SipReportDto toDto(SipReport report) {
         return new SipReportDto(report.scenarios().stream()
                 .map(s -> new SipReportDto.SipScenarioDto(
                         s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
-                        s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxReturn()))
+                        s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()))
                 .toList());
     }
 
@@ -295,5 +337,76 @@ public class FundReportMapper {
                         .toList(),
                 report.highlights(),
                 report.periodLabel());
+    }
+
+    public FundReportOverviewDto toDto(FundReportOverviewSection section) {
+        return new FundReportOverviewDto(section.scheme(), toDto(section.profile()));
+    }
+
+    public FundReportPerformanceDto toDto(FundReportPerformanceSection section) {
+        return new FundReportPerformanceDto(
+                toDto(section.trailingReturns()),
+                toDto(section.rollingReturns()),
+                toDto(section.benchmarkComparison()),
+                toDto(section.probability()));
+    }
+
+    public FundReportRiskDto toDto(FundReportRiskSection section) {
+        return new FundReportRiskDto(
+                toDto(section.risk()),
+                toDto(section.consistency()),
+                toDto(section.drawdown()));
+    }
+
+    public FundReportInvestmentDto toDto(FundReportInvestmentSection section) {
+        return new FundReportInvestmentDto(
+                toDto(section.sip()),
+                toDto(section.lumpsum()),
+                toDto(section.tax()),
+                toDto(section.expense()));
+    }
+
+    public FundReportAssessmentDto toDto(FundReportAssessmentSection section) {
+        return new FundReportAssessmentDto(
+                apiMapper.toDto(section.goldenTriangle()),
+                toDto(section.qualityScore()),
+                section.insights(),
+                toDto(section.prosCons()),
+                toDto(section.investorFit()),
+                toDto(section.recommendation()));
+    }
+
+    public <T, D> ReportSectionEnvelopeDto<D> toDto(ReportSectionEnvelope<T> envelope, java.util.function.Function<T, D> mapper) {
+        return new ReportSectionEnvelopeDto<>(
+                mapper.apply(envelope.data()),
+                envelope.freshness().name(),
+                envelope.watermarkNavDate(),
+                envelope.computedAt(),
+                envelope.schemaVersion());
+    }
+
+    public ReportSectionEnvelopeDto<FundReportOverviewDto> toOverviewDto(
+            ReportSectionEnvelope<FundReportOverviewSection> envelope) {
+        return toDto(envelope, this::toDto);
+    }
+
+    public ReportSectionEnvelopeDto<FundReportPerformanceDto> toPerformanceDto(
+            ReportSectionEnvelope<FundReportPerformanceSection> envelope) {
+        return toDto(envelope, this::toDto);
+    }
+
+    public ReportSectionEnvelopeDto<FundReportRiskDto> toRiskDto(
+            ReportSectionEnvelope<FundReportRiskSection> envelope) {
+        return toDto(envelope, this::toDto);
+    }
+
+    public ReportSectionEnvelopeDto<FundReportInvestmentDto> toInvestmentDto(
+            ReportSectionEnvelope<FundReportInvestmentSection> envelope) {
+        return toDto(envelope, this::toDto);
+    }
+
+    public ReportSectionEnvelopeDto<FundReportAssessmentDto> toAssessmentDto(
+            ReportSectionEnvelope<FundReportAssessmentSection> envelope) {
+        return toDto(envelope, this::toDto);
     }
 }

@@ -1,8 +1,9 @@
 package in.goldentriangle.mfa.adapter.out.mfapi;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import in.goldentriangle.mfa.adapter.out.persistence.NavStoreMapper;
-import in.goldentriangle.mfa.config.MfApiProperties;
+import in.goldentriangle.mfa.adapter.out.persistence.mapper.NavStoreMapper;
+import in.goldentriangle.mfa.config.properties.MfApiProperties;
+import in.goldentriangle.mfa.config.concurrency.KeyedLock;
 import in.goldentriangle.mfa.domain.analytics.NavDateFormatter;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.model.NavPoint;
@@ -39,7 +40,8 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     private final MfApiProperties mfApiProperties;
     private final CachePort cachePort;
     private final Clock clock;
-    private final Executor matrixExecutor;
+    private final Executor upstreamExecutor;
+    private final KeyedLock navRefreshLock;
 
     public MfApiNavHistoryAdapter(
             MfApiClient client,
@@ -49,7 +51,8 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
             MfApiProperties mfApiProperties,
             CachePort cachePort,
             Clock clock,
-            @Qualifier("matrixExecutor") Executor matrixExecutor) {
+            @Qualifier("upstreamExecutor") Executor upstreamExecutor,
+            KeyedLock navRefreshLock) {
         this.client = client;
         this.schemeResolver = schemeResolver;
         this.benchmarkNavResolver = benchmarkNavResolver;
@@ -57,7 +60,8 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         this.mfApiProperties = mfApiProperties;
         this.cachePort = cachePort;
         this.clock = clock;
-        this.matrixExecutor = matrixExecutor;
+        this.upstreamExecutor = upstreamExecutor;
+        this.navRefreshLock = navRefreshLock;
     }
 
     @Override
@@ -95,6 +99,10 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     }
 
     private LoadedSeries ensureSeries(String scheme, int code, String startDateUsed) {
+        return navRefreshLock.call(Integer.toString(code), () -> doEnsureSeries(scheme, code, startDateUsed));
+    }
+
+    private LoadedSeries doEnsureSeries(String scheme, int code, String startDateUsed) {
         Instant now = clock.instant();
         Optional<NavSeriesMeta> metaOpt = navStore.findMeta(code);
 
@@ -119,7 +127,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         String apiStart = MfApiNavMapper.toApiStartDate(startDateUsed);
         CompletableFuture<BenchmarkNavResolver.BenchmarkSnapshot> benchmarkFuture = CompletableFuture.supplyAsync(
                 () -> benchmarkNavResolver.resolve(scheme, startDateUsed),
-                matrixExecutor);
+                upstreamExecutor);
 
         FundFetchResult fundFetch = fetchFundNav(code, apiStart);
         BenchmarkNavResolver.BenchmarkSnapshot benchmark = benchmarkFuture.join();
@@ -156,7 +164,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
                             : NavDateFormatter.dayAfter(meta.benchmarkWatermarkNavDate());
                     return benchmarkNavResolver.resolve(scheme, benchStart);
                 },
-                matrixExecutor);
+                upstreamExecutor);
 
         List<NavPoint> deltaFund = tryFetchFundNav(code, fundApiStart)
                 .map(FundFetchResult::points)

@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.domain.analytics.report;
 
-import in.goldentriangle.mfa.domain.model.report.ReturnBand;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.ReturnBandClassifier;
+import in.goldentriangle.mfa.domain.model.report.matrix.ReturnBand;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

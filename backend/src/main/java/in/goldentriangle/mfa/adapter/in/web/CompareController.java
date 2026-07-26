@@ -1,11 +1,11 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.CompareRequestDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.CompareResponseDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.CompareRequestDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.CompareResponseDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.ApiMapper;
-import in.goldentriangle.mfa.config.ConditionalOnFeature;
-import in.goldentriangle.mfa.config.FeatureKeys;
-import in.goldentriangle.mfa.config.UpstreamProperties;
+import in.goldentriangle.mfa.config.feature.ConditionalOnFeature;
+import in.goldentriangle.mfa.config.feature.FeatureKeys;
+import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.port.in.CompareFundsUseCase;
 import org.springframework.web.bind.annotation.PostMapping;

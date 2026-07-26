@@ -1,14 +1,17 @@
 package in.goldentriangle.mfa.adapter.in.web.mapper;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.FundIndexComparisonDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundMetricsDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.GoldenTriangleResultDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.PeriodComparisonRowDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RollingReturnRowDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RollingReturnsResponseDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RuleResultDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.SeriesStatsDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.TimelineEventDto;
+import in.goldentriangle.mfa.domain.model.OverallRating;
+import in.goldentriangle.mfa.domain.model.Period;
+import in.goldentriangle.mfa.domain.model.RiskLevel;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.FundIndexComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundMetricsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.GoldenTriangleResultDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.PeriodComparisonRowDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.rolling.RollingReturnRowDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.rolling.RollingReturnsResponseDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.RuleResultDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.rolling.SeriesStatsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.TimelineEventDto;
 import in.goldentriangle.mfa.domain.model.FundIndexComparison;
 import in.goldentriangle.mfa.domain.model.FundMetrics;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;

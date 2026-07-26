@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.insight;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.analytics.AnalyticsThresholds;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 

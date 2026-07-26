@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mongo;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 import in.goldentriangle.mfa.domain.model.TimelineEvent;
 import org.springframework.data.annotation.Id;

@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import type { FundIndexComparison } from '@/api/schemas'
-import { CHART_COLORS, outperformanceColor } from '@/lib/chartColors'
+import { CHART_COLORS, outperformanceColor } from '@/lib/charts/chartColors'
 import { fiHeaderCell, fiSubHeaderCell, FI_GRID } from '@/components/fundsindia/tableStyles'
 import { MATRIX_PERIODS } from '@/lib/constants'
 import { cn, formatPercent } from '@/lib/utils'

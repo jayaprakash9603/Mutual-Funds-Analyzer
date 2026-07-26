@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.cache;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.port.out.CachePort;

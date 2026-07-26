@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { FlaskConical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { isDemoModeEnabled } from '@/demo/demoMode'
-import { loadDemoManifest, type DemoFund } from '@/demo/demoManifest'
+import { isDemoModeEnabled } from '@/demo/config/demoMode'
+import { loadDemoManifest, type DemoFund } from '@/demo/config/demoManifest'
 
 interface DemoFundPickerProps {
   selectedScheme: string | null

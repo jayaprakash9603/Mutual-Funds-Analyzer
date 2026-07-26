@@ -7,6 +7,7 @@ export const featureDefaults: Record<string, boolean> = {
   'analysis.fundIndexMatrix': true,
   'analysis.incrementalAggregates': true,
   'analysis.fundReport': true,
+  'analysis.fundReportProgressive': true,
   'analysis.peerComparison': true,
   'ui.landingPage': true,
   'ui.methodPage': true,

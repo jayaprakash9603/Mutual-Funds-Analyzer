@@ -1,5 +1,5 @@
 import { fiHeaderCell, fiSubHeaderCell, FI_GRID } from '@/components/fundsindia/tableStyles'
-import { CHART_COLORS } from '@/lib/chartColors'
+import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { MATRIX_PERIODS } from '@/lib/constants'
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReport } from '@/features/fund-report/schemas'

@@ -1,8 +1,8 @@
 package in.goldentriangle.mfa.domain.port.in;
 
 import in.goldentriangle.mfa.domain.model.report.FundReport;
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.MatrixReportBundle;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
 
 public interface GetFundReportUseCase {
 

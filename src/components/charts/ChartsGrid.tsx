@@ -64,8 +64,8 @@ import {
   TICK_SM,
   xLabel,
   yLabel,
-} from '@/lib/chartAxes'
-import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/chartColors'
+} from '@/lib/charts/chartAxes'
+import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/charts/chartColors'
 import { ChartShell, chartHeightForGuide } from '@/components/charts/ChartShell'
 
 const lineConfig = {

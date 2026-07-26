@@ -84,6 +84,7 @@ type ChartTooltipContentProps = {
   label?: string | number
   /** percent = always %; number = plain; auto = infer from dataKey */
   format?: 'percent' | 'number' | 'auto'
+  labelFormatter?: (label: string | number | undefined, payload: ReadonlyArray<TooltipPayloadItem>) => string
   className?: string
 }
 
@@ -118,10 +119,13 @@ function ChartTooltipContent({
   payload,
   label,
   format = 'auto',
+  labelFormatter,
   className,
 }: ChartTooltipContentProps) {
   const { config } = useChart()
   if (!active || !payload?.length) return null
+
+  const heading = labelFormatter ? labelFormatter(label, payload) : label
 
   return (
     <div
@@ -130,8 +134,8 @@ function ChartTooltipContent({
         className,
       )}
     >
-      {label != null && label !== '' && (
-        <p className="mb-1.5 font-semibold text-foreground">{label}</p>
+      {heading != null && heading !== '' && (
+        <p className="mb-1.5 font-semibold text-foreground">{heading}</p>
       )}
       <div className="space-y-1">
         {payload.map((item) => {

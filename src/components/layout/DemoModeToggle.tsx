@@ -18,7 +18,7 @@ import {
   LIVE_APP_NOTE,
   LIVE_APP_SETUP,
   LIVE_APP_URL,
-} from '@/demo/demoMode'
+} from '@/demo/config/demoMode'
 
 type BackendStatus = 'unknown' | 'checking' | 'up' | 'down'
 

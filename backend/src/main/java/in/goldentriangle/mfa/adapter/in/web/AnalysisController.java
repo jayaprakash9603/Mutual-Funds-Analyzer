@@ -1,8 +1,8 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.AnalysisResponseDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.compare.AnalysisResponseDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.ApiMapper;
-import in.goldentriangle.mfa.config.UpstreamProperties;
+import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.port.in.AnalyseFundUseCase;

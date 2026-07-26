@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.exception.UpstreamUnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -44,6 +45,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
         return problem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler({TaskRejectedException.class, java.util.concurrent.RejectedExecutionException.class})
+    ResponseEntity<Map<String, String>> handleExecutorSaturation(RuntimeException ex) {
+        log.warn("Executor saturated while serving request", ex);
+        return problem(HttpStatus.SERVICE_UNAVAILABLE, "Server is busy processing other requests; retry shortly");
     }
 
     /** Catch-all so an unhandled failure returns a consistent body instead of the servlet default. */

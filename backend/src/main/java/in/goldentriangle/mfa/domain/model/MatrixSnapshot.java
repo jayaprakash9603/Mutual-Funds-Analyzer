@@ -1,7 +1,7 @@
 package in.goldentriangle.mfa.domain.model;
 
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 
 import java.time.Instant;
 

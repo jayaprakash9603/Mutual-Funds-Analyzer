@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics;
 
+import in.goldentriangle.mfa.domain.model.NavSeries;
 import in.goldentriangle.mfa.domain.model.AlignedRollingPoint;
 import in.goldentriangle.mfa.domain.model.AnalysisInput;
 import in.goldentriangle.mfa.domain.model.FundMetrics;

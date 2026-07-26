@@ -18,7 +18,7 @@ export function useFundReport(scheme: string | null, startDate?: string) {
     setLoading(true)
     setError(null)
     try {
-      const report = await fetchFundReport(scheme, startDate)
+      const report = await fetchFundReport(scheme, startDate, signal)
       if (!signal.aborted) setData(report)
     } catch (e) {
       if (!signal.aborted) {

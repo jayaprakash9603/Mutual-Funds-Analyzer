@@ -1,5 +1,9 @@
 package in.goldentriangle.mfa.config;
 
+import in.goldentriangle.mfa.config.feature.FeatureFlags;
+import in.goldentriangle.mfa.config.properties.AnalyticsProperties;
+import in.goldentriangle.mfa.config.properties.MfApiProperties;
+import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
 import in.goldentriangle.mfa.domain.analytics.RollingReturnsFromNav;

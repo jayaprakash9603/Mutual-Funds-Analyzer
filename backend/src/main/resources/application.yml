@@ -82,6 +82,10 @@ analytics:
   riskFreeRate: 0.06
   tradingDays: 252
   refreshAfter: 7d
+  computePoolSize: # defaults to availableProcessors (minimum 2)
+  computeQueueCapacity: 64
+  upstreamPoolSize: 8
+  upstreamQueueCapacity: 64
   matrixPoolSize: 6
   matrixQueueCapacity: 24
   matrixPeriods:

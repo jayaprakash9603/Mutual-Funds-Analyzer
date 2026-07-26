@@ -1,6 +1,6 @@
 import { ApiError } from './apiError'
-import { isDemoModeEnabled } from '@/demo/demoMode'
-import { fetchDemoJson } from '@/demo/demoTransport'
+import { isDemoModeEnabled } from '@/demo/config/demoMode'
+import { fetchDemoJson } from '@/demo/transport/demoTransport'
 
 export { ApiError }
 

@@ -1,31 +1,32 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
-import in.goldentriangle.mfa.adapter.in.web.dto.BenchmarkComparisonDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ConsistencyDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.DrawdownReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ExpenseReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundMetricsDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundProfileDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.FundReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.GoldenTriangleResultDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.InvestorFitDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.LumpsumReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.MatrixReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ProbabilityDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.ProsConsDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.QualityScoreDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RecommendationDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RiskReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.RollingReturnsReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.SipReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.TaxReportDto;
-import in.goldentriangle.mfa.adapter.in.web.dto.TrailingReturnsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ExpenseReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundMetricsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundProfileDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.FundReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.common.GoldenTriangleResultDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.InvestorFitDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ProbabilityDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.ProsConsDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.QualityScoreDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RecommendationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RiskReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.RollingReturnsReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
-import in.goldentriangle.mfa.domain.model.report.MatrixRecoveryAnalysis;
-import in.goldentriangle.mfa.domain.model.report.MatrixReport;
-import in.goldentriangle.mfa.domain.model.report.MatrixReportBundle;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
+import in.goldentriangle.mfa.domain.port.in.GetFundReportSectionUseCase;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
 import in.goldentriangle.mfa.domain.port.out.FeatureFlagPort;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class FundReportControllerTest {
 
     @MockBean
     private GetFundReportUseCase getFundReportUseCase;
+
+    @MockBean
+    private GetFundReportSectionUseCase getFundReportSectionUseCase;
 
     @MockBean
     private FundReportMapper fundReportMapper;
@@ -118,7 +122,7 @@ class FundReportControllerTest {
                 new ProbabilityDto(0, 0, 0, 0, 0, 0),
                 emptyRisk,
                 new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "Moderate"),
-                new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of()),
+                new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
                 new SipReportDto(List.of()),
                 new LumpsumReportDto(List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),

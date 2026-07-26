@@ -1,8 +1,10 @@
 package in.goldentriangle.mfa.application;
 
-import in.goldentriangle.mfa.config.AnalyticsProperties;
-import in.goldentriangle.mfa.config.FeatureFlags;
-import in.goldentriangle.mfa.config.UpstreamProperties;
+import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.application.report.FundIndexComparisonService;
+import in.goldentriangle.mfa.config.properties.AnalyticsProperties;
+import in.goldentriangle.mfa.config.feature.FeatureFlags;
+import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;
 import in.goldentriangle.mfa.domain.model.FundIndexComparison;

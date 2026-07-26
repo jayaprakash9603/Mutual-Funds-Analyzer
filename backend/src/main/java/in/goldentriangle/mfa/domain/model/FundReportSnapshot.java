@@ -10,5 +10,6 @@ public record FundReportSnapshot(
         FundReport report,
         Instant watermarkNavDate,
         Instant computedAt,
+        int schemaVersion,
         long version) {
 }

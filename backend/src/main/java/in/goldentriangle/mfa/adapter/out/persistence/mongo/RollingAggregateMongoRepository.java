@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mongo;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;

@@ -206,6 +206,23 @@ async function captureFund(fund) {
   const slug = slugify(label)
   files.fundReport = await writeJson(`fund-report/${slug}.json`, report)
 
+  const sections = {}
+  for (const [section, path] of [
+    ['overview', '/api/fund-report/overview'],
+    ['performance', '/api/fund-report/performance'],
+    ['risk', '/api/fund-report/risk'],
+    ['investment', '/api/fund-report/investment'],
+    ['assessment', '/api/fund-report/assessment'],
+  ]) {
+    const payload = await tryRequest(`report ${section}`, path, { scheme })
+    if (payload) {
+      sections[section] = await writeJson(`fund-report-sections/${slug}-${section}.json`, payload)
+    }
+  }
+  if (Object.keys(sections).length > 0) {
+    files.fundReportSections = sections
+  }
+
   const analysis = {}
   for (const period of PERIODS) {
     const payload = await tryRequest(
@@ -252,6 +269,15 @@ async function captureFund(fund) {
   )
   if (peers) {
     files.peers = await writeJson(`peers/${slug}.json`, peers)
+  }
+
+  const drawdownPeers = await tryRequest(
+    'drawdown-peers',
+    '/api/fund-report/drawdown-peers',
+    { scheme, category },
+  )
+  if (drawdownPeers) {
+    files.drawdownPeers = await writeJson(`drawdown-peers/${slug}.json`, drawdownPeers)
   }
 
   return {

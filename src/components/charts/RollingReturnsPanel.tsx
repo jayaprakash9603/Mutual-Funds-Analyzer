@@ -33,8 +33,8 @@ import {
   TICK_SM,
   yLabelRight,
   xLabel,
-} from '@/lib/chartAxes'
-import { CHART_COLORS, TABLE_HEAD_CLASS, TABLE_SUBHEAD_CLASS } from '@/lib/chartColors'
+} from '@/lib/charts/chartAxes'
+import { CHART_COLORS, TABLE_HEAD_CLASS, TABLE_SUBHEAD_CLASS } from '@/lib/charts/chartColors'
 
 const FUND_COLOR = CHART_COLORS.fund
 const BENCHMARK_COLOR = CHART_COLORS.benchmark

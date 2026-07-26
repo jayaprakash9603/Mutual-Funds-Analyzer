@@ -1,6 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics;
 
-import in.goldentriangle.mfa.domain.analytics.report.CalendarMath;
+import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarMath;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;

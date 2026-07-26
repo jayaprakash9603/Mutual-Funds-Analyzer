@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.upstream;
 
+import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import org.springframework.stereotype.Component;
 

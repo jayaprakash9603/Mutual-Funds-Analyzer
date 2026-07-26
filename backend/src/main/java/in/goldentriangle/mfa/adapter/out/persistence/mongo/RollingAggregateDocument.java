@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mongo;
 
-import in.goldentriangle.mfa.adapter.out.persistence.RollingAggregateRecord;
+import in.goldentriangle.mfa.domain.model.Period;
+import in.goldentriangle.mfa.adapter.out.persistence.record.RollingAggregateRecord;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

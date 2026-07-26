@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { CHART_COLORS, volatilityColor } from '@/lib/chartColors'
+import { CHART_COLORS, volatilityColor } from '@/lib/charts/chartColors'
 import { MAX_CHART_POINTS, TRADING_DAYS } from '@/lib/constants'
 import { downsample, parseNavDate } from '@/lib/utils'
 import {

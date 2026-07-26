@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { REPORT_SECTION_SCROLL_OFFSET, scrollToReportSection } from '../lib/reportScroll'
+import { REPORT_SECTION_SCROLL_OFFSET, scrollToReportSection } from '../lib/nav/reportScroll'
 
 /**
  * Scroll-spy: active section is the last section whose top has crossed the sticky nav offset.

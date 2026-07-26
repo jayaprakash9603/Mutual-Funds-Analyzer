@@ -1,6 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mongo;
 
-import in.goldentriangle.mfa.adapter.out.persistence.RollingAggregateMapper;
+import in.goldentriangle.mfa.adapter.out.persistence.mapper.RollingAggregateMapper;
 import in.goldentriangle.mfa.config.Profiles;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingAggregate;

@@ -1,33 +1,37 @@
 package in.goldentriangle.mfa.application;
 
-import in.goldentriangle.mfa.config.FeatureFlags;
-import in.goldentriangle.mfa.config.FeatureKeys;
-import in.goldentriangle.mfa.config.ReportProperties;
+import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.application.report.FundReportService;
+import in.goldentriangle.mfa.application.report.FundRollingReturnsAssembler;
+import in.goldentriangle.mfa.application.report.ReportDataCoordinator;
+import in.goldentriangle.mfa.config.feature.FeatureFlags;
+import in.goldentriangle.mfa.config.properties.ReportProperties;
+import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
 import in.goldentriangle.mfa.domain.analytics.TimelineBuilder;
 import in.goldentriangle.mfa.domain.analytics.insight.InsightComposer;
-import in.goldentriangle.mfa.domain.analytics.report.DrawdownCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.ExpenseCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.FundReportEngine;
-import in.goldentriangle.mfa.domain.analytics.report.LumpsumCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.MatrixCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.NavHistoryAssembler;
-import in.goldentriangle.mfa.domain.analytics.report.ProbabilityCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.QualityScoreCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.RiskReportBuilder;
-import in.goldentriangle.mfa.domain.analytics.report.RollingBandCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.SipCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.TaxCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.TrailingReturnsCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.VerdictEngine;
+import in.goldentriangle.mfa.domain.analytics.report.drawdown.DrawdownCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.tax.ExpenseCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
+import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.core.NavHistoryAssembler;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.rule.CobRule;
 import in.goldentriangle.mfa.domain.analytics.rule.RollingReturnRule;
 import in.goldentriangle.mfa.domain.analytics.rule.RuleEngine;
 import in.goldentriangle.mfa.domain.analytics.rule.SharpeRule;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.FundMetadataPort;
 import in.goldentriangle.mfa.domain.port.out.FundReportSnapshotPort;
@@ -52,11 +56,10 @@ import static org.mockito.Mockito.when;
 class FundReportServiceTest {
 
     private FundReportService service;
-    private FundRollingReturnsAssembler rollingReturnsAssembler;
 
     @BeforeEach
     void setUp() {
-        rollingReturnsAssembler = mock(FundRollingReturnsAssembler.class);
+        FundRollingReturnsAssembler rollingReturnsAssembler = mock(FundRollingReturnsAssembler.class);
         NavHistoryPort navHistoryPort = mock(NavHistoryPort.class);
         FundMetadataPort metadataPort = mock(FundMetadataPort.class);
         FeatureGuard featureGuard = mock(FeatureGuard.class);
@@ -110,19 +113,28 @@ class FundReportServiceTest {
         when(navHistoryPort.fetch(any(), any())).thenReturn(
                 NavHistoryAssembler.assemble("Test Fund", data, "01-01-2020"));
 
-        service = new FundReportService(
+        ReportDataCoordinator reportDataCoordinator = new ReportDataCoordinator(
                 navHistoryPort,
                 rollingReturnsAssembler,
                 metadataPort,
                 engine,
-                matrixSnapshotPort,
                 reportSnapshotPort,
-                featureGuard,
                 featureFlags,
                 reportProperties,
                 cachePort,
                 clock,
-                Runnable::run);
+                Runnable::run,
+                new SingleFlightCoordinator());
+
+        service = new FundReportService(
+                navHistoryPort,
+                engine,
+                matrixSnapshotPort,
+                reportDataCoordinator,
+                featureGuard,
+                featureFlags,
+                cachePort,
+                clock);
     }
 
     @Test

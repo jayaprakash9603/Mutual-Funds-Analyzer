@@ -1,7 +1,7 @@
 package in.goldentriangle.mfa.adapter.out.featureflag;
 
-import in.goldentriangle.mfa.config.FeatureFlagResolver;
-import in.goldentriangle.mfa.config.FeatureFlags;
+import in.goldentriangle.mfa.config.feature.FeatureFlagResolver;
+import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.domain.port.out.FeatureFlagPort;
 import org.springframework.stereotype.Component;
 

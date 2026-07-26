@@ -1,7 +1,7 @@
 package in.goldentriangle.mfa.domain.port.out;
 
 import in.goldentriangle.mfa.domain.model.MatrixSnapshot;
-import in.goldentriangle.mfa.domain.model.report.MatrixMode;
+import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 
 import java.util.Optional;
 

@@ -2,7 +2,8 @@ package in.goldentriangle.mfa.adapter.out.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import in.goldentriangle.mfa.config.FeatureFlags;
+import in.goldentriangle.mfa.config.feature.FeatureFlags;
+import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -15,13 +16,15 @@ import java.util.function.Supplier;
 public class CaffeineCacheAdapter implements CachePort {
 
     private final Cache<String, Object> cache;
+    private final SingleFlightCoordinator singleFlight;
 
-    public CaffeineCacheAdapter(FeatureFlags featureFlags) {
+    public CaffeineCacheAdapter(FeatureFlags featureFlags, SingleFlightCoordinator singleFlight) {
         FeatureFlags.CacheFeatures settings = featureFlags.getPlatform().getCache();
         this.cache = Caffeine.newBuilder()
                 .expireAfterWrite(settings.getTtl())
                 .maximumSize(settings.getMaxSize())
                 .build();
+        this.singleFlight = singleFlight;
     }
 
     @Override
@@ -40,10 +43,16 @@ public class CaffeineCacheAdapter implements CachePort {
         if (cached != null) {
             return type.cast(cached);
         }
-        // Load outside Caffeine's atomic loader to avoid IllegalStateException when a loader
-        // calls getOrLoad again on the same cache (e.g. fund-report -> navHistory -> mfapi-nav).
-        T loaded = loader.get();
-        cache.put(key, loaded);
+
+        T loaded = singleFlight.run(key, () -> {
+            Object existing = cache.getIfPresent(key);
+            if (existing != null) {
+                return type.cast(existing);
+            }
+            T value = loader.get();
+            cache.put(key, value);
+            return value;
+        });
         return loaded;
     }
 

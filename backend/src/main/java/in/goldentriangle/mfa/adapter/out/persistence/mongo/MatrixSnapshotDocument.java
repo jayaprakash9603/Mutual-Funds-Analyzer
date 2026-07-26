@@ -1,6 +1,6 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mongo;
 
-import in.goldentriangle.mfa.adapter.out.persistence.MatrixSnapshotRecord;
+import in.goldentriangle.mfa.adapter.out.persistence.record.MatrixSnapshotRecord;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;

@@ -121,6 +121,32 @@ export const fundReportSchema = z.object({
       recoveryYears: z.number(),
       recovered: z.boolean().optional().default(true),
     })),
+    bearMarketDecades: z.array(z.object({
+      decadeLabel: z.string(),
+      percentOfDays: z.number(),
+      daysInBearMarket: z.number(),
+      totalDays: z.number(),
+      partial: z.boolean(),
+    })).optional().default([]),
+    thresholdRows: z.array(z.object({
+      thresholdPercent: z.number(),
+      fundPercentOfDays: z.number(),
+      fundDaysBelow: z.number(),
+      benchmarkPercentOfDays: z.number(),
+    })).optional().default([]),
+    phases: z.array(z.object({
+      type: z.string(),
+      startDate: z.string(),
+      endDate: z.string(),
+      changePercent: z.number(),
+      durationLabel: z.string(),
+      durationYears: z.number(),
+      ongoing: z.boolean(),
+    })).optional().default([]),
+    indexedNav: z.array(z.object({
+      date: z.string(),
+      indexValue: z.number(),
+    })).optional().default([]),
   }),
   sip: z.object({
     scenarios: z.array(z.object({
@@ -132,7 +158,7 @@ export const fundReportSchema = z.object({
       projectedValue10Y: z.number(),
       stcg: z.number().optional(),
       ltcg: z.number().optional(),
-      postTaxReturn: z.number().optional(),
+      postTaxXirr: z.number().optional(),
     })),
   }),
   lumpsum: z.object({
@@ -181,6 +207,115 @@ export const fundReportSchema = z.object({
 })
 
 export type FundReport = z.infer<typeof fundReportSchema>
+
+export const reportFreshnessSchema = z.enum(['FRESH', 'STALE', 'REFRESHING'])
+export type ReportFreshness = z.infer<typeof reportFreshnessSchema>
+
+export const fundReportOverviewSchema = fundReportSchema.pick({
+  scheme: true,
+  profile: true,
+})
+export type FundReportOverview = z.infer<typeof fundReportOverviewSchema>
+
+export const fundReportPerformanceSchema = fundReportSchema.pick({
+  trailingReturns: true,
+  rollingReturns: true,
+  benchmarkComparison: true,
+  probability: true,
+})
+export type FundReportPerformance = z.infer<typeof fundReportPerformanceSchema>
+
+export const fundReportRiskSchema = fundReportSchema.pick({
+  risk: true,
+  consistency: true,
+  drawdown: true,
+})
+export type FundReportRisk = z.infer<typeof fundReportRiskSchema>
+
+export const fundReportInvestmentSchema = fundReportSchema.pick({
+  sip: true,
+  lumpsum: true,
+  tax: true,
+  expense: true,
+})
+export type FundReportInvestment = z.infer<typeof fundReportInvestmentSchema>
+
+export const fundReportAssessmentSchema = fundReportSchema.pick({
+  goldenTriangle: true,
+  qualityScore: true,
+  insights: true,
+  prosCons: true,
+  investorFit: true,
+  recommendation: true,
+})
+export type FundReportAssessment = z.infer<typeof fundReportAssessmentSchema>
+
+export function createReportSectionEnvelopeSchema<T extends z.ZodType>(dataSchema: T) {
+  return z.object({
+    data: dataSchema,
+    freshness: reportFreshnessSchema,
+    watermarkNavDate: z.string().nullable(),
+    computedAt: z.string(),
+    schemaVersion: z.number(),
+  })
+}
+
+export const fundReportOverviewEnvelopeSchema = createReportSectionEnvelopeSchema(fundReportOverviewSchema)
+export const fundReportPerformanceEnvelopeSchema = createReportSectionEnvelopeSchema(fundReportPerformanceSchema)
+export const fundReportRiskEnvelopeSchema = createReportSectionEnvelopeSchema(fundReportRiskSchema)
+export const fundReportInvestmentEnvelopeSchema = createReportSectionEnvelopeSchema(fundReportInvestmentSchema)
+export const fundReportAssessmentEnvelopeSchema = createReportSectionEnvelopeSchema(fundReportAssessmentSchema)
+
+export type FundReportOverviewEnvelope = z.infer<typeof fundReportOverviewEnvelopeSchema>
+export type FundReportPerformanceEnvelope = z.infer<typeof fundReportPerformanceEnvelopeSchema>
+export type FundReportRiskEnvelope = z.infer<typeof fundReportRiskEnvelopeSchema>
+export type FundReportInvestmentEnvelope = z.infer<typeof fundReportInvestmentEnvelopeSchema>
+export type FundReportAssessmentEnvelope = z.infer<typeof fundReportAssessmentEnvelopeSchema>
+
+export type ReportSectionEnvelope<T> = {
+  data: T
+  freshness: ReportFreshness
+  watermarkNavDate: string | null
+  computedAt: string
+  schemaVersion: number
+}
+
+export function splitFundReport(report: FundReport): {
+  overview: FundReportOverview
+  performance: FundReportPerformance
+  risk: FundReportRisk
+  investment: FundReportInvestment
+  assessment: FundReportAssessment
+} {
+  return {
+    overview: { scheme: report.scheme, profile: report.profile },
+    performance: {
+      trailingReturns: report.trailingReturns,
+      rollingReturns: report.rollingReturns,
+      benchmarkComparison: report.benchmarkComparison,
+      probability: report.probability,
+    },
+    risk: {
+      risk: report.risk,
+      consistency: report.consistency,
+      drawdown: report.drawdown,
+    },
+    investment: {
+      sip: report.sip,
+      lumpsum: report.lumpsum,
+      tax: report.tax,
+      expense: report.expense,
+    },
+    assessment: {
+      goldenTriangle: report.goldenTriangle,
+      qualityScore: report.qualityScore,
+      insights: report.insights,
+      prosCons: report.prosCons,
+      investorFit: report.investorFit,
+      recommendation: report.recommendation,
+    },
+  }
+}
 
 export const matrixReportSchema = z.object({
   mode: z.string(),
@@ -241,3 +376,13 @@ export const peerComparisonSchema = z.object({
 })
 
 export type PeerComparison = z.infer<typeof peerComparisonSchema>
+
+export const drawdownPeersSchema = z.object({
+  thresholdRows: z.array(z.object({
+    thresholdPercent: z.number(),
+    peerMedianPercentOfDays: z.number(),
+  })),
+  peerCount: z.number(),
+})
+
+export type DrawdownPeers = z.infer<typeof drawdownPeersSchema>
