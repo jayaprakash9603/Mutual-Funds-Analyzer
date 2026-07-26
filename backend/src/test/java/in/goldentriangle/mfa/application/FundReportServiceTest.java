@@ -118,7 +118,8 @@ class FundReportServiceTest {
                 featureFlags,
                 reportProperties,
                 cachePort,
-                clock);
+                clock,
+                Runnable::run);
     }
 
     @Test

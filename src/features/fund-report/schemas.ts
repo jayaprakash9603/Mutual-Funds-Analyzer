@@ -42,6 +42,8 @@ export const fundReportSchema = z.object({
       maximum: z.number(),
       minimum: z.number(),
       median: z.number(),
+      stdDev: z.preprocess((value) => value ?? 0, z.number()),
+      count: z.preprocess((value) => value ?? 0, z.number().int()),
       percentAbove10: z.number(),
       percentAbove7: z.number(),
       percentNegative: z.number(),

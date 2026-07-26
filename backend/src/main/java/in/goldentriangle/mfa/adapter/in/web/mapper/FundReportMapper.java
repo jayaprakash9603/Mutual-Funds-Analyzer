@@ -182,7 +182,7 @@ public class FundReportMapper {
         return new RollingReturnsReportDto(report.periods().stream()
                 .map(p -> new RollingReturnsReportDto.PeriodRollingStatsDto(
                         p.periodLabel(), p.average(), p.maximum(), p.minimum(), p.median(),
-                        p.percentAbove10(), p.percentAbove7(), p.percentNegative()))
+                        p.stdDev(), p.count(), p.percentAbove10(), p.percentAbove7(), p.percentNegative()))
                 .toList(), report.consistencyScore());
     }
 

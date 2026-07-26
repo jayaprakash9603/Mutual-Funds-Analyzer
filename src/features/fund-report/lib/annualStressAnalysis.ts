@@ -50,3 +50,50 @@ export function buildAnnualStressHeadline(stats: AnnualStressStats, fundName: st
 
   return `${fundName} witnessed ${drawdownPhrase} — yet ${stats.positiveYears} out of ${stats.totalYears} calendar years (${stats.positiveYearRate.toFixed(0)}%) still ended with positive returns.`
 }
+
+export type PositiveYearDrawdownBuckets = {
+  totalPositiveYears: number
+  mild: number
+  moderate: number
+  severe: number
+}
+
+/** Bucket intra-year drawdowns for calendar years that ended positive (FundsIndia infographic). */
+export function computePositiveYearDrawdownBuckets(
+  years: CalendarYearRow[],
+): PositiveYearDrawdownBuckets {
+  const positive = years.filter((row) => row.returnPercent > 0)
+  let mild = 0
+  let moderate = 0
+  let severe = 0
+
+  for (const row of positive) {
+    const magnitude = Math.abs(row.intraYearDrawdown)
+    if (magnitude < 10) mild++
+    else if (magnitude < 20) moderate++
+    else severe++
+  }
+
+  return {
+    totalPositiveYears: positive.length,
+    mild,
+    moderate,
+    severe,
+  }
+}
+
+export function splitYearsIntoColumns<T>(items: T[], columnCount: number): T[][] {
+  if (items.length === 0 || columnCount <= 0) return []
+  const chunkSize = Math.ceil(items.length / columnCount)
+  const columns: T[][] = []
+  for (let index = 0; index < items.length; index += chunkSize) {
+    columns.push(items.slice(index, index + chunkSize))
+  }
+  return columns
+}
+
+export function formatInfographicPercent(value: number): string {
+  const rounded = Math.round(value)
+  if (rounded === 0) return '0%'
+  return `${rounded}%`
+}

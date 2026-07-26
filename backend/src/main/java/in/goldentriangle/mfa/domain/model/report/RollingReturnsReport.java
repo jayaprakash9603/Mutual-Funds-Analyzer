@@ -12,6 +12,8 @@ public record RollingReturnsReport(
             double maximum,
             double minimum,
             double median,
+            double stdDev,
+            int count,
             double percentAbove10,
             double percentAbove7,
             double percentNegative) {

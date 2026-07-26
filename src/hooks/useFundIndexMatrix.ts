@@ -3,13 +3,17 @@ import { fetchFundIndexMatrix } from '@/api/client'
 import type { FundIndexComparison } from '@/api/schemas'
 import { DEFAULT_START_DATE } from '@/lib/constants'
 
-export function useFundIndexMatrix(scheme: string | null, startDate = DEFAULT_START_DATE) {
+export function useFundIndexMatrix(
+  scheme: string | null,
+  startDate = DEFAULT_START_DATE,
+  enabled = true,
+) {
   const [data, setData] = useState<FundIndexComparison | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
-    if (!scheme) return
+    if (!scheme || !enabled) return
 
     setLoading(true)
     setError(null)
@@ -24,10 +28,10 @@ export function useFundIndexMatrix(scheme: string | null, startDate = DEFAULT_ST
     } finally {
       if (!signal?.aborted) setLoading(false)
     }
-  }, [scheme, startDate])
+  }, [scheme, startDate, enabled])
 
   useEffect(() => {
-    if (!scheme) {
+    if (!scheme || !enabled) {
       setData(null)
       setError(null)
       setLoading(false)
@@ -37,7 +41,7 @@ export function useFundIndexMatrix(scheme: string | null, startDate = DEFAULT_ST
     const controller = new AbortController()
     fetchData(controller.signal)
     return () => controller.abort()
-  }, [scheme, startDate, fetchData])
+  }, [scheme, startDate, enabled, fetchData])
 
   return { data, loading, error, refetch: fetchData }
 }

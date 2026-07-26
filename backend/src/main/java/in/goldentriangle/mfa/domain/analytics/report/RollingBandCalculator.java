@@ -32,17 +32,18 @@ public class RollingBandCalculator {
 
     public RollingReturnsReport.PeriodRollingStats buildStats(String label, List<Double> returns) {
         if (returns.isEmpty()) {
-            return new RollingReturnsReport.PeriodRollingStats(label, 0, 0, 0, 0, 0, 0, 0);
+            return new RollingReturnsReport.PeriodRollingStats(label, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
         double avg = Statistics.mean(returns);
         double max = returns.stream().mapToDouble(Double::doubleValue).max().orElse(0);
         double min = returns.stream().mapToDouble(Double::doubleValue).min().orElse(0);
         double median = Statistics.median(returns);
+        double stdDev = Statistics.stdDev(returns);
         double above10 = percentAbove(returns, 10);
         double above7 = percentAbove(returns, 7);
         double negative = percentBelow(returns, 0);
         return new RollingReturnsReport.PeriodRollingStats(
-                label, avg, max, min, median, above10, above7, negative);
+                label, avg, max, min, median, stdDev, returns.size(), above10, above7, negative);
     }
 
     public static double percentAbove(List<Double> values, double threshold) {

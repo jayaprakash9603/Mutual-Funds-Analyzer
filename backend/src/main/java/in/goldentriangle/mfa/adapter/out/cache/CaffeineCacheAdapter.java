@@ -36,7 +36,15 @@ public class CaffeineCacheAdapter implements CachePort {
 
     @Override
     public <T> T getOrLoad(String key, Class<T> type, Supplier<T> loader) {
-        return type.cast(cache.get(key, k -> loader.get()));
+        Object cached = cache.getIfPresent(key);
+        if (cached != null) {
+            return type.cast(cached);
+        }
+        // Load outside Caffeine's atomic loader to avoid IllegalStateException when a loader
+        // calls getOrLoad again on the same cache (e.g. fund-report -> navHistory -> mfapi-nav).
+        T loaded = loader.get();
+        cache.put(key, loaded);
+        return loaded;
     }
 
     @Override

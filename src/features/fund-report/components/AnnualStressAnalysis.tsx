@@ -15,7 +15,6 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
-import { fiBodyCell, fiHeaderCell, FI_GRID, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { CHART_COLORS, signedReturnColor } from '@/lib/chartColors'
 import {
   AXIS_LINE,
@@ -34,6 +33,7 @@ import {
   computeAnnualStressStats,
   type CalendarYearRow,
 } from '../lib/annualStressAnalysis'
+import { AnnualStressInfographicCard } from './AnnualStressInfographicCard'
 
 type CalendarYears = FundReport['consistency']['calendarYears']
 
@@ -216,53 +216,11 @@ export function AnnualStressAnalysis({
         </aside>
       </div>
 
-      <AnnualStressTable rows={rows} />
-    </div>
-  )
-}
-
-function AnnualStressTable({ rows }: { rows: Array<CalendarYearRow & { isPartialYear?: boolean }> }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
-      <table className={FI_TABLE}>
-        <thead>
-          <tr>
-            <th className={fiHeaderCell('text-left')}>Year</th>
-            <th className={fiHeaderCell()}>Max intra-year drawdown</th>
-            <th className={fiHeaderCell()}>Calendar year return</th>
-            <th className={fiHeaderCell()}>Ended positive</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...rows].reverse().map((row, index) => (
-            <tr
-              key={row.year}
-              className={cn(
-                index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20',
-              )}
-            >
-              <td className={fiBodyCell('text-left font-semibold')}>
-                {row.year}
-                {row.isPartialYear ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">YTD</span>
-                ) : null}
-              </td>
-              <td className={fiBodyCell('font-semibold text-red-600 dark:text-red-400')}>
-                {formatPercent(row.intraYearDrawdown)}
-              </td>
-              <td
-                className={fiBodyCell('font-semibold')}
-                style={{ color: signedReturnColor(row.returnPercent) }}
-              >
-                {formatPercent(row.returnPercent)}
-              </td>
-              <td className={fiBodyCell()}>
-                {row.returnPercent > 0 ? 'Yes' : 'No'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <AnnualStressInfographicCard
+        calendarYears={calendarYears}
+        fundName={fundName}
+        dataTo={dataTo}
+      />
     </div>
   )
 }

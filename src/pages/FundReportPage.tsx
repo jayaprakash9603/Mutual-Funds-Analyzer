@@ -32,20 +32,22 @@ import { DrawdownEpisodesTable } from '@/features/fund-report/components/Drawdow
 import { HeatMatrix, HeatMatrixSkeleton } from '@/features/fund-report/components/HeatMatrix'
 import { RareInstancesMatrixTable } from '@/features/fund-report/components/RareInstancesMatrixTable'
 import { MultiplyProbabilityTable } from '@/features/fund-report/components/MultiplyProbabilityTable'
-import { FundIndexMatrixTable } from '@/components/fundsindia/FundIndexMatrixTable'
-import { useFundIndexMatrix } from '@/hooks/useFundIndexMatrix'
+import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/components/ReportSectionNav'
 import { GaugeMeter, ProbabilityBar, VerdictBadge } from '@/features/fund-report/components/ReportVisuals'
 import { MetricTile, SectionShell, UnavailableNotice } from '@/features/fund-report/components/SectionShell'
 import { fetchPeerComparison } from '@/features/fund-report/api'
 import { PeerComparisonTable } from '@/features/fund-report/components/PeerComparisonTable'
+import { AnnualStressAnalysis } from '@/features/fund-report/components/AnnualStressAnalysis'
+import { TrailingReturnsTable } from '@/features/fund-report/components/TrailingReturnsTable'
 import type { FundReport } from '@/features/fund-report/schemas'
 import type { GoldenTriangleResult } from '@/api/schemas'
 
 const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 
-import { AnnualStressAnalysis } from '@/features/fund-report/components/AnnualStressAnalysis'
-import { TrailingReturnsTable } from '@/features/fund-report/components/TrailingReturnsTable'
+const PROBABILITY_MATRIX_SECTIONS = new Set(['probability'])
+
+const drawdownChartConfig = {
   drawdownPercent: { label: 'Drawdown', color: CHART_COLORS.red },
 }
 
@@ -60,18 +62,18 @@ export function FundReportPage() {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
 
   const { data, loading, error } = useFundReport(scheme || null)
-  const {
-    data: rollingMatrix,
-    loading: rollingMatrixLoading,
-    error: rollingMatrixError,
-  } = useFundIndexMatrix(scheme || null)
-  const { data: matrix, loading: matrixLoading } = useFundReportMatrix(scheme || null, matrixMode, !!data)
+  const activeSection = useSectionNav(SECTION_IDS)
+  const needsProbabilityMatrix = PROBABILITY_MATRIX_SECTIONS.has(activeSection)
+  const { data: matrix, loading: matrixLoading, error: matrixError } = useFundReportMatrix(
+    scheme || null,
+    matrixMode,
+    !!data,
+  )
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
-    !!data,
+    !!scheme && needsProbabilityMatrix,
   )
-  const activeSection = useSectionNav(SECTION_IDS)
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])
 
@@ -99,7 +101,7 @@ export function FundReportPage() {
 
       <ReportSectionNav activeSection={activeSection} />
 
-      {loading && (
+      {loading && !data && (
         <div className="space-y-4" aria-busy="true" aria-live="polite">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Skeleton className="h-4 w-4 rounded-full" />
@@ -110,7 +112,7 @@ export function FundReportPage() {
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       )}
-      {error && !loading && (
+      {error && !data && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">{error}</div>
       )}
       {!scheme && !loading && (
@@ -119,7 +121,7 @@ export function FundReportPage() {
         </div>
       )}
 
-      {data && !loading && (
+      {data && (
         <div className="space-y-6">
           <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -153,13 +155,12 @@ export function FundReportPage() {
           <SectionShell
             id="rolling"
             title="Rolling Returns"
-            description="Fund vs index rolling return comparison across 1Y, 3Y, 5Y, 7Y, and 10Y windows."
+            description="Fund rolling return statistics across 1Y, 3Y, 5Y, 7Y, 10Y, and 15Y windows — computed from daily NAV."
           >
-            <FundIndexMatrixTable
-              data={rollingMatrix}
-              loading={rollingMatrixLoading}
-              error={rollingMatrixError}
-              consistencyScore={data.rollingReturns.consistencyScore}
+            <FundRollingReturnsTable
+              rollingReturns={data.rollingReturns}
+              fundName={data.profile.fundName}
+              dataTo={data.profile.dataTo}
             />
           </SectionShell>
 
@@ -278,27 +279,24 @@ export function FundReportPage() {
                 <TabsTrigger value="STP_6M">6M STP Matrix</TabsTrigger>
               </TabsList>
               <TabsContent value={matrixMode} className="mt-4 w-full">
-                {matrixLoading ? <HeatMatrixSkeleton /> : matrix ? (
+                {matrixLoading ? (
+                  <HeatMatrixSkeleton />
+                ) : matrix ? (
                   <>
                     <HeatMatrix data={matrix} />
                     {matrix.recovery ? (
                       <RareInstancesMatrixTable matrix={matrix} recovery={matrix.recovery} />
                     ) : null}
                   </>
-                ) : null}
+                ) : matrixError ? (
+                  <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                    {matrixError}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Matrix data is not available for this mode.</p>
+                )}
               </TabsContent>
             </Tabs>
-            <div className="mt-5 grid w-full grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
-              {data.lumpsum.scenarios.map((s) => (
-                <MetricTile
-                  key={s.principal}
-                  size="lg"
-                  label={`₹${(s.principal / 100000).toFixed(s.principal >= 100000 ? 0 : 1)}${s.principal >= 100000 ? 'L' : 'k'}`}
-                  value={`₹${s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  hint={`${s.moneyMultiplied.toFixed(2)}x · CAGR ${s.cagr.toFixed(1)}%`}
-                />
-              ))}
-            </div>
           </SectionShell>
 
           <SectionShell
