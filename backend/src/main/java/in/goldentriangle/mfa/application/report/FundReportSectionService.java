@@ -146,13 +146,14 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             ReportDataCoordinator.PreparedReport prepared,
             Class<T> payloadType) {
         String batchKey = "section-batch:" + scheme + ":" + startDate;
-        return singleFlightCoordinator.run(batchKey, () -> {
+        singleFlightCoordinator.run(batchKey, () -> {
             materializeAllSections(scheme, startDate, prepared);
-            FundReportSectionSnapshot snapshot = sectionSnapshotPort.find(scheme, startDate, group)
-                    .orElseThrow(() -> new IllegalStateException("Section snapshot missing after batch save"));
-            return FundReportSectionSnapshotMapper.readPayload(
-                    snapshot.payloadJson(), payloadType, objectMapper);
+            return null;
         });
+        FundReportSectionSnapshot snapshot = sectionSnapshotPort.find(scheme, startDate, group)
+                .orElseThrow(() -> new IllegalStateException("Section snapshot missing after batch save"));
+        return FundReportSectionSnapshotMapper.readPayload(
+                snapshot.payloadJson(), payloadType, objectMapper);
     }
 
     private void materializeAllSections(
