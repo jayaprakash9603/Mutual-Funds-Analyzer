@@ -56,6 +56,8 @@ import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
 import { AllTimeHighsChart } from '../charts/AllTimeHighsChart'
 import { AllTimeHighsYearTable } from '../charts/AllTimeHighsYearTable'
+import { AthDeclineOutlookChart } from '../charts/AthDeclineOutlookChart'
+import { PostAthReturnsTable } from '../charts/PostAthReturnsTable'
 import { AnnualReturnDistributionChart } from '../charts/AnnualReturnDistributionChart'
 import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart'
 import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
@@ -595,6 +597,12 @@ export function FundReportSections({
             <div className="space-y-10">
               <AllTimeHighsChart allTimeHighs={data.allTimeHighs} fundName={fundName} />
               <AllTimeHighsYearTable allTimeHighs={data.allTimeHighs} fundName={fundName} />
+              <PostAthReturnsTable
+                postAthReturns={data.allTimeHighs.postAthReturns}
+                periodLabel={data.allTimeHighs.periodLabel}
+                fundName={fundName}
+              />
+              <AthDeclineOutlookChart allTimeHighs={data.allTimeHighs} fundName={fundName} />
             </div>
           )}
         </ReportGroupBoundary>

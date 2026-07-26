@@ -123,7 +123,7 @@ public class FundReportEngine {
         BenchmarkComparisonReport benchmark = buildBenchmark(metrics, rollingBandCalculator.winningPercent(rollingData));
         DrawdownReport drawdown = drawdownCalculator.compute(history.fundNav(), history.benchmarkNav());
         BestDaysReport bestDays = bestDaysCalculator.compute(history.fundNav());
-        AllTimeHighsReport allTimeHighs = allTimeHighsCalculator.compute(history.fundNav());
+        AllTimeHighsReport allTimeHighs = allTimeHighsCalculator.compute(history.fundNav(), history.fundName());
         ConsistencyReport consistency = drawdownCalculator.calendarYears(history.fundNav());
         CalendarYearInsightsReport calendarYearInsights =
                 calendarYearInsightsCalculator.compute(history.fundNav(), consistency);

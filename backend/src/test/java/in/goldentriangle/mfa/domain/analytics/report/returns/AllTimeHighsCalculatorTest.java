@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +54,81 @@ class AllTimeHighsCalculatorTest {
                 .orElseThrow();
 
         assertFalse(year2016.allTimeHighYear());
+    }
+
+    @Test
+    void athThatNeverFallsTenPercentBelowIsMarkedAsNeverFell() {
+        List<NavPoint> nav = List.of(
+                point("2020-01-01", 100),
+                point("2020-06-01", 110),
+                point("2020-12-01", 115),
+                point("2021-06-01", 120),
+                point("2022-01-01", 125));
+
+        AllTimeHighsReport report = calculator.compute(nav, "Test Fund");
+
+        AllTimeHighsReport.NavPoint firstAth = report.series().stream()
+                .filter(AllTimeHighsReport.NavPoint::allTimeHigh)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(Boolean.FALSE, firstAth.fellBelowThreshold());
+        assertTrue(report.athDeclineOutlook().neverFellPercent() > 0);
+    }
+
+    @Test
+    void athFollowedByDeepDrawdownIsMarkedAsFell() {
+        List<NavPoint> nav = List.of(
+                point("2020-01-01", 100),
+                point("2020-06-01", 120),
+                point("2020-12-01", 90),
+                point("2021-06-01", 95));
+
+        AllTimeHighsReport report = calculator.compute(nav, "Test Fund");
+
+        AllTimeHighsReport.NavPoint athAt120 = report.series().stream()
+                .filter(p -> p.allTimeHigh() && p.nav() == 120)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(Boolean.TRUE, athAt120.fellBelowThreshold());
+        assertTrue(report.athDeclineOutlook().fellCount() > 0);
+    }
+
+    @Test
+    void postAthHorizonWithInsufficientHistoryReportsZeroSamples() {
+        List<NavPoint> nav = List.of(
+                point("2024-01-01", 100),
+                point("2024-06-01", 110),
+                point("2025-01-01", 115));
+
+        AllTimeHighsReport report = calculator.compute(nav, "Young Fund");
+        AllTimeHighsReport.PostAthHorizon fiveYear = report.postAthReturns().horizons().stream()
+                .filter(h -> h.years() == 5)
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(0, fiveYear.sampleCount());
+    }
+
+    @Test
+    void postAthThresholdSharesSumMeaningfullyForOneYearHorizon() {
+        List<NavPoint> nav = new ArrayList<>();
+        Instant start = Instant.parse("2010-01-01T00:00:00Z");
+        double navValue = 100;
+        for (int i = 0; i < 365 * 8; i++) {
+            if (i % 400 == 0) {
+                navValue += 5;
+            }
+            nav.add(new NavPoint(start.plus(i, java.time.temporal.ChronoUnit.DAYS), navValue));
+        }
+
+        AllTimeHighsReport report = calculator.compute(nav, "Steady Fund");
+        AllTimeHighsReport.PostAthHorizon oneYear = report.postAthReturns().horizons().stream()
+                .filter(h -> h.years() == 1)
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(oneYear.sampleCount() > 0);
+        assertTrue(oneYear.thresholds().stream().anyMatch(t -> t.label().contains(">0%")));
     }
 
     private static NavPoint point(String isoDate, double nav) {

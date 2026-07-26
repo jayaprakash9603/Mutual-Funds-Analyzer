@@ -53,7 +53,7 @@ describe('declineRecoveryCycles', () => {
     { date: '2020-03-24', indexValue: 69 },
     { date: '2020-05-01', indexValue: 78 },
     { date: '2020-08-01', indexValue: 92 },
-    { date: '2020-11-13', indexValue: 101 },
+    { date: '2020-11-13', indexValue: 99 },
     { date: '2022-01-03', indexValue: 130 },
     { date: '2022-06-23', indexValue: 120 },
     { date: '2023-05-11', indexValue: 134 },
@@ -67,21 +67,28 @@ describe('declineRecoveryCycles', () => {
     expect(cycles[0]?.label).toBe('2020')
   })
 
-  it('builds symmetric chart points around zero', () => {
+  it('splits chart points by phase so decline and recovery legs both render', () => {
     const cycles = buildDeclineRecoveryCycles(phases)
     const model = buildCycleChartModel(cycles)
-    expect(model.points.some((point) => point.decline < 0)).toBe(true)
-    expect(model.points.some((point) => point.recovery > 0)).toBe(true)
+    const cyclePoints = model.points.filter((point) => point.cycleId === cycles[0]?.id)
+
+    expect(cyclePoints.some((point) => point.decline != null && point.decline < 0)).toBe(true)
+    expect(cyclePoints.some((point) => point.recovery != null)).toBe(true)
+    expect(cyclePoints.some((point) => point.decline != null && point.recovery != null)).toBe(true)
+    expect(cyclePoints.some((point) => point.decline == null && point.recovery != null)).toBe(true)
     expect(model.bands).toHaveLength(1)
   })
 
   it('uses real indexed NAV paths when available', () => {
     const cycles = buildDeclineRecoveryCycles(phases)
     const model = buildCycleChartModel(cycles, indexedNav)
+    const cyclePoints = model.points.filter((point) => point.cycleId === cycles[0]?.id)
+
     expect(model.usesRealNav).toBe(true)
     expect(model.points.length).toBeGreaterThan(6)
-    expect(model.points.some((point) => point.value <= -30)).toBe(true)
-    expect(model.points.some((point) => point.recovery > 0)).toBe(true)
+    expect(cyclePoints.some((point) => point.decline != null && point.value <= -30)).toBe(true)
+    expect(cyclePoints.some((point) => point.recovery != null && point.recovery > -31)).toBe(true)
+    expect(cyclePoints.some((point) => point.decline != null && point.recovery != null)).toBe(true)
   })
 
   it('builds indexed NAV timeline with decline and recovery segments', () => {

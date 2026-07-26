@@ -61,25 +61,24 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
               <th className="border border-border px-3 py-2 text-right font-semibold">
                 Buy &amp; hold CAGR
               </th>
+              <th
+                className="border border-border px-3 py-2 text-center font-semibold"
+                colSpan={columns.length}
+              >
+                Annualized outperformance of buy &amp; hold vs profit booking
+              </th>
+            </tr>
+            <tr className="bg-muted/30">
+              <th className="border border-border px-3 py-2" colSpan={2} />
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
                     'border border-border px-3 py-2 text-right font-semibold',
-                    col.highlight && 'ring-1 ring-inset ring-primary/40',
+                    col.highlight && 'border-dashed ring-1 ring-inset ring-primary/50',
                   )}
                 >
                   {col.label}
-                </th>
-              ))}
-            </tr>
-            <tr className="bg-muted/30 text-xs text-muted-foreground">
-              <th className="border border-border px-3 py-2 text-left font-medium" colSpan={2}>
-                Annualized outperformance of buy &amp; hold vs profit booking
-              </th>
-              {columns.map((col) => (
-                <th key={col.key} className="border border-border px-3 py-2 text-right font-medium">
-                  Δ CAGR (pp)
                 </th>
               ))}
             </tr>
@@ -97,7 +96,7 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
                     className={cn(
                       'border border-border px-3 py-2 text-right font-mono tabular-nums',
                       cellTone(row[col.key]),
-                      col.highlight && 'ring-1 ring-inset ring-primary/30',
+                      col.highlight && 'border-dashed ring-1 ring-inset ring-primary/40',
                     )}
                   >
                     {formatPercent(row[col.key], 1)}

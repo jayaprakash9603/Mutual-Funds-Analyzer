@@ -2,6 +2,27 @@ import { z } from 'zod'
 import { goldenTriangleResultSchema } from '@/api/schemas'
 import { withFundReportDefaults } from './sectionDefaults'
 
+function coerceNumericBound(value: unknown): unknown {
+  if (value == null) {
+    return value
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : value < 0 ? -1000 : 1000
+  }
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase()
+    if (lower === '-infinity') {
+      return -1000
+    }
+    if (lower === 'infinity') {
+      return 1000
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : value
+  }
+  return value
+}
+
 const periodReturnSchema = z.object({
   label: z.string(),
   absoluteReturn: z.number(),
@@ -55,8 +76,8 @@ export const fundReportSchema = z.object({
     distribution: z.object({
       buckets: z.array(z.object({
         label: z.string(),
-        minInclusive: z.number(),
-        maxExclusive: z.number().nullable(),
+        minInclusive: z.preprocess(coerceNumericBound, z.number()),
+        maxExclusive: z.preprocess((value) => value == null ? null : coerceNumericBound(value), z.number().nullable()),
         percentOfYears: z.number(),
         yearCount: z.number(),
       })),
@@ -239,6 +260,7 @@ export const fundReportSchema = z.object({
       date: z.string(),
       nav: z.number(),
       allTimeHigh: z.boolean(),
+      fellBelowThreshold: z.boolean().nullable(),
     })),
     yearlyMaxLevels: z.array(z.object({
       year: z.number(),
@@ -251,6 +273,30 @@ export const fundReportSchema = z.object({
       calendarYears: z.number(),
       yearsWithNewHigh: z.number(),
       yearsWithNewHighPercent: z.number(),
+      headline: z.string(),
+    }),
+    postAthReturns: z.object({
+      horizons: z.array(z.object({
+        label: z.string(),
+        years: z.number(),
+        sampleCount: z.number(),
+        averageCagrPercent: z.number(),
+        thresholds: z.array(z.object({
+          label: z.string(),
+          boundPercent: z.number(),
+          above: z.boolean(),
+          shareOfTimesPercent: z.number(),
+        })),
+      })),
+      headline: z.string(),
+    }),
+    athDeclineOutlook: z.object({
+      declineThresholdPercent: z.number(),
+      totalAthInstances: z.number(),
+      neverFellCount: z.number(),
+      neverFellPercent: z.number(),
+      fellCount: z.number(),
+      fellPercent: z.number(),
       headline: z.string(),
     }),
   }),

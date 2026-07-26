@@ -124,7 +124,10 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         T payload = FundReportSectionSnapshotMapper.readPayload(
                 stored.payloadJson(), payloadType, objectMapper);
         if (group == ReportSectionGroup.RISK && payload instanceof FundReportRiskSection riskSection) {
-            return riskSection.bestDays() != null && riskSection.allTimeHighs() != null;
+            return riskSection.bestDays() != null
+                    && riskSection.allTimeHighs() != null
+                    && riskSection.allTimeHighs().postAthReturns() != null
+                    && riskSection.allTimeHighs().athDeclineOutlook() != null;
         }
         if (group == ReportSectionGroup.PERFORMANCE && payload instanceof FundReportPerformanceSection performanceSection) {
             return performanceSection.calendarYearInsights() != null;

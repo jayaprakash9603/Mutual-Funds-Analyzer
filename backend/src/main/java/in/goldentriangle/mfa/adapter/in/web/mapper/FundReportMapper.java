@@ -356,7 +356,8 @@ public class FundReportMapper {
         return new AllTimeHighsReportDto(
                 report.periodLabel(),
                 report.series().stream()
-                        .map(p -> new AllTimeHighsReportDto.NavPointDto(p.date(), p.nav(), p.allTimeHigh()))
+                        .map(p -> new AllTimeHighsReportDto.NavPointDto(
+                                p.date(), p.nav(), p.allTimeHigh(), p.fellBelowThreshold()))
                         .toList(),
                 report.yearlyMaxLevels().stream()
                         .map(y -> new AllTimeHighsReportDto.YearlyMaxNavDto(
@@ -367,7 +368,31 @@ public class FundReportMapper {
                         report.summary().calendarYears(),
                         report.summary().yearsWithNewHigh(),
                         report.summary().yearsWithNewHighPercent(),
-                        report.summary().headline()));
+                        report.summary().headline()),
+                new AllTimeHighsReportDto.PostAthReturnsDto(
+                        report.postAthReturns().horizons().stream()
+                                .map(h -> new AllTimeHighsReportDto.PostAthHorizonDto(
+                                        h.label(),
+                                        h.years(),
+                                        h.sampleCount(),
+                                        h.averageCagrPercent(),
+                                        h.thresholds().stream()
+                                                .map(t -> new AllTimeHighsReportDto.PostAthThresholdDto(
+                                                        t.label(),
+                                                        t.boundPercent(),
+                                                        t.above(),
+                                                        t.shareOfTimesPercent()))
+                                                .toList()))
+                                .toList(),
+                        report.postAthReturns().headline()),
+                new AllTimeHighsReportDto.AthDeclineOutlookDto(
+                        report.athDeclineOutlook().declineThresholdPercent(),
+                        report.athDeclineOutlook().totalAthInstances(),
+                        report.athDeclineOutlook().neverFellCount(),
+                        report.athDeclineOutlook().neverFellPercent(),
+                        report.athDeclineOutlook().fellCount(),
+                        report.athDeclineOutlook().fellPercent(),
+                        report.athDeclineOutlook().headline()));
     }
 
     public DrawdownPeersDto toDto(DrawdownPeersReport report) {

@@ -135,8 +135,8 @@ export function buildIndexedNavTimelineModel(
 export type CycleChartPoint = {
   x: number
   value: number
-  decline: number
-  recovery: number
+  decline: number | null
+  recovery: number | null
   cycleId: string
 }
 
@@ -188,11 +188,13 @@ function buildCycleChartModelFromNav(
       const t = (Date.parse(point.date) - startMs) / spanMs
       const x = xStart + t * SLOT_WIDTH
       const value = ((point.indexValue / peakNav) - 1) * 100
+      const inDecline = point.date <= cycle.declineEnd
+      const inRecovery = point.date >= cycle.recoveryStart
       return {
         x,
         value,
-        decline: Math.min(0, value),
-        recovery: Math.max(0, value),
+        decline: inDecline ? value : null,
+        recovery: inRecovery ? value : null,
         cycleId: cycle.id,
       }
     })
@@ -230,18 +232,26 @@ function buildSyntheticCycleChartModel(cycles: DeclineRecoveryCycle[]) {
   cycles.forEach((cycle, index) => {
     const xStart = index * (SLOT_WIDTH + SLOT_GAP)
     const decline = -cycle.declinePercent
-    const recovery = cycle.recoveryPercent
+    const troughValue = decline
+    const endValue =
+      ((1 + cycle.recoveryPercent / 100) * (1 + troughValue / 100) - 1) * 100
     const curve: CycleChartPoint[] = []
 
-    for (let step = 0; step < CURVE_STEPS; step++) {
-      const t = step / (CURVE_STEPS - 1)
-      const value = sampleCycleValue(t, decline, recovery)
+    const tValues = [...new Set([
+      ...Array.from({ length: CURVE_STEPS }, (_, step) => step / (CURVE_STEPS - 1)),
+      TROUGH_END,
+    ])].sort((a, b) => a - b)
+
+    for (const t of tValues) {
+      const value = sampleCycleValue(t, decline, endValue)
       const x = xStart + t * SLOT_WIDTH
+      const inDecline = t <= TROUGH_END
+      const inRecovery = t >= TROUGH_END
       curve.push({
         x,
         value,
-        decline: Math.min(0, value),
-        recovery: Math.max(0, value),
+        decline: inDecline ? value : null,
+        recovery: inRecovery ? value : null,
         cycleId: cycle.id,
       })
     }
@@ -271,20 +281,21 @@ function buildSyntheticCycleChartModel(cycles: DeclineRecoveryCycle[]) {
   }
 }
 
-function sampleCycleValue(t: number, decline: number, recovery: number): number {
+const TROUGH_END = 0.48
+
+function sampleCycleValue(t: number, decline: number, endValue: number): number {
   const declineEnd = 0.38
-  const troughEnd = 0.48
 
   if (t <= declineEnd) {
     const progress = t / declineEnd
     return decline * easeInOut(progress)
   }
-  if (t <= troughEnd) {
-    const progress = (t - declineEnd) / (troughEnd - declineEnd)
+  if (t <= TROUGH_END) {
+    const progress = (t - declineEnd) / (TROUGH_END - declineEnd)
     return decline + (0 - decline) * easeInOut(progress)
   }
-  const progress = (t - troughEnd) / (1 - troughEnd)
-  return recovery * easeInOut(progress)
+  const progress = (t - TROUGH_END) / (1 - TROUGH_END)
+  return endValue * easeInOut(progress)
 }
 
 function easeInOut(t: number): number {

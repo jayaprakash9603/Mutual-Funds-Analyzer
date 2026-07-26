@@ -144,7 +144,7 @@ function envelopeFromReport<T>(report: FundReport, data: T): ReportSectionEnvelo
     freshness: 'FRESH',
     watermarkNavDate: report.profile.dataTo,
     computedAt: report.computedAt,
-    schemaVersion: 6,
+    schemaVersion: 7,
   }
 }
 

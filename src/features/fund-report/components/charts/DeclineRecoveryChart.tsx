@@ -340,6 +340,7 @@ function CycleColumns({
             <Area
               type="monotone"
               dataKey="decline"
+              baseValue={0}
               stroke={CHART_COLORS.red}
               fill={CHART_COLORS.red}
               fillOpacity={0.9}
@@ -352,6 +353,7 @@ function CycleColumns({
             <Area
               type="monotone"
               dataKey="recovery"
+              baseValue={0}
               stroke={CHART_COLORS.fund}
               fill={CHART_COLORS.fund}
               fillOpacity={0.9}

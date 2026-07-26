@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Cell, Label, ReferenceLine, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Label, LabelList, ReferenceLine, XAxis, YAxis } from 'recharts'
 import {
   ChartContainer,
   ChartTooltip,
@@ -16,7 +16,7 @@ import {
   yLabel,
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
-import { CHART_COLORS, signedReturnColor } from '@/lib/charts/chartColors'
+import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { formatPercent } from '@/lib/utils'
 import type { FundReportPerformance } from '../../schemas'
 
@@ -36,6 +36,7 @@ export function SortedCalendarReturnsChart({
       sortedReturns.years.map((row) => ({
         ...row,
         label: String(row.year),
+        valueLabel: formatPercent(row.returnPercent, 1),
       })),
     [sortedReturns.years],
   )
@@ -79,11 +80,20 @@ export function SortedCalendarReturnsChart({
       <div className="w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
         <ChartContainer
           config={{ returnPercent: { label: 'Return', color: CHART_COLORS.blue } }}
-          className="aspect-auto h-[320px] w-full sm:h-[380px]"
+          className="aspect-auto h-[340px] w-full sm:h-[400px]"
         >
-          <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 12, right: 12, bottom: 8 }}>
+          <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 28, right: 12, bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
-            <XAxis dataKey="label" hide />
+            <XAxis
+              dataKey="label"
+              tickLine={TICK_LINE}
+              axisLine={AXIS_LINE}
+              tick={TICK_MD}
+              interval={0}
+              angle={-65}
+              textAnchor="end"
+              height={56}
+            />
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
@@ -102,20 +112,16 @@ export function SortedCalendarReturnsChart({
                   fill={row.inLongTermBand ? CHART_COLORS.fund : CHART_COLORS.blue}
                 />
               ))}
+              <LabelList
+                dataKey="valueLabel"
+                position="top"
+                angle={-90}
+                offset={12}
+                className="fill-foreground text-[10px] font-semibold"
+              />
             </Bar>
           </BarChart>
         </ChartContainer>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          {rows.map((row) => (
-            <span
-              key={row.year}
-              className="inline-block px-0.5 tabular-nums"
-              style={{ color: signedReturnColor(row.returnPercent) }}
-            >
-              {formatPercent(row.returnPercent, 1)}
-            </span>
-          ))}
-        </p>
       </div>
     </div>
   )

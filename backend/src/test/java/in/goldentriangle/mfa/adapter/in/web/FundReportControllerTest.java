@@ -127,7 +127,9 @@ class FundReportControllerTest {
                         10, 6, List.of(), "", ""));
         var emptyAllTimeHighs = new AllTimeHighsReportDto(
                 "", List.of(), List.of(),
-                new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, ""));
+                new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, ""),
+                new AllTimeHighsReportDto.PostAthReturnsDto(List.of(), ""),
+                new AllTimeHighsReportDto.AthDeclineOutlookDto(10, 0, 0, 0, 0, 0, ""));
         return new FundReportDto(
                 scheme,
                 profile,

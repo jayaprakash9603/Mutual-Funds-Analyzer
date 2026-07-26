@@ -20,6 +20,21 @@ export const EMPTY_BEST_DAYS: FundReportRisk['bestDays'] = {
   headlineSummary: '',
 }
 
+export const EMPTY_POST_ATH_RETURNS: FundReportRisk['allTimeHighs']['postAthReturns'] = {
+  horizons: [],
+  headline: '',
+}
+
+export const EMPTY_ATH_DECLINE_OUTLOOK: FundReportRisk['allTimeHighs']['athDeclineOutlook'] = {
+  declineThresholdPercent: 10,
+  totalAthInstances: 0,
+  neverFellCount: 0,
+  neverFellPercent: 0,
+  fellCount: 0,
+  fellPercent: 0,
+  headline: '',
+}
+
 export const EMPTY_ALL_TIME_HIGHS: FundReportRisk['allTimeHighs'] = {
   periodLabel: '',
   series: [],
@@ -31,6 +46,38 @@ export const EMPTY_ALL_TIME_HIGHS: FundReportRisk['allTimeHighs'] = {
     yearsWithNewHighPercent: 0,
     headline: '',
   },
+  postAthReturns: EMPTY_POST_ATH_RETURNS,
+  athDeclineOutlook: EMPTY_ATH_DECLINE_OUTLOOK,
+}
+
+function normalizeAllTimeHighs(value: unknown): FundReportRisk['allTimeHighs'] {
+  if (!value || typeof value !== 'object') {
+    return EMPTY_ALL_TIME_HIGHS
+  }
+  const raw = value as Record<string, unknown>
+  const series = Array.isArray(raw.series)
+    ? raw.series.map((point) => {
+        const row = point as Record<string, unknown>
+        return {
+          date: String(row.date ?? ''),
+          nav: Number(row.nav ?? 0),
+          allTimeHigh: Boolean(row.allTimeHigh),
+          fellBelowThreshold:
+            row.fellBelowThreshold == null ? null : Boolean(row.fellBelowThreshold),
+        }
+      })
+    : []
+  return {
+    ...(EMPTY_ALL_TIME_HIGHS as FundReportRisk['allTimeHighs']),
+    ...(raw as Partial<FundReportRisk['allTimeHighs']>),
+    series,
+    postAthReturns:
+      (raw.postAthReturns as FundReportRisk['allTimeHighs']['postAthReturns'] | undefined)
+      ?? EMPTY_POST_ATH_RETURNS,
+    athDeclineOutlook:
+      (raw.athDeclineOutlook as FundReportRisk['allTimeHighs']['athDeclineOutlook'] | undefined)
+      ?? EMPTY_ATH_DECLINE_OUTLOOK,
+  }
 }
 
 export const EMPTY_CALENDAR_YEAR_INSIGHTS: FundReportPerformance['calendarYearInsights'] = {
@@ -65,7 +112,7 @@ export function withFundReportDefaults(report: Partial<FundReport> & Record<stri
   return {
     ...report,
     bestDays: (report.bestDays as FundReport['bestDays'] | undefined) ?? EMPTY_BEST_DAYS,
-    allTimeHighs: (report.allTimeHighs as FundReport['allTimeHighs'] | undefined) ?? EMPTY_ALL_TIME_HIGHS,
+    allTimeHighs: normalizeAllTimeHighs(report.allTimeHighs),
     calendarYearInsights:
       (report.calendarYearInsights as FundReport['calendarYearInsights'] | undefined)
       ?? EMPTY_CALENDAR_YEAR_INSIGHTS,
@@ -80,7 +127,7 @@ export function normalizeRiskSectionPayload(data: unknown): unknown {
   return {
     ...section,
     bestDays: section.bestDays ?? EMPTY_BEST_DAYS,
-    allTimeHighs: section.allTimeHighs ?? EMPTY_ALL_TIME_HIGHS,
+    allTimeHighs: normalizeAllTimeHighs(section.allTimeHighs),
   }
 }
 
@@ -89,10 +136,58 @@ export function normalizePerformanceSectionPayload(data: unknown): unknown {
     return data
   }
   const section = data as Record<string, unknown>
+  const insights = section.calendarYearInsights
+  if (!insights || typeof insights !== 'object') {
+    return {
+      ...section,
+      calendarYearInsights: EMPTY_CALENDAR_YEAR_INSIGHTS,
+    }
+  }
+  const rawInsights = insights as Record<string, unknown>
+  const distribution = rawInsights.distribution
+  const normalizedDistribution =
+    distribution && typeof distribution === 'object'
+      ? {
+          ...(distribution as Record<string, unknown>),
+          buckets: Array.isArray((distribution as Record<string, unknown>).buckets)
+            ? ((distribution as Record<string, unknown>).buckets as unknown[]).map((bucket) => {
+                const row = bucket as Record<string, unknown>
+                return {
+                  ...row,
+                  minInclusive: coerceBucketBound(row.minInclusive),
+                  maxExclusive:
+                    row.maxExclusive == null ? null : coerceBucketBound(row.maxExclusive),
+                }
+              })
+            : [],
+        }
+      : EMPTY_CALENDAR_YEAR_INSIGHTS.distribution
   return {
     ...section,
-    calendarYearInsights: section.calendarYearInsights ?? EMPTY_CALENDAR_YEAR_INSIGHTS,
+    calendarYearInsights: {
+      ...EMPTY_CALENDAR_YEAR_INSIGHTS,
+      ...rawInsights,
+      distribution: normalizedDistribution,
+    },
   }
+}
+
+function coerceBucketBound(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : value < 0 ? -1000 : 1000
+  }
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase()
+    if (lower === '-infinity') {
+      return -1000
+    }
+    if (lower === 'infinity') {
+      return 1000
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
 }
 
 export function normalizeRiskEnvelope(data: unknown): unknown {

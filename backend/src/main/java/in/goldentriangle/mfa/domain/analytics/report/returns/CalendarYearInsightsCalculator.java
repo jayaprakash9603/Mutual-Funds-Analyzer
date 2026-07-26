@@ -26,8 +26,10 @@ public class CalendarYearInsightsCalculator {
     private record ReturnBucketDef(String label, double minInclusive, Double maxExclusive) {
     }
 
+    private static final double WORST_BUCKET_FLOOR = -1000.0;
+
     private static final List<ReturnBucketDef> BUCKET_DEFS = List.of(
-            new ReturnBucketDef("-30% or worse", Double.NEGATIVE_INFINITY, -30.0),
+            new ReturnBucketDef("-30% or worse", WORST_BUCKET_FLOOR, -30.0),
             new ReturnBucketDef("-30% to -20%", -30.0, -20.0),
             new ReturnBucketDef("-20% to -10%", -20.0, -10.0),
             new ReturnBucketDef("-10% to 0%", -10.0, 0.0),
@@ -246,9 +248,6 @@ public class CalendarYearInsightsCalculator {
     private static boolean matchesBucket(double value, ReturnBucketDef def) {
         if (def.maxExclusive() == null) {
             return value >= def.minInclusive();
-        }
-        if (def.minInclusive() == Double.NEGATIVE_INFINITY) {
-            return value < def.maxExclusive();
         }
         return value >= def.minInclusive() && value < def.maxExclusive();
     }
