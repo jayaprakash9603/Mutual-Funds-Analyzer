@@ -26,7 +26,8 @@ public final class FundReportSectionExtractor {
     }
 
     public static FundReportRiskSection risk(FundReport report) {
-        return new FundReportRiskSection(report.risk(), report.consistency(), report.drawdown());
+        return new FundReportRiskSection(
+                report.risk(), report.consistency(), report.drawdown(), report.bestDays());
     }
 
     public static FundReportInvestmentSection investment(FundReport report) {

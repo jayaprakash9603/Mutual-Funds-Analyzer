@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
+import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
@@ -112,6 +113,9 @@ class FundReportControllerTest {
                 scheme, "", "Equity", "Index", null, null, null, 10, null, null, null, null, null,
                 100, null, null, "Moderate", 3, Instant.parse("2010-01-01T00:00:00Z"), Instant.now());
         var emptyRisk = new RiskReportDto(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Moderate");
+        var emptyBestDays = new BestDaysReportDto(
+                1_000_000, "", List.of(), List.of(), List.of(), List.of(),
+                new BestDaysReportDto.BestWorstProximityInsightDto(0, 10, 30, ""), "");
         return new FundReportDto(
                 scheme,
                 profile,
@@ -123,6 +127,7 @@ class FundReportControllerTest {
                 emptyRisk,
                 new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "Moderate"),
                 new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+                emptyBestDays,
                 new SipReportDto(List.of()),
                 new LumpsumReportDto(List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),

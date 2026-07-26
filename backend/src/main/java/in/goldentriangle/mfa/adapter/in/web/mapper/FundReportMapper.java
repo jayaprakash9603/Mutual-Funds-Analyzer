@@ -3,6 +3,7 @@ package in.goldentriangle.mfa.adapter.in.web.mapper;
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import in.goldentriangle.mfa.domain.model.RiskLevel;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownPeersDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
@@ -30,6 +31,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
+import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
 import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownPeersReport;
 import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownReport;
@@ -79,6 +81,7 @@ public class FundReportMapper {
                 toDto(report.risk()),
                 toDto(report.consistency()),
                 toDto(report.drawdown()),
+                toDto(report.bestDays()),
                 toDto(report.sip()),
                 toDto(report.lumpsum()),
                 toDto(report.tax()),
@@ -266,6 +269,40 @@ public class FundReportMapper {
                         .toList());
     }
 
+    private BestDaysReportDto toDto(BestDaysReport report) {
+        return new BestDaysReportDto(
+                report.initialInvestment(),
+                report.periodLabel(),
+                report.missingScenarios().stream()
+                        .map(s -> new BestDaysReportDto.MissingBestDaysScenarioDto(
+                                s.missCount(), s.label(), s.finalValue(), s.cagrPercent(), s.lowerByPercent()))
+                        .toList(),
+                report.topBestDays().stream()
+                        .map(d -> new BestDaysReportDto.BestDayEntryDto(d.rank(), d.date(), d.returnPercent()))
+                        .toList(),
+                report.crashPeriods().stream()
+                        .map(p -> new BestDaysReportDto.CrashPeriodBestDaysDto(
+                                p.periodLabel(),
+                                p.marketFallLabel(),
+                                p.topDaysInPeriod(),
+                                p.topRankLimit(),
+                                p.bestDays().stream()
+                                        .map(d -> new BestDaysReportDto.BestDayInPeriodDto(
+                                                d.rank(), d.date(), d.returnPercent()))
+                                        .toList()))
+                        .toList(),
+                report.topDaysCumulative().stream()
+                        .map(c -> new BestDaysReportDto.TopDaysCumulativeDto(
+                                c.topCount(), c.cumulativeReturnPercent()))
+                        .toList(),
+                new BestDaysReportDto.BestWorstProximityInsightDto(
+                        report.proximityInsight().bestDaysNearWorst(),
+                        report.proximityInsight().worstDaysConsidered(),
+                        report.proximityInsight().topRankLimit(),
+                        report.proximityInsight().exampleText()),
+                report.headlineSummary());
+    }
+
     public DrawdownPeersDto toDto(DrawdownPeersReport report) {
         return new DrawdownPeersDto(
                 report.thresholdRows().stream()
@@ -355,7 +392,8 @@ public class FundReportMapper {
         return new FundReportRiskDto(
                 toDto(section.risk()),
                 toDto(section.consistency()),
-                toDto(section.drawdown()));
+                toDto(section.drawdown()),
+                toDto(section.bestDays()));
     }
 
     public FundReportInvestmentDto toDto(FundReportInvestmentSection section) {

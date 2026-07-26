@@ -4,6 +4,7 @@ import in.goldentriangle.mfa.domain.analytics.report.drawdown.DrawdownCalculator
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
@@ -19,6 +20,7 @@ import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
+import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
 import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownReport;
 import in.goldentriangle.mfa.domain.model.report.investment.ExpenseReport;
@@ -48,6 +50,7 @@ public class FundReportEngine {
     private final TrailingReturnsCalculator trailingReturnsCalculator;
     private final RollingBandCalculator rollingBandCalculator;
     private final DrawdownCalculator drawdownCalculator;
+    private final BestDaysCalculator bestDaysCalculator;
     private final ProbabilityCalculator probabilityCalculator;
     private final RiskReportBuilder riskReportBuilder;
     private final SipCalculator sipCalculator;
@@ -63,6 +66,7 @@ public class FundReportEngine {
             TrailingReturnsCalculator trailingReturnsCalculator,
             RollingBandCalculator rollingBandCalculator,
             DrawdownCalculator drawdownCalculator,
+            BestDaysCalculator bestDaysCalculator,
             ProbabilityCalculator probabilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
@@ -76,6 +80,7 @@ public class FundReportEngine {
         this.trailingReturnsCalculator = trailingReturnsCalculator;
         this.rollingBandCalculator = rollingBandCalculator;
         this.drawdownCalculator = drawdownCalculator;
+        this.bestDaysCalculator = bestDaysCalculator;
         this.probabilityCalculator = probabilityCalculator;
         this.riskReportBuilder = riskReportBuilder;
         this.sipCalculator = sipCalculator;
@@ -107,6 +112,7 @@ public class FundReportEngine {
         RollingReturnsReport rolling = rollingBandCalculator.compute(rollingData, metrics.consistencyScore());
         BenchmarkComparisonReport benchmark = buildBenchmark(metrics, rollingBandCalculator.winningPercent(rollingData));
         DrawdownReport drawdown = drawdownCalculator.compute(history.fundNav(), history.benchmarkNav());
+        BestDaysReport bestDays = bestDaysCalculator.compute(history.fundNav());
         ConsistencyReport consistency = drawdownCalculator.calendarYears(history.fundNav());
         SipReport sip = sipCalculator.compute(history);
         LumpsumReport lumpsum = lumpsumCalculator.compute(history);
@@ -132,6 +138,7 @@ public class FundReportEngine {
                 riskReportBuilder.build(rollingData, periodLabel, metrics, drawdown),
                 consistency,
                 drawdown,
+                bestDays,
                 sip,
                 lumpsum,
                 tax,

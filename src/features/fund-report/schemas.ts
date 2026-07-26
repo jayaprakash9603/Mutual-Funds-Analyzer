@@ -148,6 +148,44 @@ export const fundReportSchema = z.object({
       indexValue: z.number(),
     })).optional().default([]),
   }),
+  bestDays: z.object({
+    initialInvestment: z.number(),
+    periodLabel: z.string(),
+    missingScenarios: z.array(z.object({
+      missCount: z.number(),
+      label: z.string(),
+      finalValue: z.number(),
+      cagrPercent: z.number(),
+      lowerByPercent: z.number(),
+    })),
+    topBestDays: z.array(z.object({
+      rank: z.number(),
+      date: z.string(),
+      returnPercent: z.number(),
+    })),
+    crashPeriods: z.array(z.object({
+      periodLabel: z.string(),
+      marketFallLabel: z.string(),
+      topDaysInPeriod: z.number(),
+      topRankLimit: z.number(),
+      bestDays: z.array(z.object({
+        rank: z.number(),
+        date: z.string(),
+        returnPercent: z.number(),
+      })),
+    })),
+    topDaysCumulative: z.array(z.object({
+      topCount: z.number(),
+      cumulativeReturnPercent: z.number(),
+    })),
+    proximityInsight: z.object({
+      bestDaysNearWorst: z.number(),
+      worstDaysConsidered: z.number(),
+      topRankLimit: z.number(),
+      exampleText: z.string(),
+    }),
+    headlineSummary: z.string(),
+  }),
   sip: z.object({
     scenarios: z.array(z.object({
       monthlyAmount: z.number(),
@@ -229,6 +267,7 @@ export const fundReportRiskSchema = fundReportSchema.pick({
   risk: true,
   consistency: true,
   drawdown: true,
+  bestDays: true,
 })
 export type FundReportRisk = z.infer<typeof fundReportRiskSchema>
 
@@ -299,6 +338,7 @@ export function splitFundReport(report: FundReport): {
       risk: report.risk,
       consistency: report.consistency,
       drawdown: report.drawdown,
+      bestDays: report.bestDays,
     },
     investment: {
       sip: report.sip,

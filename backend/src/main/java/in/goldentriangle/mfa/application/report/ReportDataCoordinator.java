@@ -30,7 +30,7 @@ public class ReportDataCoordinator {
     /** Bumped when drawdown report carries bear-market and recovery analytics. */
     public static final String REPORT_CACHE_PREFIX = "fund-report:v10:";
     /** Bumped when the persisted report shape changes; older snapshots are recomputed. */
-    public static final int REPORT_SCHEMA_VERSION = 3;
+    public static final int REPORT_SCHEMA_VERSION = 4;
 
     private static final String CONTEXT_CACHE_PREFIX = "report-context:v1:";
 

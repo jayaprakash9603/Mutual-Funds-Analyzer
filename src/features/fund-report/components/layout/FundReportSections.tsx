@@ -52,6 +52,8 @@ import {
 } from '../charts/BearMarketDecadeChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
+import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
+import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
@@ -536,6 +538,21 @@ export function FundReportSections({
                   fundName={fundName}
                 />
               </section>
+            </div>
+          )}
+        </ReportGroupBoundary>
+      </SectionShell>
+
+      <SectionShell
+        id="best-days"
+        title="Best Trading Days"
+        description="How much return you give up by missing the fund’s strongest single-day moves, and when those days typically occur."
+      >
+        <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
+          {(data) => (
+            <div className="space-y-10">
+              <MissingBestDaysChart bestDays={data.bestDays} fundName={fundName} />
+              <BestDaysInCrashAnalysis bestDays={data.bestDays} fundName={fundName} />
             </div>
           )}
         </ReportGroupBoundary>
