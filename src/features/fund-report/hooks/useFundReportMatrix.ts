@@ -10,14 +10,16 @@ export function useFundReportMatrix(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    setData(null)
+    setError(null)
+  }, [scheme, mode])
+
   const load = useCallback(async (signal: AbortSignal) => {
     if (!scheme || !enabled) {
-      setData(null)
-      setError(null)
       setLoading(false)
       return
     }
-    setData(null)
     setLoading(true)
     setError(null)
     try {
@@ -25,7 +27,6 @@ export function useFundReportMatrix(
       if (!signal.aborted) setData(matrix)
     } catch (e) {
       if (!signal.aborted) {
-        setData(null)
         setError(e instanceof Error ? e.message : 'Failed to load matrix')
       }
     } finally {

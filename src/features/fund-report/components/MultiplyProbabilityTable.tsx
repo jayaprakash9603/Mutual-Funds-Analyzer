@@ -6,6 +6,7 @@ import {
 } from '@/components/fundsindia/tableStyles'
 import type { MatrixReport } from '../schemas'
 import { buildMultiplyProbability, isCellHighlighted } from '../lib/multiplyProbability'
+import { trimMatrixToCalculatedValues } from '../lib/matrixTableUtils'
 
 export function MultiplyProbabilityTable({
   matrix,
@@ -16,7 +17,7 @@ export function MultiplyProbabilityTable({
   fundName: string
   benchmarkName?: string
 }) {
-  const table = buildMultiplyProbability(matrix, benchmarkName)
+  const table = buildMultiplyProbability(trimMatrixToCalculatedValues(matrix), benchmarkName)
   if (table.holdingYears.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">

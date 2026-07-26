@@ -45,8 +45,6 @@ import type { GoldenTriangleResult } from '@/api/schemas'
 
 const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 
-const PROBABILITY_MATRIX_SECTIONS = new Set(['probability'])
-
 const drawdownChartConfig = {
   drawdownPercent: { label: 'Drawdown', color: CHART_COLORS.red },
 }
@@ -63,7 +61,6 @@ export function FundReportPage() {
 
   const { data, loading, error } = useFundReport(scheme || null)
   const activeSection = useSectionNav(SECTION_IDS)
-  const needsProbabilityMatrix = PROBABILITY_MATRIX_SECTIONS.has(activeSection)
   const { data: matrix, loading: matrixLoading, error: matrixError } = useFundReportMatrix(
     scheme || null,
     matrixMode,
@@ -72,7 +69,7 @@ export function FundReportPage() {
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
-    !!scheme && needsProbabilityMatrix,
+    !!data,
   )
 
   const stars = useMemo(() => '★'.repeat(data?.profile.overallRatingStars ?? 0), [data])
@@ -177,14 +174,16 @@ export function FundReportPage() {
               <ProbabilityBar label="Double money (7Y)" value={data.probability.doubleMoney} />
               <ProbabilityBar label="Triple money (7Y)" value={data.probability.tripleMoney} />
             </div>
-            {multipleMatrixLoading ? (
+            {multipleMatrix ? (
+              <div className={multipleMatrixLoading ? 'opacity-70 transition-opacity' : undefined}>
+                <MultiplyProbabilityTable
+                  matrix={multipleMatrix}
+                  fundName={data.profile.fundName}
+                  benchmarkName={data.profile.benchmarkName}
+                />
+              </div>
+            ) : multipleMatrixLoading ? (
               <Skeleton className="h-48 w-full rounded-xl" />
-            ) : multipleMatrix ? (
-              <MultiplyProbabilityTable
-                matrix={multipleMatrix}
-                fundName={data.profile.fundName}
-                benchmarkName={data.profile.benchmarkName}
-              />
             ) : null}
           </SectionShell>
 
@@ -274,15 +273,15 @@ export function FundReportPage() {
                 <TabsTrigger value="STP_6M">6M STP Matrix</TabsTrigger>
               </TabsList>
               <TabsContent value={matrixMode} className="mt-4 w-full">
-                {matrixLoading ? (
-                  <HeatMatrixSkeleton />
-                ) : matrix ? (
-                  <>
+                {matrix ? (
+                  <div className={matrixLoading ? 'opacity-70 transition-opacity' : undefined}>
                     <HeatMatrix data={matrix} />
                     {matrix.recovery ? (
                       <RareInstancesMatrixTable matrix={matrix} recovery={matrix.recovery} />
                     ) : null}
-                  </>
+                  </div>
+                ) : matrixLoading ? (
+                  <HeatMatrixSkeleton />
                 ) : matrixError ? (
                   <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                     {matrixError}

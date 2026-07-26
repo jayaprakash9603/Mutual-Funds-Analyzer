@@ -1,6 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { MatrixReport } from '../schemas'
+import { trimMatrixToCalculatedValues } from '../lib/matrixTableUtils'
 import { FundsIndiaMatrixTable } from './FundsIndiaMatrixTable'
 
 const SKELETON_YEARS = 13
@@ -8,14 +9,15 @@ const SKELETON_ROWS = 10
 const GRID_LINE = 'border-slate-300/80 dark:border-slate-600/70'
 
 export function HeatMatrix({ data }: { data: MatrixReport }) {
-  const highlightLabels = new Set(data.recovery?.rows.map((row) => row.startLabel) ?? [])
+  const trimmed = trimMatrixToCalculatedValues(data)
+  const highlightLabels = new Set(trimmed.recovery?.rows.map((row) => row.startLabel) ?? [])
 
   return (
     <div className="w-full space-y-3">
       <FundsIndiaMatrixTable
-        data={data}
+        data={trimmed}
         highlightLabels={highlightLabels.size > 0 ? highlightLabels : undefined}
-        dashedHighlightLabels={new Set(data.recovery?.exceptionStartLabels ?? [])}
+        dashedHighlightLabels={new Set(trimmed.recovery?.exceptionStartLabels ?? [])}
       />
     </div>
   )

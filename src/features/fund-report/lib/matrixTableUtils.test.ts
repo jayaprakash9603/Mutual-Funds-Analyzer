@@ -4,6 +4,7 @@ import {
   computeColumnMinimums,
   findContiguousLabelRanges,
   isColumnMinimum,
+  trimMatrixToCalculatedValues,
 } from './matrixTableUtils'
 
 describe('matrixTableUtils', () => {
@@ -46,5 +47,48 @@ describe('matrixTableUtils', () => {
   it('groups contiguous dashed highlight ranges', () => {
     const ranges = findContiguousLabelRanges(['Oct-07', 'Nov-07'], ['Sep-07', 'Oct-07', 'Nov-07', 'Dec-07'])
     expect(ranges).toEqual([{ start: 1, end: 2 }])
+  })
+
+  it('trims empty matrix rows and columns', () => {
+    const trimmed = trimMatrixToCalculatedValues({
+      mode: 'LUMPSUM',
+      startLabels: ['Jan-20', 'Jan-21', 'Jan-26'],
+      holdingYears: [1, 2, 3],
+      summaryRows: [
+        { label: 'Average', values: [null, 20, null] },
+        { label: 'Max', values: [null, 25, null] },
+        { label: 'Min', values: [null, 15, null] },
+      ],
+      dataRows: [
+        {
+          startLabel: 'Jan-20',
+          cells: [
+            { holdingYears: 1, value: null, band: null },
+            { holdingYears: 2, value: null, band: null },
+            { holdingYears: 3, value: null, band: null },
+          ],
+        },
+        {
+          startLabel: 'Jan-21',
+          cells: [
+            { holdingYears: 1, value: 25, band: 'STRONG' },
+            { holdingYears: 2, value: 20, band: 'GOOD' },
+            { holdingYears: 3, value: null, band: null },
+          ],
+        },
+        {
+          startLabel: 'Jan-26',
+          cells: [
+            { holdingYears: 1, value: null, band: null },
+            { holdingYears: 2, value: null, band: null },
+            { holdingYears: 3, value: null, band: null },
+          ],
+        },
+      ],
+    })
+
+    expect(trimmed.holdingYears).toEqual([1, 2])
+    expect(trimmed.dataRows.map((row) => row.startLabel)).toEqual(['Jan-21'])
+    expect(trimmed.summaryRows[0]?.values).toEqual([25, 20])
   })
 })

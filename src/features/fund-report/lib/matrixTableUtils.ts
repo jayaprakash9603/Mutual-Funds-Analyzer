@@ -103,10 +103,59 @@ export function findContiguousLabelRanges(labels: string[], orderedLabels: strin
 
 export function filterMatrixRows(data: MatrixReport, startLabels: Set<string>): MatrixReport {
   const dataRows = data.dataRows.filter((row) => startLabels.has(row.startLabel))
-  return {
+  return trimMatrixToCalculatedValues({
     ...data,
     startLabels: dataRows.map((row) => row.startLabel),
     summaryRows: buildSubsetSummaryRows(dataRows, data.holdingYears, data.mode),
+    dataRows,
+  })
+}
+
+/** Drop rows and holding-period columns that contain no calculated values. */
+export function trimMatrixToCalculatedValues(data: MatrixReport): MatrixReport {
+  if (data.dataRows.length === 0 || data.holdingYears.length === 0) {
+    return data
+  }
+
+  const columnCount = data.holdingYears.length
+  const columnHasValue = Array.from({ length: columnCount }, () => false)
+
+  for (const row of data.dataRows) {
+    row.cells.forEach((cell, index) => {
+      if (cell.value != null) {
+        columnHasValue[index] = true
+      }
+    })
+  }
+
+  const activeColumnIndices = columnHasValue
+    .map((hasValue, index) => (hasValue ? index : -1))
+    .filter((index) => index >= 0)
+
+  if (activeColumnIndices.length === 0) {
+    return {
+      ...data,
+      startLabels: [],
+      holdingYears: [],
+      summaryRows: [],
+      dataRows: [],
+    }
+  }
+
+  const dataRows = data.dataRows
+    .map((row) => ({
+      startLabel: row.startLabel,
+      cells: activeColumnIndices.map((index) => row.cells[index]),
+    }))
+    .filter((row) => row.cells.some((cell) => cell.value != null))
+
+  const holdingYears = activeColumnIndices.map((index) => data.holdingYears[index])
+
+  return {
+    ...data,
+    startLabels: dataRows.map((row) => row.startLabel),
+    holdingYears,
+    summaryRows: buildSubsetSummaryRows(dataRows, holdingYears, data.mode),
     dataRows,
   }
 }

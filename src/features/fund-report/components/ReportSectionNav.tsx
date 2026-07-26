@@ -185,7 +185,7 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
 
         <div
           ref={scrollerRef}
-          className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="scrollbar-nav relative flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth px-1 pb-1"
           role="list"
         >
           {SECTION_GROUPS.map((group, groupIndex) => (

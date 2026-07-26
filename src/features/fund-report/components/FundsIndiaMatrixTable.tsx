@@ -31,7 +31,7 @@ export function FundsIndiaMatrixTable({
     : []
 
   return (
-    <div className={cn('overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card', className)}>
+    <div className={cn('scrollbar-thin overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card', className)}>
       <table className={FI_TABLE}>
         <tbody>
           {data.summaryRows.map((row) => (
