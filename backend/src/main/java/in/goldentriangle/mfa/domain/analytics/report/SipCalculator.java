@@ -3,6 +3,7 @@ package in.goldentriangle.mfa.domain.analytics.report;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.SipReport;
+import in.goldentriangle.mfa.domain.model.report.TaxReport;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -15,6 +16,12 @@ public class SipCalculator {
     private static final List<Integer> AMOUNTS = List.of(500, 1_000, 5_000, 10_000, 25_000);
     private static final int PROJECTION_YEARS = 10;
 
+    private final TaxCalculator taxCalculator;
+
+    public SipCalculator(TaxCalculator taxCalculator) {
+        this.taxCalculator = taxCalculator;
+    }
+
     public SipReport compute(NavHistory history) {
         List<NavPoint> nav = history.fundNav();
         if (nav.size() < 2) {
@@ -24,6 +31,7 @@ public class SipCalculator {
         List<SipReport.SipScenario> scenarios = new ArrayList<>();
         NavPoint end = nav.get(nav.size() - 1);
         Instant start = nav.get(0).date();
+        double years = CalendarMath.yearsBetweenMillis(start.toEpochMilli(), end.date().toEpochMilli());
 
         for (int amount : AMOUNTS) {
             List<Xirr.CashFlow> flows = new ArrayList<>();
@@ -46,16 +54,20 @@ public class SipCalculator {
             flows.add(new Xirr.CashFlow(endDay - baseDay, currentValue));
             double xirr = Xirr.compute(flows);
 
-            double years = CalendarMath.yearsBetweenMillis(start.toEpochMilli(), end.date().toEpochMilli());
             double projected = currentValue * Math.pow(1 + xirr / 100, PROJECTION_YEARS - years);
+            double gain = currentValue - invested;
+            TaxReport tax = taxCalculator.computeFromGain(gain, invested, years);
 
             scenarios.add(new SipReport.SipScenario(
                     amount,
                     currentValue,
-                    currentValue - invested,
+                    gain,
                     xirr,
                     invested,
-                    projected));
+                    projected,
+                    tax.stcg(),
+                    tax.ltcg(),
+                    tax.postTaxReturn()));
         }
         return new SipReport(scenarios);
     }

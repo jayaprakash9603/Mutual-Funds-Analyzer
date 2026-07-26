@@ -90,7 +90,7 @@ class FundReportServiceTest {
                 new DrawdownCalculator(),
                 new ProbabilityCalculator(),
                 new RiskReportBuilder(metricsCalculator, new DrawdownCalculator(), 252),
-                new SipCalculator(),
+                new SipCalculator(new TaxCalculator()),
                 new LumpsumCalculator(),
                 new TaxCalculator(),
                 new ExpenseCalculator(),

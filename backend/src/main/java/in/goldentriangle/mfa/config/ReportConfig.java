@@ -54,8 +54,8 @@ public class ReportConfig {
     }
 
     @Bean
-    SipCalculator sipCalculator() {
-        return new SipCalculator();
+    SipCalculator sipCalculator(TaxCalculator taxCalculator) {
+        return new SipCalculator(taxCalculator);
     }
 
     @Bean

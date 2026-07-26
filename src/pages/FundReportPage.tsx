@@ -225,9 +225,13 @@ export function FundReportPage() {
             />
           </SectionShell>
 
-          <SectionShell id="sip" title="SIP Analysis" description="Monthly SIP outcomes from daily NAV history (mfapi.in).">
-            <div className="overflow-x-auto rounded-xl border border-border/70">
-              <table className="w-full min-w-[640px] text-sm">
+          <SectionShell
+            id="sip"
+            title="SIP Analysis"
+            description={`Monthly SIP outcomes from daily NAV history (mfapi.in). ${data.tax.explanation}`}
+          >
+            <div className="scrollbar-thin overflow-x-auto rounded-xl border border-border/70">
+              <table className="w-full min-w-[960px] text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3">Monthly SIP</th>
@@ -235,6 +239,9 @@ export function FundReportPage() {
                     <th className="px-4 py-3">Current value</th>
                     <th className="px-4 py-3">Gain</th>
                     <th className="px-4 py-3">XIRR</th>
+                    <th className="px-4 py-3">STCG</th>
+                    <th className="px-4 py-3">LTCG</th>
+                    <th className="px-4 py-3">Post-tax return</th>
                     <th className="px-4 py-3">10Y projection</th>
                   </tr>
                 </thead>
@@ -251,9 +258,18 @@ export function FundReportPage() {
                         ₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </td>
                       <td className="px-4 py-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                        ₹{s.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        +₹{s.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </td>
                       <td className="px-4 py-3 font-mono tabular-nums">{s.xirr.toFixed(1)}%</td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        ₹{(s.stcg ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        ₹{(s.ltcg ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        {formatPercent(s.postTaxReturn ?? 0)}
+                      </td>
                       <td className="px-4 py-3 font-mono tabular-nums">
                         ₹{s.projectedValue10Y.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                       </td>
@@ -369,15 +385,6 @@ export function FundReportPage() {
               </ChartContainer>
             </div>
             <DrawdownEpisodesTable drawdown={data.drawdown} />
-          </SectionShell>
-
-          <SectionShell id="tax" title="Tax Analysis">
-            <p className="mb-3 text-sm text-muted-foreground">{data.tax.explanation}</p>
-            <div className="grid gap-3 md:grid-cols-3">
-              <MetricTile label="STCG" value={`₹${data.tax.stcg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`} />
-              <MetricTile label="LTCG" value={`₹${data.tax.ltcg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`} />
-              <MetricTile label="Post-tax return" value={formatPercent(data.tax.postTaxReturn)} />
-            </div>
           </SectionShell>
 
           <SectionShell id="expense" title="Expense Analysis">

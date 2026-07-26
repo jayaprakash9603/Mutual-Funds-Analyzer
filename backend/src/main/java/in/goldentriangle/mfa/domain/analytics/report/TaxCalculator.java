@@ -11,6 +11,10 @@ public class TaxCalculator {
 
     public TaxReport compute(double totalReturnPercent, double holdingYears, double investedAmount) {
         double gain = investedAmount * totalReturnPercent / 100;
+        return computeFromGain(gain, investedAmount, holdingYears);
+    }
+
+    public TaxReport computeFromGain(double gain, double investedAmount, double holdingYears) {
         boolean longTerm = holdingYears >= LTCG_HOLDING_YEARS;
 
         double stcg = longTerm ? 0 : gain * STCG_RATE;

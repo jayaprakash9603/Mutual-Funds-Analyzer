@@ -5,7 +5,6 @@ import {
   ChevronRight,
   CircleDollarSign,
   Gauge,
-  Landmark,
   Layers,
   LineChart,
   Percent,
@@ -73,7 +72,6 @@ const SECTION_GROUPS: SectionGroup[] = [
     id: 'costs',
     label: 'Costs & Peers',
     sections: [
-      { id: 'tax', label: 'Tax', icon: Landmark },
       { id: 'expense', label: 'Expense', icon: CircleDollarSign },
       { id: 'peers', label: 'Peers', icon: Users },
       { id: 'insights', label: 'Insights', icon: Sparkles },

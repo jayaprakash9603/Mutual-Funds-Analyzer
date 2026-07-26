@@ -130,6 +130,9 @@ export const fundReportSchema = z.object({
       xirr: z.number(),
       moneyInvested: z.number(),
       projectedValue10Y: z.number(),
+      stcg: z.number().optional(),
+      ltcg: z.number().optional(),
+      postTaxReturn: z.number().optional(),
     })),
   }),
   lumpsum: z.object({

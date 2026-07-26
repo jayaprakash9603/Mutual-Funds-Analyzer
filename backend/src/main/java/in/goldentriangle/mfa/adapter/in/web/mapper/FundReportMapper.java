@@ -237,7 +237,7 @@ public class FundReportMapper {
         return new SipReportDto(report.scenarios().stream()
                 .map(s -> new SipReportDto.SipScenarioDto(
                         s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
-                        s.moneyInvested(), s.projectedValue10Y()))
+                        s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxReturn()))
                 .toList());
     }
 

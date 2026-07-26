@@ -10,6 +10,9 @@ public record SipReportDto(List<SipScenarioDto> scenarios) {
             double totalGain,
             double xirr,
             double moneyInvested,
-            double projectedValue10Y) {
+            double projectedValue10Y,
+            double stcg,
+            double ltcg,
+            double postTaxReturn) {
     }
 }
