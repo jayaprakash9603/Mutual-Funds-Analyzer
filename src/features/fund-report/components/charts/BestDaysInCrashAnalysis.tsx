@@ -25,7 +25,13 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-4">
+      <div
+        className={
+          bestDays.topDaysCumulative.length > 0
+            ? 'grid gap-4 lg:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(220px,280px)]'
+            : 'grid gap-4 xl:grid-cols-4'
+        }
+      >
         {bestDays.crashPeriods.map((period) => (
           <div key={period.periodLabel} className="rounded-xl border border-border bg-card p-3">
             <div className="space-y-1 border-b border-border pb-3">
@@ -64,11 +70,9 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
             </div>
           </div>
         ))}
-      </div>
 
-      {bestDays.topDaysCumulative.length > 0 ? (
-        <div className="flex justify-end">
-          <div className="w-full max-w-xs rounded-xl border border-border bg-card p-3">
+        {bestDays.topDaysCumulative.length > 0 ? (
+          <div className="self-start rounded-xl border border-border bg-card p-3 lg:col-span-2 xl:col-span-1">
             <h4 className="mb-2 text-sm font-semibold">Cumulative impact of best days</h4>
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -89,8 +93,8 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
               </tbody>
             </table>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   )
 }

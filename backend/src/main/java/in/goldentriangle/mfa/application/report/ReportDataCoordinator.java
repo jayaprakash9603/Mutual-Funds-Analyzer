@@ -28,7 +28,7 @@ import java.util.concurrent.Executor;
 public class ReportDataCoordinator {
 
     /** Bumped when drawdown report carries bear-market and recovery analytics. */
-    public static final String REPORT_CACHE_PREFIX = "fund-report:v10:";
+    public static final String REPORT_CACHE_PREFIX = "fund-report:v11:";
     /** Bumped when the persisted report shape changes; older snapshots are recomputed. */
     public static final int REPORT_SCHEMA_VERSION = 6;
 

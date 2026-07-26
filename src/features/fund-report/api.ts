@@ -1,6 +1,11 @@
 import { requestJson } from '@/api/request'
 import { API_ROUTES } from '@/api/routes'
 import {
+  normalizePerformanceEnvelope,
+  normalizeRiskEnvelope,
+  withFundReportDefaults,
+} from './sectionDefaults'
+import {
   drawdownPeersSchema,
   fundReportAssessmentEnvelopeSchema,
   fundReportAssessmentSchema,
@@ -71,7 +76,7 @@ export async function fetchFundReport(
     signal,
     label: 'Fund report',
   })
-  return fundReportSchema.parse(data)
+  return fundReportSchema.parse(withFundReportDefaults(data as Partial<FundReport> & Record<string, unknown>))
 }
 
 export async function fetchFundReportOverview(
@@ -95,7 +100,7 @@ export async function fetchFundReportPerformance(
     signal: options?.signal,
     label: 'Fund report performance',
   })
-  return fundReportPerformanceEnvelopeSchema.parse(data)
+  return fundReportPerformanceEnvelopeSchema.parse(normalizePerformanceEnvelope(data))
 }
 
 export async function fetchFundReportRisk(
@@ -107,7 +112,7 @@ export async function fetchFundReportRisk(
     signal: options?.signal,
     label: 'Fund report risk',
   })
-  return fundReportRiskEnvelopeSchema.parse(data)
+  return fundReportRiskEnvelopeSchema.parse(normalizeRiskEnvelope(data))
 }
 
 export async function fetchFundReportInvestment(

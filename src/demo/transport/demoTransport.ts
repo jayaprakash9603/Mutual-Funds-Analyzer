@@ -6,6 +6,11 @@ import {
   type ReportSectionEnvelope,
 } from '@/features/fund-report/schemas'
 import {
+  normalizePerformanceSectionPayload,
+  normalizeRiskSectionPayload,
+  withFundReportDefaults,
+} from '@/features/fund-report/sectionDefaults'
+import {
   filterCompareResults,
   filterDemoSchemes,
   resolveAnalysisFile,
@@ -139,7 +144,7 @@ function envelopeFromReport<T>(report: FundReport, data: T): ReportSectionEnvelo
     freshness: 'FRESH',
     watermarkNavDate: report.profile.dataTo,
     computedAt: report.computedAt,
-    schemaVersion: 3,
+    schemaVersion: 6,
   }
 }
 
@@ -157,9 +162,15 @@ async function handleFundReportSection(
     return loadDemoFixture(dedicated, request.signal)
   }
   const file = requireFile(fund.files.fundReport, label, scheme)
-  const report = await loadDemoFixture<FundReport>(file, request.signal)
+  const report = withFundReportDefaults(await loadDemoFixture<FundReport>(file, request.signal))
   const groups = splitFundReport(report)
-  return envelopeFromReport(report, groups[section])
+  const payload =
+    section === 'risk'
+      ? normalizeRiskSectionPayload(groups.risk)
+      : section === 'performance'
+        ? normalizePerformanceSectionPayload(groups.performance)
+        : groups[section]
+  return envelopeFromReport(report, payload)
 }
 
 async function handleFundReportOverview(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {

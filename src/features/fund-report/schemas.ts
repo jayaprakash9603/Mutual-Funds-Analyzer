@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { goldenTriangleResultSchema } from '@/api/schemas'
+import { withFundReportDefaults } from './sectionDefaults'
 
 const periodReturnSchema = z.object({
   label: z.string(),
@@ -395,35 +396,36 @@ export function splitFundReport(report: FundReport): {
   investment: FundReportInvestment
   assessment: FundReportAssessment
 } {
+  const normalized = withFundReportDefaults(report as Partial<FundReport> & Record<string, unknown>)
   return {
-    overview: { scheme: report.scheme, profile: report.profile },
+    overview: { scheme: normalized.scheme, profile: normalized.profile },
     performance: {
-      trailingReturns: report.trailingReturns,
-      rollingReturns: report.rollingReturns,
-      calendarYearInsights: report.calendarYearInsights,
-      benchmarkComparison: report.benchmarkComparison,
-      probability: report.probability,
+      trailingReturns: normalized.trailingReturns,
+      rollingReturns: normalized.rollingReturns,
+      calendarYearInsights: normalized.calendarYearInsights,
+      benchmarkComparison: normalized.benchmarkComparison,
+      probability: normalized.probability,
     },
     risk: {
-      risk: report.risk,
-      consistency: report.consistency,
-      drawdown: report.drawdown,
-      bestDays: report.bestDays,
-      allTimeHighs: report.allTimeHighs,
+      risk: normalized.risk,
+      consistency: normalized.consistency,
+      drawdown: normalized.drawdown,
+      bestDays: normalized.bestDays,
+      allTimeHighs: normalized.allTimeHighs,
     },
     investment: {
-      sip: report.sip,
-      lumpsum: report.lumpsum,
-      tax: report.tax,
-      expense: report.expense,
+      sip: normalized.sip,
+      lumpsum: normalized.lumpsum,
+      tax: normalized.tax,
+      expense: normalized.expense,
     },
     assessment: {
-      goldenTriangle: report.goldenTriangle,
-      qualityScore: report.qualityScore,
-      insights: report.insights,
-      prosCons: report.prosCons,
-      investorFit: report.investorFit,
-      recommendation: report.recommendation,
+      goldenTriangle: normalized.goldenTriangle,
+      qualityScore: normalized.qualityScore,
+      insights: normalized.insights,
+      prosCons: normalized.prosCons,
+      investorFit: normalized.investorFit,
+      recommendation: normalized.recommendation,
     },
   }
 }

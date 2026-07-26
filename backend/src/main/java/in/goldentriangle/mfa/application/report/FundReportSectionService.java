@@ -93,7 +93,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         Optional<FundReportSectionSnapshot> stored =
                 sectionSnapshotPort.find(scheme, resolvedStart, group);
 
-        if (stored.isPresent() && stored.get().schemaVersion() == ReportDataCoordinator.REPORT_SCHEMA_VERSION) {
+        if (stored.isPresent() && isUsableSectionSnapshot(stored.get(), group, payloadType)) {
             T payload = FundReportSectionSnapshotMapper.readPayload(
                     stored.get().payloadJson(), payloadType, objectMapper);
             if (isFresh(stored.get().watermarkNavDate(), liveWatermark)) {
@@ -112,6 +112,24 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         FundReportSectionSnapshot saved = sectionSnapshotPort.find(scheme, resolvedStart, group)
                 .orElseThrow(() -> new IllegalStateException("Section snapshot missing after save"));
         return envelope(payload, ReportFreshness.FRESH, saved);
+    }
+
+    private <T> boolean isUsableSectionSnapshot(
+            FundReportSectionSnapshot stored,
+            ReportSectionGroup group,
+            Class<T> payloadType) {
+        if (stored.schemaVersion() != ReportDataCoordinator.REPORT_SCHEMA_VERSION) {
+            return false;
+        }
+        T payload = FundReportSectionSnapshotMapper.readPayload(
+                stored.payloadJson(), payloadType, objectMapper);
+        if (group == ReportSectionGroup.RISK && payload instanceof FundReportRiskSection riskSection) {
+            return riskSection.bestDays() != null && riskSection.allTimeHighs() != null;
+        }
+        if (group == ReportSectionGroup.PERFORMANCE && payload instanceof FundReportPerformanceSection performanceSection) {
+            return performanceSection.calendarYearInsights() != null;
+        }
+        return payload != null;
     }
 
     private static boolean isFresh(Instant storedWatermark, Optional<Instant> liveWatermark) {
@@ -145,7 +163,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             Optional<FundReportSectionSnapshot> existing =
                     sectionSnapshotPort.find(scheme, startDate, group);
             if (existing.isPresent()
-                    && existing.get().schemaVersion() == ReportDataCoordinator.REPORT_SCHEMA_VERSION
+                    && isUsableSectionSnapshot(existing.get(), group, sectionPayloadType(group))
                     && Objects.equals(existing.get().watermarkNavDate(), prepared.lastNavDate())) {
                 continue;
             }
@@ -160,6 +178,16 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         }
     }
 
+
+    private static Class<?> sectionPayloadType(ReportSectionGroup group) {
+        return switch (group) {
+            case OVERVIEW -> FundReportOverviewSection.class;
+            case PERFORMANCE -> FundReportPerformanceSection.class;
+            case RISK -> FundReportRiskSection.class;
+            case INVESTMENT -> FundReportInvestmentSection.class;
+            case ASSESSMENT -> FundReportAssessmentSection.class;
+        };
+    }
 
     private void scheduleRefresh(
             ReportSectionGroup group,
