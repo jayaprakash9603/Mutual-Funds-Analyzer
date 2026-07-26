@@ -18,6 +18,8 @@ interface FundsIndiaMatrixTableProps {
   className?: string
 }
 
+const matrixLabelCell = 'w-px whitespace-nowrap px-2 py-2'
+
 export function FundsIndiaMatrixTable({
   data,
   highlightLabels,
@@ -36,7 +38,7 @@ export function FundsIndiaMatrixTable({
         <tbody>
           {data.summaryRows.map((row) => (
             <tr key={row.label} className="border-b border-slate-900/80">
-              <td className={cn(fiBodyCell('sticky left-0 z-10 bg-white text-left font-bold dark:bg-card'), 'min-w-[88px]')}>
+              <td className={cn(fiBodyCell('sticky left-0 z-10 bg-white text-left font-bold dark:bg-card'), matrixLabelCell)}>
                 {row.label}
               </td>
               {row.values.map((value, index) => (
@@ -55,7 +57,7 @@ export function FundsIndiaMatrixTable({
           ))}
 
           <tr className="border-b border-slate-900/80">
-            <td className={cn(fiHeaderCell('sticky left-0 z-20 text-left'), 'min-w-[88px]')}>
+            <td className={cn(fiHeaderCell('sticky left-0 z-20 text-left normal-case'), matrixLabelCell)}>
               Period
             </td>
             {data.holdingYears.map((year) => (
@@ -78,6 +80,7 @@ export function FundsIndiaMatrixTable({
                 <td
                   className={cn(
                     fiBodyCell('sticky left-0 z-10 bg-white text-left font-semibold dark:bg-card'),
+                    matrixLabelCell,
                     highlighted && 'bg-sky-50 dark:bg-sky-950/30',
                     inDashedRange && 'border-l-2 border-dashed border-sky-600',
                     rangeStart && 'border-t-2 border-dashed border-sky-600',
