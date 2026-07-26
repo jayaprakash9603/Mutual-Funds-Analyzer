@@ -1,0 +1,128 @@
+import { useMemo } from 'react'
+import { Bar, BarChart, CartesianGrid, Cell, Label, ReferenceLine, XAxis, YAxis } from 'recharts'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  CHART_TOOLTIP_CURSOR,
+} from '@/components/ui/chart'
+import {
+  AXIS_LINE,
+  formatAxisPercentTick,
+  GRID_STROKE,
+  MARGIN_LEFT,
+  TICK_LINE,
+  TICK_MD,
+  xLabel,
+  yLabel,
+  ZERO_LINE_STROKE,
+} from '@/lib/charts/chartAxes'
+import { CHART_COLORS } from '@/lib/charts/chartColors'
+import { formatPercent } from '@/lib/utils'
+import type { FundReportPerformance } from '../../schemas'
+
+type Insights = FundReportPerformance['calendarYearInsights']
+
+function bucketColor(minInclusive: number) {
+  return minInclusive < 0 ? CHART_COLORS.red : CHART_COLORS.fund
+}
+
+type AnnualReturnDistributionChartProps = {
+  distribution: Insights['distribution']
+  fundName: string
+}
+
+export function AnnualReturnDistributionChart({
+  distribution,
+  fundName,
+}: AnnualReturnDistributionChartProps) {
+  const rows = useMemo(
+    () =>
+      distribution.buckets.map((bucket) => ({
+        ...bucket,
+        shortLabel: bucket.label.replace(' or better', '+').replace(' or worse', '−'),
+      })),
+    [distribution.buckets],
+  )
+
+  if (rows.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold text-primary">
+          Calendar-year returns are positive in most years — but spread widely
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Distribution of {fundName} annual returns across {distribution.totalYears} calendar years
+        </p>
+      </div>
+
+      {distribution.headline ? (
+        <p className="rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-4 py-3 text-sm leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100">
+          {distribution.headline}
+        </p>
+      ) : null}
+
+      <div className="relative w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
+        <div className="pointer-events-none absolute inset-x-8 top-3 hidden justify-between text-xs font-medium sm:flex">
+          <span className="rounded bg-red-100 px-2 py-1 text-red-800 dark:bg-red-950/40 dark:text-red-200">
+            {formatPercent(distribution.negativeYearsPercent, 0)} of years ({distribution.negativeYearCount}Y) with negative returns
+          </span>
+          <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+            {formatPercent(distribution.positiveYearsPercent, 0)} of years ({distribution.positiveYearCount}Y) with positive returns
+          </span>
+        </div>
+
+        <ChartContainer
+          config={{ percentOfYears: { label: '% of years', color: CHART_COLORS.fund } }}
+          className="aspect-auto h-[300px] w-full sm:h-[340px]"
+        >
+          <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 48, right: 12, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
+            <XAxis
+              dataKey="shortLabel"
+              tickLine={TICK_LINE}
+              axisLine={AXIS_LINE}
+              tick={TICK_MD}
+              interval={0}
+              angle={-20}
+              textAnchor="end"
+              height={72}
+            >
+              <Label {...xLabel('Annual return bucket', -4)} />
+            </XAxis>
+            <YAxis
+              tickLine={TICK_LINE}
+              axisLine={AXIS_LINE}
+              tick={TICK_MD}
+              tickFormatter={formatAxisPercentTick}
+              width={44}
+            >
+              <Label {...yLabel('% of years')} />
+            </YAxis>
+            <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} />
+            <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent format="percent" />} />
+            <Bar dataKey="percentOfYears" radius={[4, 4, 0, 0]}>
+              {rows.map((row) => (
+                <Cell key={row.label} fill={bucketColor(row.minInclusive)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ChartContainer>
+
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+          {rows.map((row) => (
+            <div key={row.label} className="text-center text-[11px] leading-tight sm:text-xs">
+              <div className="font-semibold tabular-nums">
+                {formatPercent(row.percentOfYears, 0)} ({row.yearCount}Y)
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

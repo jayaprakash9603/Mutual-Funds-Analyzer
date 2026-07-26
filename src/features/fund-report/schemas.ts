@@ -50,6 +50,52 @@ export const fundReportSchema = z.object({
     })),
     consistencyScore: z.number(),
   }),
+  calendarYearInsights: z.object({
+    distribution: z.object({
+      buckets: z.array(z.object({
+        label: z.string(),
+        minInclusive: z.number(),
+        maxExclusive: z.number().nullable(),
+        percentOfYears: z.number(),
+        yearCount: z.number(),
+      })),
+      positiveYearsPercent: z.number(),
+      negativeYearsPercent: z.number(),
+      positiveYearCount: z.number(),
+      negativeYearCount: z.number(),
+      totalYears: z.number(),
+      headline: z.string(),
+    }),
+    sortedReturns: z.object({
+      periodLabel: z.string(),
+      cagrPercent: z.number(),
+      moneyMultiple: z.number(),
+      longTermBandLow: z.number(),
+      longTermBandHigh: z.number(),
+      years: z.array(z.object({
+        year: z.number(),
+        returnPercent: z.number(),
+        inLongTermBand: z.boolean(),
+      })),
+      headline: z.string(),
+    }),
+    profitBooking: z.object({
+      rollingWindowYears: z.number(),
+      debtAnnualReturnPercent: z.number(),
+      rows: z.array(z.object({
+        periodLabel: z.string(),
+        startYear: z.number(),
+        endYear: z.number(),
+        buyHoldCagrPercent: z.number(),
+        outperformanceAt20Percent: z.number(),
+        outperformanceAt30Percent: z.number(),
+        outperformanceAt50Percent: z.number(),
+        outperformanceAtAllTimeHighPercent: z.number(),
+      })),
+      headline: z.string(),
+      methodologyNote: z.string(),
+    }),
+  }),
   benchmarkComparison: z.object({
     fundTotalReturn: z.number(),
     benchmarkTotalReturn: z.number(),
@@ -279,6 +325,7 @@ export type FundReportOverview = z.infer<typeof fundReportOverviewSchema>
 export const fundReportPerformanceSchema = fundReportSchema.pick({
   trailingReturns: true,
   rollingReturns: true,
+  calendarYearInsights: true,
   benchmarkComparison: true,
   probability: true,
 })
@@ -353,6 +400,7 @@ export function splitFundReport(report: FundReport): {
     performance: {
       trailingReturns: report.trailingReturns,
       rollingReturns: report.rollingReturns,
+      calendarYearInsights: report.calendarYearInsights,
       benchmarkComparison: report.benchmarkComparison,
       probability: report.probability,
     },

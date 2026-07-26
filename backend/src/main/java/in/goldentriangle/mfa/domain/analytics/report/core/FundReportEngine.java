@@ -4,6 +4,7 @@ import in.goldentriangle.mfa.domain.analytics.report.drawdown.DrawdownCalculator
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
@@ -20,6 +21,7 @@ import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
+import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
@@ -54,6 +56,7 @@ public class FundReportEngine {
     private final DrawdownCalculator drawdownCalculator;
     private final BestDaysCalculator bestDaysCalculator;
     private final AllTimeHighsCalculator allTimeHighsCalculator;
+    private final CalendarYearInsightsCalculator calendarYearInsightsCalculator;
     private final ProbabilityCalculator probabilityCalculator;
     private final RiskReportBuilder riskReportBuilder;
     private final SipCalculator sipCalculator;
@@ -71,6 +74,7 @@ public class FundReportEngine {
             DrawdownCalculator drawdownCalculator,
             BestDaysCalculator bestDaysCalculator,
             AllTimeHighsCalculator allTimeHighsCalculator,
+            CalendarYearInsightsCalculator calendarYearInsightsCalculator,
             ProbabilityCalculator probabilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
@@ -86,6 +90,7 @@ public class FundReportEngine {
         this.drawdownCalculator = drawdownCalculator;
         this.bestDaysCalculator = bestDaysCalculator;
         this.allTimeHighsCalculator = allTimeHighsCalculator;
+        this.calendarYearInsightsCalculator = calendarYearInsightsCalculator;
         this.probabilityCalculator = probabilityCalculator;
         this.riskReportBuilder = riskReportBuilder;
         this.sipCalculator = sipCalculator;
@@ -120,6 +125,8 @@ public class FundReportEngine {
         BestDaysReport bestDays = bestDaysCalculator.compute(history.fundNav());
         AllTimeHighsReport allTimeHighs = allTimeHighsCalculator.compute(history.fundNav());
         ConsistencyReport consistency = drawdownCalculator.calendarYears(history.fundNav());
+        CalendarYearInsightsReport calendarYearInsights =
+                calendarYearInsightsCalculator.compute(history.fundNav(), consistency);
         SipReport sip = sipCalculator.compute(history);
         LumpsumReport lumpsum = lumpsumCalculator.compute(history);
         TaxReport tax = taxCalculator.compute(metrics.totalReturn(), metrics.fundAgeYears(), 100_000);
@@ -139,6 +146,7 @@ public class FundReportEngine {
                 goldenTriangle,
                 trailing,
                 rolling,
+                calendarYearInsights,
                 benchmark,
                 probabilityCalculator.compute(rollingData),
                 riskReportBuilder.build(rollingData, periodLabel, metrics, drawdown),

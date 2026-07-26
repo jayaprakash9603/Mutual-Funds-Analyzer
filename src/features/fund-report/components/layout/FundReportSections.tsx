@@ -56,6 +56,9 @@ import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
 import { AllTimeHighsChart } from '../charts/AllTimeHighsChart'
 import { AllTimeHighsYearTable } from '../charts/AllTimeHighsYearTable'
+import { AnnualReturnDistributionChart } from '../charts/AnnualReturnDistributionChart'
+import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart'
+import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
@@ -185,6 +188,28 @@ export function FundReportSections({
               fundName={fundName}
               dataTo={dataTo}
             />
+          )}
+        </ReportGroupBoundary>
+      </SectionShell>
+
+      <SectionShell
+        id="return-patterns"
+        title="Return Patterns"
+        description="How often calendar years land in each return bucket, how rarely they match long-term averages, and why profit booking tends to lag buy-and-hold."
+      >
+        <ReportGroupBoundary state={performance} skeleton={<ChartSkeleton />}>
+          {(data) => (
+            <div className="space-y-12">
+              <AnnualReturnDistributionChart
+                distribution={data.calendarYearInsights.distribution}
+                fundName={fundName}
+              />
+              <SortedCalendarReturnsChart
+                sortedReturns={data.calendarYearInsights.sortedReturns}
+                fundName={fundName}
+              />
+              <ProfitBookingComparisonTable profitBooking={data.calendarYearInsights.profitBooking} />
+            </div>
           )}
         </ReportGroupBoundary>
       </SectionShell>

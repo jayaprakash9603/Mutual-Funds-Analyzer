@@ -23,6 +23,7 @@ import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
@@ -95,6 +96,7 @@ class FundReportServiceTest {
                 new DrawdownCalculator(),
                 new BestDaysCalculator(),
                 new AllTimeHighsCalculator(),
+                new CalendarYearInsightsCalculator(),
                 new ProbabilityCalculator(),
                 new RiskReportBuilder(metricsCalculator, new DrawdownCalculator(), 252),
                 new SipCalculator(new TaxCalculator()),

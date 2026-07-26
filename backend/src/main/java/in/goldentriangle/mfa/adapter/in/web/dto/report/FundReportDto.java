@@ -10,6 +10,7 @@ public record FundReportDto(
         GoldenTriangleResultDto goldenTriangle,
         TrailingReturnsDto trailingReturns,
         RollingReturnsReportDto rollingReturns,
+        CalendarYearInsightsReportDto calendarYearInsights,
         BenchmarkComparisonDto benchmarkComparison,
         ProbabilityDto probability,
         RiskReportDto risk,

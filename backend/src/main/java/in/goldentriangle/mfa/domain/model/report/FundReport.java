@@ -15,6 +15,7 @@ import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
+import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
@@ -28,6 +29,7 @@ public record FundReport(
         GoldenTriangleResult goldenTriangle,
         TrailingReturnsReport trailingReturns,
         RollingReturnsReport rollingReturns,
+        CalendarYearInsightsReport calendarYearInsights,
         BenchmarkComparisonReport benchmarkComparison,
         ProbabilityReport probability,
         RiskReport risk,

@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web;
 
+import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarYearInsightsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
@@ -117,6 +118,13 @@ class FundReportControllerTest {
         var emptyBestDays = new BestDaysReportDto(
                 1_000_000, "", List.of(), List.of(), List.of(), List.of(),
                 new BestDaysReportDto.BestWorstProximityInsightDto(0, 10, 30, ""), "");
+        var emptyCalendarInsights = new CalendarYearInsightsReportDto(
+                new CalendarYearInsightsReportDto.AnnualReturnDistributionDto(
+                        List.of(), 0, 0, 0, 0, 0, ""),
+                new CalendarYearInsightsReportDto.SortedCalendarReturnsDto(
+                        "", 0, 0, 10, 15, List.of(), ""),
+                new CalendarYearInsightsReportDto.ProfitBookingComparisonDto(
+                        10, 6, List.of(), "", ""));
         var emptyAllTimeHighs = new AllTimeHighsReportDto(
                 "", List.of(), List.of(),
                 new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, ""));
@@ -126,6 +134,7 @@ class FundReportControllerTest {
                 golden,
                 new TrailingReturnsDto(List.of()),
                 new RollingReturnsReportDto(List.of(), 0),
+                emptyCalendarInsights,
                 new BenchmarkComparisonDto(0, 0, 0, false, 0, 0, ""),
                 new ProbabilityDto(0, 0, 0, 0, 0, 0),
                 emptyRisk,

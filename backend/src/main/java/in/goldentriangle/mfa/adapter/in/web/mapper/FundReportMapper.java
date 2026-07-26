@@ -2,6 +2,7 @@ package in.goldentriangle.mfa.adapter.in.web.mapper;
 
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import in.goldentriangle.mfa.domain.model.RiskLevel;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarYearInsightsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
@@ -31,6 +32,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
+import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
@@ -78,6 +80,7 @@ public class FundReportMapper {
                 apiMapper.toDto(report.goldenTriangle()),
                 toDto(report.trailingReturns()),
                 toDto(report.rollingReturns()),
+                toDto(report.calendarYearInsights()),
                 toDto(report.benchmarkComparison()),
                 toDto(report.probability()),
                 toDto(report.risk()),
@@ -306,6 +309,49 @@ public class FundReportMapper {
                 report.headlineSummary());
     }
 
+    private CalendarYearInsightsReportDto toDto(CalendarYearInsightsReport report) {
+        return new CalendarYearInsightsReportDto(
+                new CalendarYearInsightsReportDto.AnnualReturnDistributionDto(
+                        report.distribution().buckets().stream()
+                                .map(b -> new CalendarYearInsightsReportDto.ReturnBucketDto(
+                                        b.label(), b.minInclusive(), b.maxExclusive(),
+                                        b.percentOfYears(), b.yearCount()))
+                                .toList(),
+                        report.distribution().positiveYearsPercent(),
+                        report.distribution().negativeYearsPercent(),
+                        report.distribution().positiveYearCount(),
+                        report.distribution().negativeYearCount(),
+                        report.distribution().totalYears(),
+                        report.distribution().headline()),
+                new CalendarYearInsightsReportDto.SortedCalendarReturnsDto(
+                        report.sortedReturns().periodLabel(),
+                        report.sortedReturns().cagrPercent(),
+                        report.sortedReturns().moneyMultiple(),
+                        report.sortedReturns().longTermBandLow(),
+                        report.sortedReturns().longTermBandHigh(),
+                        report.sortedReturns().years().stream()
+                                .map(y -> new CalendarYearInsightsReportDto.RankedYearReturnDto(
+                                        y.year(), y.returnPercent(), y.inLongTermBand()))
+                                .toList(),
+                        report.sortedReturns().headline()),
+                new CalendarYearInsightsReportDto.ProfitBookingComparisonDto(
+                        report.profitBooking().rollingWindowYears(),
+                        report.profitBooking().debtAnnualReturnPercent(),
+                        report.profitBooking().rows().stream()
+                                .map(r -> new CalendarYearInsightsReportDto.ProfitBookingRowDto(
+                                        r.periodLabel(),
+                                        r.startYear(),
+                                        r.endYear(),
+                                        r.buyHoldCagrPercent(),
+                                        r.outperformanceAt20Percent(),
+                                        r.outperformanceAt30Percent(),
+                                        r.outperformanceAt50Percent(),
+                                        r.outperformanceAtAllTimeHighPercent()))
+                                .toList(),
+                        report.profitBooking().headline(),
+                        report.profitBooking().methodologyNote()));
+    }
+
     private AllTimeHighsReportDto toDto(AllTimeHighsReport report) {
         return new AllTimeHighsReportDto(
                 report.periodLabel(),
@@ -405,6 +451,7 @@ public class FundReportMapper {
         return new FundReportPerformanceDto(
                 toDto(section.trailingReturns()),
                 toDto(section.rollingReturns()),
+                toDto(section.calendarYearInsights()),
                 toDto(section.benchmarkComparison()),
                 toDto(section.probability()));
     }

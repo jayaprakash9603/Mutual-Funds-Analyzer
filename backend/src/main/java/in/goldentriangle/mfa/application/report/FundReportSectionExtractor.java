@@ -21,6 +21,7 @@ public final class FundReportSectionExtractor {
         return new FundReportPerformanceSection(
                 report.trailingReturns(),
                 report.rollingReturns(),
+                report.calendarYearInsights(),
                 report.benchmarkComparison(),
                 report.probability());
     }

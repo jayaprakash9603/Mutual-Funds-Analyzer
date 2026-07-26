@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   Gauge,
   Layers,
+  Layers2,
   LineChart,
   Percent,
   PieChart,
@@ -56,6 +57,7 @@ const SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'returns', label: 'Returns', icon: TrendingUp },
       { id: 'rolling', label: 'Rolling', icon: LineChart },
+      { id: 'return-patterns', label: 'Patterns', icon: Layers2 },
       { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
       { id: 'probability', label: 'Probability', icon: Percent },
       { id: 'sip', label: 'SIP', icon: Wallet },
