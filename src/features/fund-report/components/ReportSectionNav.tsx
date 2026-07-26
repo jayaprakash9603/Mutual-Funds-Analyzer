@@ -19,6 +19,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { centerElementInScroller } from '../lib/reportScroll'
 
 export type ReportSection = {
   id: string
@@ -85,9 +86,10 @@ export const REPORT_SECTIONS: ReportSection[] = SECTION_GROUPS.flatMap((group) =
 
 type ReportSectionNavProps = {
   activeSection: string
+  onSectionSelect: (id: string) => void
 }
 
-export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
+export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSectionNavProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -117,9 +119,18 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
     })
   }
 
+  const centerActiveTab = () => {
+    const scroller = scrollerRef.current
+    const activeEl = scroller?.querySelector<HTMLElement>(`[data-section-id="${activeSection}"]`)
+    if (scroller && activeEl) {
+      centerElementInScroller(scroller, activeEl)
+    }
+  }
+
   useLayoutEffect(() => {
     updateScrollState()
     updateUnderline()
+    centerActiveTab()
   }, [activeSection])
 
   useEffect(() => {
@@ -132,6 +143,7 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
     const onResize = () => {
       updateScrollState()
       updateUnderline()
+      centerActiveTab()
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onResize)
@@ -139,11 +151,6 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
       el.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onResize)
     }
-  }, [activeSection])
-
-  useEffect(() => {
-    const activeEl = scrollerRef.current?.querySelector<HTMLElement>(`[data-section-id="${activeSection}"]`)
-    activeEl?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
   }, [activeSection])
 
   const scrollByAmount = (direction: -1 | 1) => {
@@ -183,7 +190,7 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
 
         <div
           ref={scrollerRef}
-          className="scrollbar-nav relative flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth px-1 pb-1"
+          className="relative flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="list"
         >
           {SECTION_GROUPS.map((group, groupIndex) => (
@@ -203,13 +210,10 @@ export function ReportSectionNav({ activeSection }: ReportSectionNavProps) {
                     aria-current={isActive ? 'true' : undefined}
                     onClick={(e) => {
                       e.preventDefault()
-                      document.getElementById(section.id)?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      })
+                      onSectionSelect(section.id)
                     }}
                     className={cn(
-                      'inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-sm font-medium transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isActive
                         ? 'text-primary'
                         : 'text-muted-foreground hover:text-foreground',

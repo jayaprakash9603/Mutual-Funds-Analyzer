@@ -60,7 +60,7 @@ export function FundReportPage() {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
 
   const { data, loading, error } = useFundReport(scheme || null)
-  const activeSection = useSectionNav(SECTION_IDS)
+  const { activeSection, scrollToSection } = useSectionNav(SECTION_IDS)
   const { data: matrix, loading: matrixLoading, error: matrixError } = useFundReportMatrix(
     scheme || null,
     matrixMode,
@@ -96,7 +96,7 @@ export function FundReportPage() {
         onSelectScheme={selectScheme}
       />
 
-      <ReportSectionNav activeSection={activeSection} />
+      <ReportSectionNav activeSection={activeSection} onSectionSelect={scrollToSection} />
 
       {loading && !data && (
         <div className="space-y-4" aria-busy="true" aria-live="polite">
