@@ -101,8 +101,8 @@ export function AnnualStressAnalysis({
         </div>
       </div>
 
-      <div className="grid gap-0 overflow-hidden rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="border-b border-slate-200 p-3 sm:p-4 lg:border-b-0 lg:border-r dark:border-slate-700">
+      <div className="grid gap-0 overflow-hidden rounded-xl border border-border/70 bg-[var(--chart-surface)] shadow-inner lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="border-b border-slate-700/60 p-3 sm:p-4 lg:border-b-0 lg:border-r">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Intra-year maximum drawdown
           </p>
@@ -199,7 +199,7 @@ export function AnnualStressAnalysis({
           </ChartContainer>
         </div>
 
-        <aside className="flex flex-col justify-center gap-3 bg-slate-50/80 p-5 text-sm dark:bg-muted/20">
+        <aside className="flex flex-col justify-center gap-3 border-t border-border/70 bg-muted/30 p-5 text-sm lg:border-l lg:border-t-0 dark:border-slate-700/60 dark:bg-slate-900/40">
           <InsightCallout
             title="Temporary declines are common"
             body={`${stats.tenPlusDrawdownRate.toFixed(0)}% of years saw at least a 10% peak-to-trough fall within the year.`}

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 export const FI_GRID = 'border-slate-300/80 dark:border-slate-600/70'
-export const FI_TABLE = 'w-full min-w-[720px] border-collapse text-sm'
+export const FI_TABLE = 'w-full border-collapse text-sm'
 
 export function fiHeaderCell(className?: string) {
   return cn(
@@ -29,8 +29,12 @@ export function fiBodyCell(className?: string) {
 }
 
 export function fiStickyYearCell(className?: string) {
+  return fiStickyLabelCell(className)
+}
+
+export function fiStickyLabelCell(className?: string) {
   return cn(
-    'sticky left-0 z-10 border-r bg-white px-3 py-2 text-left align-top font-semibold dark:bg-card',
+    'sticky left-0 z-10 min-w-[140px] border-r bg-background px-3 py-2 text-left align-top font-semibold sm:min-w-[180px]',
     FI_GRID,
     className,
   )

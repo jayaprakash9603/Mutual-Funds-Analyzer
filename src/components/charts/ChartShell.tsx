@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { CHART_HEIGHT, CHART_HEIGHT_COMPACT, CHART_HEIGHT_WIDE } from '@/lib/charts/chartAxes'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { cn } from '@/lib/utils'
 import type { ChartGuide } from '@/lib/analytics/chartGuide'
 
@@ -66,11 +67,11 @@ export function ChartShell({ guide, children, loading, empty, footer }: ChartShe
           </p>
         ) : (
           <>
-            {children}
+            <div className={CHART_PANEL_CLASS}>{children}</div>
             {footer}
           </>
         )}
-        <div className="mt-auto flex gap-2.5 rounded-lg border border-border/50 bg-muted/35 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+        <div className="mt-auto flex gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground dark:border-slate-700/50 dark:bg-[var(--chart-surface)]/80">
           <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           <p>
             <span className="font-medium text-foreground">Use case: </span>

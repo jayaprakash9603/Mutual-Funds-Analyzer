@@ -77,6 +77,20 @@ class DrawdownCalculatorTest {
         assertTrue(episodes.get(0).recovered());
     }
 
+    @Test
+    void bearMarketDecadesOmitDecadesWithoutNavData() {
+        List<NavPoint> nav = new ArrayList<>();
+        for (int year = 2013; year <= 2024; year++) {
+            nav.add(nav(year + "-06-01", 100 + (year - 2013)));
+        }
+
+        DrawdownReport report = calculator.compute(nav);
+
+        assertFalse(report.bearMarketDecades().isEmpty());
+        assertTrue(report.bearMarketDecades().stream().noneMatch(d -> d.decadeLabel().startsWith("200")));
+        assertTrue(report.bearMarketDecades().stream().allMatch(d -> d.totalDays() > 0));
+    }
+
     private static NavPoint nav(String date, double value) {
         return new NavPoint(Instant.parse(date + "T00:00:00Z"), value);
     }

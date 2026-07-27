@@ -67,6 +67,18 @@
   --scrollbar-thumb: oklch(0.62 0.17 155 / 0.38);
   --scrollbar-thumb-hover: oklch(0.62 0.17 155 / 0.62);
   --scrollbar-track: oklch(0.94 0.01 240 / 0.45);
+  /* Recharts plot surfaces — light theme defaults */
+  --chart-surface: #f8fafc;
+  --chart-cycle-band-even: #f1f5f9;
+  --chart-cycle-band-odd: #ffffff;
+  --chart-axis: #64748b;
+  --chart-grid-stroke: rgba(148, 163, 184, 0.45);
+  --chart-zero-line: rgba(100, 116, 139, 0.45);
+  --chart-tooltip-cursor: rgba(148, 163, 184, 0.35);
+  --chart-annotation-fill: #f1f5f9;
+  --chart-annotation-stroke: #cbd5e1;
+  --chart-annotation-text: #475569;
+  --chart-marker-detail: #64748b;
 }
 
 .dark {
@@ -96,6 +108,18 @@
   --scrollbar-thumb: oklch(0.72 0.17 155 / 0.42);
   --scrollbar-thumb-hover: oklch(0.72 0.17 155 / 0.68);
   --scrollbar-track: oklch(0.26 0.02 240 / 0.55);
+  /* Recharts plot surfaces — dark theme */
+  --chart-surface: #0a101c;
+  --chart-cycle-band-even: #131f33;
+  --chart-cycle-band-odd: #0a101c;
+  --chart-axis: #94a3b8;
+  --chart-grid-stroke: rgba(100, 116, 139, 0.32);
+  --chart-zero-line: rgba(226, 232, 240, 0.5);
+  --chart-tooltip-cursor: rgba(51, 65, 85, 0.55);
+  --chart-annotation-fill: #1e293b;
+  --chart-annotation-stroke: #475569;
+  --chart-annotation-text: #cbd5e1;
+  --chart-marker-detail: #94a3b8;
 }
 
 @layer base {

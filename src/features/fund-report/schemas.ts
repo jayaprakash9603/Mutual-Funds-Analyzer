@@ -529,9 +529,23 @@ export const peerComparisonSchema = z.object({
     maxDrawdown: z.number(),
     consistencyScore: z.number(),
     selected: z.boolean(),
+    horizonReturns: z.array(z.object({
+      label: z.string(),
+      cagrPercent: z.number().nullable(),
+      moneyMultiplied: z.number().nullable(),
+    })).optional().default([]),
   })),
   highlights: z.array(z.string()),
   periodLabel: z.string(),
+  longRunAnalysis: z.object({
+    categoryLabel: z.string(),
+    asOfDate: z.string(),
+    horizonLabels: z.array(z.string()),
+    twentyYearCagrLow: z.number().nullable(),
+    twentyYearCagrHigh: z.number().nullable(),
+    twentyYearMultiplyLow: z.number().nullable(),
+    twentyYearMultiplyHigh: z.number().nullable(),
+  }).optional(),
 })
 
 export type PeerComparison = z.infer<typeof peerComparisonSchema>

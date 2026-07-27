@@ -132,6 +132,322 @@ export function buildIndexedNavTimelineModel(
   }
 }
 
+export type ContinuousPhasePoint = {
+  date: string
+  decline: number | null
+  upside: number | null
+}
+
+export type PhaseTimelineBand = {
+  cycle: DeclineRecoveryCycle
+  dateStart: string
+  dateEnd: string
+}
+
+export type PhaseMarker = {
+  id: string
+  date: string
+  value: number
+  headline: string
+  detail: string
+  tone: 'decline' | 'upside'
+}
+
+export type PhaseAnnotation = {
+  id: string
+  dateStart: string
+  dateEnd: string
+  type: 'DECLINE' | 'RECOVERY' | 'RALLY'
+  label: string
+  durationLabel: string
+  changePercent: number
+  minY: number
+  maxY: number
+}
+
+export function phasesForMajorCycles(
+  phases: Phase[],
+  cycles: DeclineRecoveryCycle[],
+): Phase[] {
+  const selected: Phase[] = []
+  for (const cycle of cycles) {
+    const decline = phases.find(
+      (phase) => phase.type === 'DECLINE' && phase.startDate === cycle.declineStart,
+    )
+    const recovery = phases.find(
+      (phase) => phase.type === 'RECOVERY' && phase.startDate === cycle.recoveryStart,
+    )
+    if (decline) selected.push(decline)
+    if (recovery) selected.push(recovery)
+  }
+  return selected
+}
+
+export function buildContinuousPhaseTimelineModel(
+  phases: Phase[],
+  indexedNav: IndexedNavPoint[],
+  cycles: DeclineRecoveryCycle[] = buildDeclineRecoveryCycles(phases),
+) {
+  if (cycles.length === 0) {
+    return {
+      points: [] as ContinuousPhasePoint[],
+      bands: [] as PhaseTimelineBand[],
+      annotations: [] as PhaseAnnotation[],
+      markers: [] as PhaseMarker[],
+      yLimit: 35,
+      usesRealNav: false,
+    }
+  }
+
+  const majorPhases = phasesForMajorCycles(phases, cycles)
+  if (indexedNav.length > 0) {
+    return buildContinuousPhaseTimelineFromNav(majorPhases, indexedNav, cycles)
+  }
+  return buildSyntheticContinuousPhaseTimeline(majorPhases, cycles)
+}
+
+function buildContinuousPhaseTimelineFromNav(
+  majorPhases: Phase[],
+  indexedNav: IndexedNavPoint[],
+  cycles: DeclineRecoveryCycle[],
+) {
+  const navByDate = new Map(indexedNav.map((point) => [point.date, point.indexValue]))
+  const pointByDate = new Map<string, ContinuousPhasePoint>()
+  const annotations: PhaseAnnotation[] = []
+  const markers: PhaseMarker[] = []
+
+  const assignPoint = (date: string, decline: number | null, upside: number | null) => {
+    const existing = pointByDate.get(date) ?? { date, decline: null, upside: null }
+    pointByDate.set(date, {
+      date,
+      decline: decline ?? existing.decline,
+      upside: upside ?? existing.upside,
+    })
+  }
+
+  for (const phase of majorPhases) {
+    const windowPoints = indexedNav.filter(
+      (point) => point.date >= phase.startDate && point.date <= phase.endDate,
+    )
+    if (windowPoints.length === 0) continue
+
+    const referenceNav = navByDate.get(phase.startDate)
+    if (referenceNav == null || referenceNav <= 0) continue
+
+    const values: number[] = []
+    let extremaDate = windowPoints[0]?.date ?? phase.startDate
+    let extremaValue = phase.type === 'DECLINE' ? 0 : 0
+
+    for (const point of windowPoints) {
+      if (phase.type === 'DECLINE') {
+        const value = ((point.indexValue / referenceNav) - 1) * 100
+        values.push(value)
+        assignPoint(point.date, value, null)
+        if (values.length === 1 || value < extremaValue) {
+          extremaValue = value
+          extremaDate = point.date
+        }
+      } else {
+        const value = ((point.indexValue / referenceNav) - 1) * 100
+        values.push(value)
+        assignPoint(point.date, null, value)
+        if (values.length === 1 || value > extremaValue) {
+          extremaValue = value
+          extremaDate = point.date
+        }
+      }
+    }
+
+    const phaseLabel = formatPhaseLabel(phase.startDate, phase.endDate)
+    const isDecline = phase.type === 'DECLINE'
+    annotations.push({
+      id: `${phase.type}-${phase.startDate}`,
+      dateStart: phase.startDate,
+      dateEnd: phase.endDate,
+      type: isDecline ? 'DECLINE' : 'RECOVERY',
+      label: phaseLabel,
+      durationLabel: phase.durationLabel,
+      changePercent: phase.changePercent,
+      minY: Math.min(...values),
+      maxY: Math.max(...values),
+    })
+
+    markers.push({
+      id: `${phase.type}-${phase.startDate}-extrema`,
+      date: extremaDate,
+      value: extremaValue,
+      headline: isDecline
+          ? `-${Math.abs(phase.changePercent).toFixed(0)}%`
+          : `+${Math.abs(phase.changePercent).toFixed(0)}%`,
+      detail: phase.durationLabel ? `${phase.durationLabel} · ${phaseLabel}` : phaseLabel,
+      tone: isDecline ? 'decline' : 'upside',
+    })
+  }
+
+  for (let index = 0; index < cycles.length - 1; index++) {
+    const current = cycles[index]
+    const next = cycles[index + 1]
+    if (!current || !next) continue
+
+    const rallyPoints = indexedNav.filter(
+      (point) => point.date > current.recoveryEnd && point.date < next.declineStart,
+    )
+    if (rallyPoints.length === 0) continue
+
+    const baseline = navByDate.get(current.recoveryEnd)
+    if (baseline == null || baseline <= 0) continue
+
+    const values: number[] = []
+    let extremaDate = rallyPoints[0]?.date ?? current.recoveryEnd
+    let extremaValue = 0
+
+    for (const point of rallyPoints) {
+      const value = ((point.indexValue / baseline) - 1) * 100
+      if (value <= 0) continue
+      values.push(value)
+      assignPoint(point.date, null, value)
+      if (value > extremaValue) {
+        extremaValue = value
+        extremaDate = point.date
+      }
+    }
+
+    if (values.length === 0) continue
+
+    const rallyLabel = formatPhaseLabel(current.recoveryEnd, next.declineStart)
+    annotations.push({
+      id: `rally-${current.recoveryEnd}-${next.declineStart}`,
+      dateStart: rallyPoints[0]?.date ?? current.recoveryEnd,
+      dateEnd: rallyPoints[rallyPoints.length - 1]?.date ?? next.declineStart,
+      type: 'RALLY',
+      label: rallyLabel,
+      durationLabel: '',
+      changePercent: Math.max(...values),
+      minY: 0,
+      maxY: Math.max(...values),
+    })
+
+    markers.push({
+      id: `rally-${current.recoveryEnd}-peak`,
+      date: extremaDate,
+      value: extremaValue,
+      headline: `+${extremaValue.toFixed(0)}%`,
+      detail: rallyLabel,
+      tone: 'upside',
+    })
+  }
+
+  const points = [...pointByDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+  const yLimit = computeSymmetricYLimit(points)
+
+  return {
+    points,
+    bands: cycles.map((cycle) => ({
+      cycle,
+      dateStart: cycle.declineStart,
+      dateEnd: cycle.recoveryEnd,
+    })),
+    annotations,
+    markers,
+    yLimit,
+    usesRealNav: true,
+  }
+}
+
+function buildSyntheticContinuousPhaseTimeline(
+  majorPhases: Phase[],
+  cycles: DeclineRecoveryCycle[],
+) {
+  const points: ContinuousPhasePoint[] = []
+  const annotations: PhaseAnnotation[] = []
+  const markers: PhaseMarker[] = []
+  const STEPS = 8
+
+  for (const phase of majorPhases) {
+    const startMs = Date.parse(phase.startDate)
+    const endMs = Date.parse(phase.endDate)
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue
+
+    const target =
+      phase.type === 'DECLINE' ? phase.changePercent : Math.abs(phase.changePercent)
+    const values: number[] = []
+    const isDecline = phase.type === 'DECLINE'
+    const phaseLabel = formatPhaseLabel(phase.startDate, phase.endDate)
+
+    for (let step = 0; step < STEPS; step++) {
+      const t = step / (STEPS - 1)
+      const progress = easeInOut(t)
+      const date = new Date(startMs + (endMs - startMs) * t).toISOString().slice(0, 10)
+      if (isDecline) {
+        const value = target * progress
+        values.push(value)
+        points.push({ date, decline: value, upside: null })
+      } else {
+        const value = target * progress
+        values.push(value)
+        points.push({ date, decline: null, upside: value })
+      }
+    }
+
+    annotations.push({
+      id: `${phase.type}-${phase.startDate}`,
+      dateStart: phase.startDate,
+      dateEnd: phase.endDate,
+      type: isDecline ? 'DECLINE' : 'RECOVERY',
+      label: phaseLabel,
+      durationLabel: phase.durationLabel,
+      changePercent: phase.changePercent,
+      minY: Math.min(...values),
+      maxY: Math.max(...values),
+    })
+
+    markers.push({
+      id: `${phase.type}-${phase.startDate}-extrema`,
+      date: phase.endDate,
+      value: isDecline ? Math.min(...values) : Math.max(...values),
+      headline: isDecline
+          ? `-${Math.abs(phase.changePercent).toFixed(0)}%`
+          : `+${Math.abs(phase.changePercent).toFixed(0)}%`,
+      detail: phase.durationLabel ? `${phase.durationLabel} · ${phaseLabel}` : phaseLabel,
+      tone: isDecline ? 'decline' : 'upside',
+    })
+  }
+
+  points.sort((a, b) => a.date.localeCompare(b.date))
+  const yLimit = computeSymmetricYLimit(points)
+
+  return {
+    points,
+    bands: cycles.map((cycle) => ({
+      cycle,
+      dateStart: cycle.declineStart,
+      dateEnd: cycle.recoveryEnd,
+    })),
+    annotations,
+    markers,
+    yLimit,
+    usesRealNav: false,
+  }
+}
+
+function formatPhaseLabel(start: string, end: string): string {
+  const startYear = new Date(start).getFullYear()
+  const endYear = new Date(end).getFullYear()
+  if (!Number.isFinite(startYear) || !Number.isFinite(endYear)) return ''
+  if (startYear === endYear) return String(startYear)
+  const endSuffix = String(endYear).slice(-2)
+  return `${startYear}-${endSuffix}`
+}
+
+function computeSymmetricYLimit(points: ContinuousPhasePoint[]): number {
+  let maxAbs = 1
+  for (const point of points) {
+    if (point.decline != null) maxAbs = Math.max(maxAbs, Math.abs(point.decline))
+    if (point.upside != null) maxAbs = Math.max(maxAbs, Math.abs(point.upside))
+  }
+  return Math.ceil(maxAbs * 1.12)
+}
+
 export type CycleChartPoint = {
   x: number
   value: number

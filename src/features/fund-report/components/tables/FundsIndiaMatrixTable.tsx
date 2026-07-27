@@ -1,4 +1,5 @@
-import { fiBodyCell, fiHeaderCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import { ScrollTable } from '@/components/ui/scroll-table'
+import { fiBodyCell, fiHeaderCell, fiStickyLabelCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { cn } from '@/lib/utils'
 import type { MatrixReport } from '../../schemas'
 import {
@@ -33,12 +34,15 @@ export function FundsIndiaMatrixTable({
     : []
 
   return (
-    <div className={cn('scrollbar-thin overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card', className)}>
+    <ScrollTable
+      minWidth={960}
+      className={cn('rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card', className)}
+    >
       <table className={FI_TABLE}>
         <tbody>
           {data.summaryRows.map((row) => (
             <tr key={row.label} className="border-b border-slate-900/80">
-              <td className={cn(fiBodyCell('sticky left-0 z-10 bg-white text-left font-bold dark:bg-card'), matrixLabelCell)}>
+              <td className={cn(fiBodyCell(fiStickyLabelCell('font-bold')), matrixLabelCell)}>
                 {row.label}
               </td>
               {row.values.map((value, index) => (
@@ -57,7 +61,7 @@ export function FundsIndiaMatrixTable({
           ))}
 
           <tr className="border-b border-slate-900/80">
-            <td className={cn(fiHeaderCell('sticky left-0 z-20 text-left normal-case'), matrixLabelCell)}>
+            <td className={cn(fiHeaderCell(fiStickyLabelCell('z-20 normal-case')), matrixLabelCell)}>
               Period
             </td>
             {data.holdingYears.map((year) => (
@@ -79,7 +83,7 @@ export function FundsIndiaMatrixTable({
               <tr key={row.startLabel} className="border-b border-slate-900/80">
                 <td
                   className={cn(
-                    fiBodyCell('sticky left-0 z-10 bg-white text-left font-semibold dark:bg-card'),
+                    fiBodyCell(fiStickyLabelCell('font-semibold')),
                     matrixLabelCell,
                     highlighted && 'bg-sky-50 dark:bg-sky-950/30',
                     inDashedRange && 'border-l-2 border-dashed border-sky-600',
@@ -117,6 +121,6 @@ export function FundsIndiaMatrixTable({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollTable>
   )
 }

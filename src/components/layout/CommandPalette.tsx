@@ -21,13 +21,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 shadow-2xl">
+      <DialogContent className="max-h-[min(640px,calc(100vh-2rem))] w-[min(32rem,calc(100vw-2rem))] overflow-hidden p-0 shadow-2xl">
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Command.Input placeholder="Search pages, favorites, recent..." className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none" />
           </div>
-          <Command.List className="max-h-[300px] overflow-y-auto p-2">
+          <Command.List className="max-h-[min(420px,calc(100vh-10rem))] overflow-y-auto p-2">
             <Command.Empty>No results found.</Command.Empty>
             <Command.Group heading="Navigation">
               <Command.Item onSelect={() => run('/dashboard')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">

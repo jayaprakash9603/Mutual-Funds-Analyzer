@@ -6,6 +6,7 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -26,6 +27,13 @@ const chartConfig = {
   percentOfDays: { label: 'Time in bear market', color: CHART_COLORS.red },
 }
 
+function decadeAxisPadding(count: number): { left: number; right: number } {
+  if (count <= 1) return { left: 0.45, right: 0.45 }
+  if (count <= 2) return { left: 0.35, right: 0.35 }
+  if (count <= 4) return { left: 0.12, right: 0.12 }
+  return { left: 0.04, right: 0.04 }
+}
+
 type BearMarketDecadeChartProps = {
   decades: Decades
   fundName: string
@@ -34,12 +42,16 @@ type BearMarketDecadeChartProps = {
 export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeChartProps) {
   const rows = useMemo(
     () =>
-      decades.map((d) => ({
-        ...d,
-        label: d.partial ? `${d.decadeLabel}*` : d.decadeLabel,
-      })),
+      decades
+        .filter((d) => d.totalDays > 0)
+        .map((d) => ({
+          ...d,
+          label: d.partial ? `${d.decadeLabel}*` : d.decadeLabel,
+        })),
     [decades],
   )
+
+  const axisPadding = useMemo(() => decadeAxisPadding(rows.length), [rows.length])
 
   const analysis = useMemo(() => {
     if (rows.length === 0) return null
@@ -71,11 +83,26 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
         </p>
       )}
 
-      <div className="w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[240px] w-full sm:h-[280px]">
-          <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 12, bottom: 0, left: 44 }}>
+      <div className={CHART_PANEL_CLASS}>
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[240px] w-full sm:h-[280px]"
+        >
+          <BarChart
+            data={rows}
+            margin={{ ...MARGIN_LEFT, top: 12, bottom: 0, left: 44 }}
+            barCategoryGap={rows.length <= 3 ? '20%' : '18%'}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
-            <XAxis dataKey="label" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={44}>
+            <XAxis
+              dataKey="label"
+              tickLine={TICK_LINE}
+              axisLine={AXIS_LINE}
+              tick={TICK_MD}
+              height={44}
+              interval={0}
+              padding={axisPadding}
+            >
               <Label {...xLabel('Decade', -2)} />
             </XAxis>
             <YAxis

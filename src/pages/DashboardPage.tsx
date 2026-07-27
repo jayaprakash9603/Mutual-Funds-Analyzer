@@ -13,6 +13,7 @@ import { RiskMeter } from '@/components/dashboard/charts/RiskMeter'
 import { PerformanceTimeline } from '@/components/dashboard/charts/PerformanceTimeline'
 import { FundIndexMatrixTable } from '@/components/fundsindia/FundIndexMatrixTable'
 import { RollingReturnsPanel } from '@/components/charts/RollingReturnsPanel'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
 import { useFundIndexMatrix } from '@/hooks/useFundIndexMatrix'
@@ -101,7 +102,7 @@ export function DashboardPage() {
   )
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6">
+    <PageContainer width="wide">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Fund Analysis Dashboard</h1>
@@ -256,6 +257,6 @@ export function DashboardPage() {
           </FeatureGate>
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

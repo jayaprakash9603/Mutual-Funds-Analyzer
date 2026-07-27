@@ -10,6 +10,7 @@ import {
 import { Loader2, Trophy, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { FundSearchDropdown } from '@/components/dashboard/search/FundSearchDropdown'
 import { useFundSearch } from '@/hooks/useFundSearch'
 import { fetchComparison } from '@/api/client'
@@ -34,13 +36,16 @@ import {
   type SortOption,
 } from '@/lib/constants'
 import { CHART_SERIES } from '@/lib/charts/chartColors'
+import { cn } from '@/lib/utils'
 import { DOMAIN_0_100 } from '@/lib/charts/chartAxes'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts'
 
@@ -174,7 +179,7 @@ export function ComparePage() {
   }, [results])
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6">
+    <PageContainer width="wide">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Compare Funds</h1>
         <p className="text-muted-foreground">Compare up to {MAX_COMPARE_FUNDS} mutual funds side by side</p>
@@ -230,8 +235,8 @@ export function ComparePage() {
 
           <div className="flex flex-wrap gap-2">
             {funds.map((f) => (
-              <Badge key={f} variant="secondary" className="gap-1 py-1.5 pl-3 pr-1">
-                <span className="max-w-[200px] truncate">{f}</span>
+              <Badge key={f} variant="secondary" className="max-w-full gap-1 py-1.5 pl-3 pr-1 sm:max-w-[200px]">
+                <span className="truncate">{f}</span>
                 <button type="button" onClick={() => removeFund(f)} aria-label={`Remove ${f}`}>
                   <X className="h-3 w-3" />
                 </button>
@@ -239,11 +244,11 @@ export function ComparePage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="w-full space-y-2 sm:w-auto">
               <Label>Sort By</Label>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -279,14 +284,22 @@ export function ComparePage() {
 
       {results.length > 0 && (
         <>
-          <Card className="glass overflow-x-auto">
+          <Card className="glass">
             <CardContent className="p-0">
+              <ScrollTable minWidth={720}>
               <table className="w-full text-sm">
                 <thead>
                   {table.getHeaderGroups().map((hg) => (
                     <tr key={hg.id} className="border-b border-border/60">
-                      {hg.headers.map((header) => (
-                        <th key={header.id} className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      {hg.headers.map((header, index) => (
+                        <th
+                          key={header.id}
+                          className={cn(
+                            'px-4 py-3 text-left font-medium text-muted-foreground',
+                            index === 0 &&
+                              'sticky left-0 z-10 min-w-[160px] bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border/60 sm:min-w-[200px]',
+                          )}
+                        >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
                       ))}
@@ -296,8 +309,15 @@ export function ComparePage() {
                 <tbody>
                   {table.getRowModel().rows.map((row) => (
                     <tr key={row.id} className="border-b border-border/40 hover:bg-muted/30">
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-4 py-3">
+                      {row.getVisibleCells().map((cell, index) => (
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            'px-4 py-3',
+                            index === 0 &&
+                              'sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border/40',
+                          )}
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -305,6 +325,7 @@ export function ComparePage() {
                   ))}
                 </tbody>
               </table>
+              </ScrollTable>
             </CardContent>
           </Card>
 
@@ -313,11 +334,12 @@ export function ComparePage() {
               <CardTitle>Radar Comparison</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className={CHART_PANEL_CLASS}>
               <ChartContainer config={radarConfig} className="mx-auto aspect-square max-h-[400px]">
                 <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="metric" />
-                  <PolarRadiusAxis domain={DOMAIN_0_100} />
+                  <PolarGrid stroke="var(--chart-grid-stroke)" />
+                  <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} />
+                  <PolarRadiusAxis domain={DOMAIN_0_100} tick={{ fill: 'var(--chart-axis)', fontSize: 10 }} />
                   {results.map((result, i) => (
                     <Radar
                       key={result.fundName}
@@ -330,13 +352,14 @@ export function ComparePage() {
                     />
                   ))}
                   <ChartLegend content={ChartLegendContent} />
-                  <ChartTooltip cursor={{ fill: 'var(--muted)', opacity: 0.45 }} content={<ChartTooltipContent />} />
+                  <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
                 </RadarChart>
               </ChartContainer>
+              </div>
             </CardContent>
           </Card>
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

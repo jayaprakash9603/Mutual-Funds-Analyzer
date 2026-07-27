@@ -5,7 +5,8 @@ import java.util.List;
 public record PeerComparisonDto(
         List<PeerRowDto> peers,
         List<String> highlights,
-        String periodLabel) {
+        String periodLabel,
+        LongRunAnalysisDto longRunAnalysis) {
 
     public record PeerRowDto(
             String scheme,
@@ -18,6 +19,20 @@ public record PeerComparisonDto(
             double sharpe,
             double maxDrawdown,
             double consistencyScore,
-            boolean selected) {
+            boolean selected,
+            List<HorizonReturnDto> horizonReturns) {
+    }
+
+    public record HorizonReturnDto(String label, Double cagrPercent, Double moneyMultiplied) {
+    }
+
+    public record LongRunAnalysisDto(
+            String categoryLabel,
+            String asOfDate,
+            List<String> horizonLabels,
+            Double twentyYearCagrLow,
+            Double twentyYearCagrHigh,
+            Double twentyYearMultiplyLow,
+            Double twentyYearMultiplyHigh) {
     }
 }

@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { CartesianGrid, Label, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 import {
   ChartContainer,
   ChartTooltip,
@@ -51,6 +53,7 @@ type AllTimeHighsChartProps = {
 }
 
 export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartProps) {
+  const isSmall = useIsSmallScreen()
   const chartRows = useMemo(
     () =>
       downsampleSeries(allTimeHighs.series).map((point) => ({
@@ -95,7 +98,7 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
         </p>
       ) : null}
 
-      <div className="relative w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
+      <div className={`relative w-full ${CHART_PANEL_CLASS}`}>
         <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full sm:h-[380px]">
           <LineChart data={chartRows} margin={{ ...MARGIN_LEFT, top: 12, right: 24, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -141,10 +144,18 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
           </LineChart>
         </ChartContainer>
 
-        <p className="pointer-events-none absolute bottom-6 right-6 max-w-[180px] text-right text-sm font-medium text-primary italic">
+        {!isSmall ? (
+          <p className="pointer-events-none absolute bottom-6 right-6 max-w-[180px] text-right text-sm font-medium text-primary italic">
+            green dots indicate All Time Highs
+          </p>
+        ) : null}
+      </div>
+
+      {isSmall ? (
+        <p className="text-center text-sm font-medium text-primary italic">
           green dots indicate All Time Highs
         </p>
-      </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card px-4 py-3 text-sm">

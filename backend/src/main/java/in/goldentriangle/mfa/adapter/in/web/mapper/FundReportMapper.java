@@ -462,10 +462,22 @@ public class FundReportMapper {
                                 r.sharpe(),
                                 r.maxDrawdown(),
                                 r.consistencyScore(),
-                                r.selected()))
+                                r.selected(),
+                                r.horizonReturns().stream()
+                                        .map(h -> new PeerComparisonDto.HorizonReturnDto(
+                                                h.label(), h.cagrPercent(), h.moneyMultiplied()))
+                                        .toList()))
                         .toList(),
                 report.highlights(),
-                report.periodLabel());
+                report.periodLabel(),
+                new PeerComparisonDto.LongRunAnalysisDto(
+                        report.longRunAnalysis().categoryLabel(),
+                        report.longRunAnalysis().asOfDate(),
+                        report.longRunAnalysis().horizonLabels(),
+                        report.longRunAnalysis().twentyYearCagrLow(),
+                        report.longRunAnalysis().twentyYearCagrHigh(),
+                        report.longRunAnalysis().twentyYearMultiplyLow(),
+                        report.longRunAnalysis().twentyYearMultiplyHigh()));
     }
 
     public FundReportOverviewDto toDto(FundReportOverviewSection section) {

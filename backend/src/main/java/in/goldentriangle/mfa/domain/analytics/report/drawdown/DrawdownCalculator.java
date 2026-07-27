@@ -197,19 +197,17 @@ public class DrawdownCalculator {
             Map<Integer, int[]> decadeCounts,
             Instant firstDate,
             Instant lastDate) {
-        int firstYear = firstDate.atZone(ZoneOffset.UTC).getYear();
-        int lastYear = lastDate.atZone(ZoneOffset.UTC).getYear();
-        int firstDecade = (firstYear / 10) * 10;
-        int lastDecade = (lastYear / 10) * 10;
+        int firstDecade = (firstDate.atZone(ZoneOffset.UTC).getYear() / 10) * 10;
+        int lastDecade = (lastDate.atZone(ZoneOffset.UTC).getYear() / 10) * 10;
 
         List<DrawdownReport.BearMarketDecade> decades = new ArrayList<>();
-        for (int decade = firstDecade; decade <= lastDecade; decade += 10) {
-            int[] counts = decadeCounts.getOrDefault(decade, new int[] {0, 0});
-            int bearDays = counts[0];
-            int totalDays = counts[1];
-            if (totalDays == 0) {
+        for (int decade : decadeCounts.keySet().stream().sorted().toList()) {
+            int[] counts = decadeCounts.get(decade);
+            if (counts == null || counts[1] == 0) {
                 continue;
             }
+            int bearDays = counts[0];
+            int totalDays = counts[1];
             boolean partial = decade == firstDecade || decade == lastDecade;
             decades.add(new DrawdownReport.BearMarketDecade(
                     decade + "s",

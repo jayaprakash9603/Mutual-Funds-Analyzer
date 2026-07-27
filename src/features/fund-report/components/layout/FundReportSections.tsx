@@ -13,6 +13,8 @@ import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollTable } from '@/components/ui/scroll-table'
+import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import {
   ChartContainer,
   ChartTooltip,
@@ -31,8 +33,9 @@ import {
   yLabel,
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
-import { formatPercent } from '@/lib/utils'
+import { cn, formatPercent } from '@/lib/utils'
 import type { GoldenTriangleResult } from '@/api/schemas'
 import { fetchPeerComparison } from '../../api'
 import type { ProgressiveFundReportGroups } from '../../hooks/useProgressiveFundReport'
@@ -59,6 +62,7 @@ import { AllTimeHighsYearTable } from '../charts/AllTimeHighsYearTable'
 import { AthDeclineOutlookChart } from '../charts/AthDeclineOutlookChart'
 import { PostAthReturnsTable } from '../charts/PostAthReturnsTable'
 import { AnnualReturnDistributionChart } from '../charts/AnnualReturnDistributionChart'
+import { RollingHorizonProbabilityCharts } from '../charts/RollingHorizonProbabilityCharts'
 import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart'
 import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
@@ -201,9 +205,13 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={performance} skeleton={<ChartSkeleton />}>
           {(data) => (
-            <div className="space-y-12">
+            <div className="space-y-8">
               <AnnualReturnDistributionChart
                 distribution={data.calendarYearInsights.distribution}
+                fundName={fundName}
+              />
+              <RollingHorizonProbabilityCharts
+                rollingReturns={data.rollingReturns}
                 fundName={fundName}
               />
               <SortedCalendarReturnsChart
@@ -336,11 +344,11 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={investment} skeleton={<TableSkeleton rows={4} />}>
           {(data) => (
-            <div className="scrollbar-thin overflow-x-auto rounded-xl border border-border/70">
-              <table className="w-full min-w-[960px] text-sm">
+            <ScrollTable minWidth={960} className="rounded-xl border border-border/70">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-3">Monthly SIP</th>
+                    <th className={cn('px-4 py-3', fiStickyLabelCell('normal-case'))}>Monthly SIP</th>
                     <th className="px-4 py-3">Invested</th>
                     <th className="px-4 py-3">Current value</th>
                     <th className="px-4 py-3">Gain</th>
@@ -357,7 +365,7 @@ export function FundReportSections({
                     const totalTax = stcg + ltcg
                     return (
                       <tr key={s.monthlyAmount} className="border-b border-border/40 last:border-0">
-                        <td className="px-4 py-3 font-medium">
+                        <td className={cn('px-4 py-3 font-medium', fiStickyLabelCell())}>
                           ₹{s.monthlyAmount.toLocaleString('en-IN')}
                         </td>
                         <td className="px-4 py-3 font-mono tabular-nums">
@@ -390,14 +398,14 @@ export function FundReportSections({
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollTable>
           )}
         </ReportGroupBoundary>
       </SectionShell>
 
       <SectionShell id="lumpsum" title="Lump Sum Analysis">
         <Tabs value={matrixMode} onValueChange={(v) => setMatrixMode(v as typeof matrixMode)}>
-          <TabsList>
+          <TabsList scrollable>
             <TabsTrigger value="LUMPSUM">CAGR Matrix</TabsTrigger>
             <TabsTrigger value="MULTIPLE">Multiplier Matrix</TabsTrigger>
             <TabsTrigger value="SIP">SIP Matrix</TabsTrigger>
@@ -431,7 +439,7 @@ export function FundReportSections({
         </Tabs>
         <ReportGroupBoundary state={investment} skeleton={<MetricGridSkeleton count={5} />}>
           {(data) => (
-            <div className="mt-5 grid w-full grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+            <div className="mt-5 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {data.lumpsum.scenarios.map((s) => (
                 <MetricTile
                   key={s.principal}
@@ -454,7 +462,7 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <>
-              <div className="mb-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <MetricTile
                   label="Biggest crash"
                   value={formatPercent(-data.drawdown.biggestCrash)}
@@ -478,7 +486,7 @@ export function FundReportSections({
                   value={String(data.drawdown.episodes.length)}
                 />
               </div>
-              <div className="w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
+              <div className={`w-full ${CHART_PANEL_CLASS}`}>
                 <ChartContainer
                   config={drawdownChartConfig}
                   className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
@@ -742,7 +750,7 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
         type="button"
         onClick={load}
         disabled={loading || !scheme}
-        className="mb-4 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+        className="mb-6 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
       >
         {loading ? 'Loading…' : 'Load peer comparison'}
       </button>

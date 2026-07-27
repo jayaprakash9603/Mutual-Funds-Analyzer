@@ -1,6 +1,7 @@
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { formatPercent } from '@/lib/utils'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
-import { fiBodyCell, fiHeaderCell, FI_GRID, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import { fiBodyCell, fiHeaderCell, fiStickyLabelCell, FI_GRID, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { cn } from '@/lib/utils'
 import type { FundReport } from '../../schemas'
 
@@ -34,11 +35,11 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
         </h4>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
         <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th className={fiHeaderCell('text-left')}>#</th>
+              <th className={fiHeaderCell(fiStickyLabelCell('normal-case z-20'))}>#</th>
               <th className={fiHeaderCell()}>Peak</th>
               <th className={fiHeaderCell()}>Trough</th>
               <th className={fiHeaderCell()}>Recovery</th>
@@ -60,7 +61,7 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
                     critical && 'ring-1 ring-inset ring-red-200/80 dark:ring-red-900/50',
                   )}
                 >
-                  <td className={fiBodyCell('text-left font-medium text-muted-foreground')}>{index + 1}</td>
+                  <td className={fiBodyCell(fiStickyLabelCell('font-medium text-muted-foreground'))}>{index + 1}</td>
                   <td className={fiBodyCell()}>{episode.peakDate}</td>
                   <td className={fiBodyCell()}>{episode.troughDate}</td>
                   <td className={fiBodyCell()}>{episode.recoveryDate || '—'}</td>
@@ -88,7 +89,7 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollTable>
 
       <p className={cn('text-xs text-muted-foreground', FI_GRID)}>
         Episodes are measured from peak to trough when fall reached at least 10%. Duration is recovery time for

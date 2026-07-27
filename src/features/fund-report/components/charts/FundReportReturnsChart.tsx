@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Label,
-  Legend,
   Line,
   LineChart,
   Tooltip,
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CHART_HEADER_CLASS, CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
 import {
@@ -25,12 +25,12 @@ import {
   type RollingReturnChartPoint,
 } from '@/lib/analytics/rollingReturnsAnalysis'
 import { DEFAULT_PERIOD, PERIODS, type Period } from '@/lib/constants'
-import { downsample } from '@/lib/utils'
+import { cn, downsample } from '@/lib/utils'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import {
   AXIS_LINE,
   GRID_STROKE,
   TICK_LINE,
-  TICK_MD,
   TICK_SM,
   xLabel,
   yLabelRight,
@@ -52,6 +52,7 @@ const absoluteConfig = {
 } satisfies ChartConfig
 
 const CHART_MARGIN = { top: 16, right: 24, left: 8, bottom: 8 }
+const ROLLING_CHART_MARGIN = { top: 16, right: 56, left: 8, bottom: 12 }
 const TOOLTIP_CURSOR = { stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }
 const Y_DOMAIN: ['auto', 'auto'] = ['auto', 'auto']
 const CHART_HEIGHT_CLASS = 'aspect-auto h-[300px] w-full sm:h-[360px] lg:h-[400px]'
@@ -136,6 +137,7 @@ export function FundReportReturnsChart({
 }: FundReportReturnsChartProps) {
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD)
   const [mode, setMode] = useState<'rolling' | 'absolute'>('rolling')
+  const axis = useResponsiveAxis()
 
   const { data: analysisData, loading: analysisLoading } = useFundAnalysis(
     mode === 'rolling' ? scheme : null,
@@ -157,6 +159,12 @@ export function FundReportReturnsChart({
     [indexedNav, period],
   )
 
+  const rollingTickInterval = useMemo(() => {
+    const count = rollingChartData.length
+    if (count <= 8) return 0
+    return Math.max(1, Math.floor(count / 8))
+  }, [rollingChartData.length])
+
   const periodControl = (
     <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
       <SelectTrigger className="w-[140px]" aria-label="Rolling window">
@@ -174,7 +182,7 @@ export function FundReportReturnsChart({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-border/60 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', CHART_HEADER_CLASS)}>
         <div>
           <h3 className="text-lg font-semibold tracking-tight">Returns comparison</h3>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -186,7 +194,7 @@ export function FundReportReturnsChart({
 
       <Tabs value={mode} onValueChange={(value) => setMode(value as 'rolling' | 'absolute')}>
         <div className="border-b border-border/60 px-4 sm:px-6">
-          <TabsList className="h-10 bg-transparent p-0">
+          <TabsList scrollable className="h-10 bg-transparent p-0">
             <TabsTrigger value="rolling" className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:bg-transparent">
               Rolling returns
             </TabsTrigger>
@@ -204,30 +212,31 @@ export function FundReportReturnsChart({
               No rolling return data for {period}
             </p>
           ) : (
+            <div className={CHART_PANEL_CLASS}>
             <ChartContainer config={rollingConfig} className={CHART_HEIGHT_CLASS}>
-              <LineChart data={rollingChartData} margin={CHART_MARGIN}>
+              <LineChart data={rollingChartData} margin={ROLLING_CHART_MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
                 <XAxis
-                  dataKey="label"
+                  dataKey="shortLabel"
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
-                  interval="preserveStartEnd"
-                  minTickGap={48}
-                  tick={TICK_MD}
-                  angle={-20}
-                  textAnchor="end"
-                  height={64}
+                  interval={rollingTickInterval}
+                  minTickGap={axis.xGap}
+                  tick={axis.tick}
+                  angle={axis.xAngle}
+                  textAnchor={axis.xAnchor}
+                  height={axis.xHeight}
                 >
-                  <Label {...xLabel('Rolling window', -6)} />
+                  <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
                 </XAxis>
                 <YAxis
                   orientation="right"
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
-                  tick={TICK_MD}
+                  tick={axis.tick}
                   tickFormatter={(value) => `${value}%`}
                   domain={Y_DOMAIN}
-                  width={52}
+                  width={axis.yWidth}
                 >
                   <Label {...yLabelRight('Return (%)')} />
                 </YAxis>
@@ -236,15 +245,6 @@ export function FundReportReturnsChart({
                     <RollingReturnTooltip fundName={fundName} benchmarkName={benchmarkName} />
                   }
                   cursor={TOOLTIP_CURSOR}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={40}
-                  formatter={(value) => (
-                    <span className="text-sm text-muted-foreground">
-                      {value === 'fund' ? fundName : benchmarkName}
-                    </span>
-                  )}
                 />
                 <Line
                   type="monotone"
@@ -266,6 +266,26 @@ export function FundReportReturnsChart({
                 />
               </LineChart>
             </ChartContainer>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border/70 pt-3 text-sm dark:border-slate-700/60">
+              <span className="inline-flex max-w-full items-center gap-2">
+                <span
+                  className="inline-block h-0.5 w-6 shrink-0 rounded-full"
+                  style={{ backgroundColor: FUND_COLOR }}
+                />
+                <span className="truncate text-muted-foreground">{fundName}</span>
+              </span>
+              <span className="inline-flex max-w-full items-center gap-2">
+                <span
+                  className="inline-block h-0.5 w-6 shrink-0 rounded-full"
+                  style={{ backgroundColor: BENCHMARK_COLOR }}
+                />
+                <span className="truncate text-muted-foreground">{benchmarkName}</span>
+              </span>
+            </div>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Hover a point for the full rolling window range ({period}).
+            </p>
+            </div>
           )}
         </TabsContent>
 
@@ -277,6 +297,7 @@ export function FundReportReturnsChart({
               Indexed NAV history is not available yet
             </p>
           ) : (
+            <div className={CHART_PANEL_CLASS}>
             <ChartContainer config={absoluteConfig} className={CHART_HEIGHT_CLASS}>
               <LineChart data={absoluteChartData} margin={{ ...CHART_MARGIN, left: 48 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -317,6 +338,7 @@ export function FundReportReturnsChart({
                 />
               </LineChart>
             </ChartContainer>
+            </div>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
             Indexed NAV rebases to 100 at the start of the selected window ({period}).

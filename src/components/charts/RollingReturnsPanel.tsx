@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import {
   getDetailedRollingReturnData,
   CONSISTENCY_BUCKETS,
@@ -25,12 +27,13 @@ import {
 } from '@/lib/analytics/rollingReturnsAnalysis'
 import type { AnalysisInput } from '@/lib/analytics/types'
 import { downsample, formatPercent } from '@/lib/utils'
-import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
+import { CHART_HEADER_CLASS, CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import {
   AXIS_LINE,
+  GRID_STROKE,
   TICK_LINE,
-  TICK_MD,
-  TICK_SM,
   yLabelRight,
   xLabel,
 } from '@/lib/charts/chartAxes'
@@ -167,7 +170,7 @@ function RollingReturnsChart({
   displayBenchName: string
   period: string
 }) {
-  const isSmall = useIsSmallScreen()
+  const axis = useResponsiveAxis()
 
   const tooltipContent = useMemo(
     () => <RollingReturnTooltip fundName={displayFundName} benchmarkName={displayBenchName} />,
@@ -183,15 +186,15 @@ function RollingReturnsChart({
     [displayFundName, displayBenchName],
   )
 
-  const xTick = isSmall ? TICK_SM : TICK_MD
-  const xHeight = isSmall ? 48 : 70
-  const xAngle = isSmall ? 0 : -20
-  const xAnchor = isSmall ? 'middle' : 'end'
-  const xGap = isSmall ? 72 : 48
+  const xTick = axis.tick
+  const xHeight = axis.xHeight
+  const xAngle = axis.xAngle
+  const xAnchor = axis.xAnchor
+  const xGap = axis.xGap
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 shadow-sm">
-      <div className="border-b border-border/60 bg-muted/20 px-6 py-4">
+      <div className={CHART_HEADER_CLASS}>
         <h2 className="text-xl font-semibold tracking-tight">Rolling Returns</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {period} rolling return comparison — hover chart for details
@@ -199,9 +202,10 @@ function RollingReturnsChart({
       </div>
 
       <div className="px-4 py-6 sm:px-6">
+        <div className={CHART_PANEL_CLASS}>
         <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASS}>
           <LineChart data={chartData} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
             <XAxis
               dataKey="label"
               tickLine={TICK_LINE}
@@ -213,7 +217,7 @@ function RollingReturnsChart({
               textAnchor={xAnchor}
               height={xHeight}
             >
-              <Label {...xLabel('Rolling window', isSmall ? -2 : -6)} />
+              <Label {...xLabel('Rolling window', axis.xAngle === 0 ? -2 : -6)} />
             </XAxis>
             <YAxis
               orientation="right"
@@ -222,7 +226,7 @@ function RollingReturnsChart({
               tick={xTick}
               tickFormatter={formatAxisPercent}
               domain={Y_DOMAIN}
-              width={isSmall ? 40 : 52}
+              width={axis.yWidth}
             >
               <Label {...yLabelRight('Return (%)')} />
             </YAxis>
@@ -250,15 +254,16 @@ function RollingReturnsChart({
             />
           </LineChart>
         </ChartContainer>
+        </div>
       </div>
 
-      <div className="overflow-x-auto border-t border-border/60">
+      <ScrollTable minWidth={960} className="border-t border-border/60">
         <Table>
           <TableHeader>
             <TableRow className="border-0 hover:bg-transparent">
               <TableHead
                 rowSpan={2}
-                className={`sticky left-0 z-10 min-w-[220px] text-left ${TABLE_HEAD_CLASS}`}
+                className={cn('text-left', fiStickyLabelCell('z-20 min-w-[220px] normal-case'), TABLE_HEAD_CLASS)}
               >
                 Scheme / Category Name
               </TableHead>
@@ -284,7 +289,7 @@ function RollingReturnsChart({
           <TableBody>
             {analysis.tableRows.map((row, i) => (
               <TableRow key={row.name} className={i % 2 === 0 ? 'bg-background/60' : 'bg-muted/10'}>
-                <TableCell className="sticky left-0 z-10 min-w-[220px] bg-inherit text-left font-medium">
+                <TableCell className={cn(fiStickyLabelCell('min-w-[220px] text-left font-medium'), i % 2 === 0 ? 'bg-background/60' : 'bg-muted/10')}>
                   <div>{row.name}</div>
                   {row.category && (
                     <div className="mt-0.5 text-xs font-normal text-muted-foreground">{row.category}</div>
@@ -301,7 +306,7 @@ function RollingReturnsChart({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollTable>
     </div>
   )
 }

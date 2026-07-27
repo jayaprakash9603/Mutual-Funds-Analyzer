@@ -95,9 +95,17 @@ export const REPORT_SECTIONS: ReportSection[] = SECTION_GROUPS.flatMap((group) =
 type ReportSectionNavProps = {
   activeSection: string
   onSectionSelect: (id: string) => void
+  onOffsetChange?: (offsetPx: number) => void
 }
 
-export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSectionNavProps) {
+const NAVBAR_HEIGHT_PX = 64
+
+export function ReportSectionNav({
+  activeSection,
+  onSectionSelect,
+  onOffsetChange,
+}: ReportSectionNavProps) {
+  const navRef = useRef<HTMLElement>(null)
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -142,6 +150,25 @@ export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSecti
   }, [activeSection])
 
   useEffect(() => {
+    const nav = navRef.current
+    if (!nav || !onOffsetChange) return
+
+    const publishOffset = () => {
+      onOffsetChange(NAVBAR_HEIGHT_PX + nav.offsetHeight + 8)
+    }
+
+    publishOffset()
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publishOffset) : null
+    observer?.observe(nav)
+    window.addEventListener('resize', publishOffset)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', publishOffset)
+    }
+  }, [onOffsetChange])
+
+  useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
     const onScroll = () => {
@@ -167,6 +194,7 @@ export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSecti
 
   return (
     <nav
+      ref={navRef}
       aria-label="Report sections"
       className="sticky top-16 z-20 rounded-2xl border border-border/70 bg-card/90 shadow-sm backdrop-blur-xl"
     >
@@ -183,14 +211,14 @@ export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSecti
 
         <div
           className={cn(
-            'pointer-events-none absolute inset-y-1 left-10 w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
+            'pointer-events-none absolute inset-y-1 left-0 w-6 bg-gradient-to-r from-card to-transparent transition-opacity duration-200 sm:left-10 sm:w-8',
             canScrollLeft ? 'opacity-100' : 'opacity-0',
           )}
           aria-hidden="true"
         />
         <div
           className={cn(
-            'pointer-events-none absolute inset-y-1 right-10 w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
+            'pointer-events-none absolute inset-y-1 right-0 w-6 bg-gradient-to-l from-card to-transparent transition-opacity duration-200 sm:right-10 sm:w-8',
             canScrollRight ? 'opacity-100' : 'opacity-0',
           )}
           aria-hidden="true"
@@ -204,7 +232,7 @@ export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSecti
           {SECTION_GROUPS.map((group, groupIndex) => (
             <div key={group.id} className="flex shrink-0 items-center" role="presentation">
               {groupIndex > 0 && (
-                <div className="mx-1.5 h-6 w-px shrink-0 bg-border/70" aria-hidden="true" />
+                <div className="mx-1.5 hidden h-6 w-px shrink-0 bg-border/70 sm:block" aria-hidden="true" />
               )}
               {group.sections.map((section) => {
                 const Icon = section.icon
@@ -221,7 +249,7 @@ export function ReportSectionNav({ activeSection, onSectionSelect }: ReportSecti
                       onSectionSelect(section.id)
                     }}
                     className={cn(
-                      'inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 px-3.5 text-sm font-medium transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 px-3 text-sm font-medium transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3.5',
                       isActive
                         ? 'text-primary'
                         : 'text-muted-foreground hover:text-foreground',

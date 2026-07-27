@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Label, XAxis, YAxis } from 'recharts'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 import {
   ChartContainer,
   ChartTooltip,
@@ -42,6 +44,7 @@ type MissingBestDaysChartProps = {
 }
 
 export function MissingBestDaysChart({ bestDays, fundName }: MissingBestDaysChartProps) {
+  const isSmall = useIsSmallScreen()
   const chartRows = useMemo(
     () =>
       bestDays.missingScenarios.map((row) => ({
@@ -78,7 +81,7 @@ export function MissingBestDaysChart({ bestDays, fundName }: MissingBestDaysChar
         </p>
       </div>
 
-      <div className="relative w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
+      <div className={`relative w-full ${CHART_PANEL_CLASS}`}>
         <ChartContainer
           config={{ finalValue: { label: 'Final value', color: CHART_COLORS.blue } }}
           className="aspect-auto h-[320px] w-full sm:h-[380px]"
@@ -115,21 +118,41 @@ export function MissingBestDaysChart({ bestDays, fundName }: MissingBestDaysChar
           </BarChart>
         </ChartContainer>
 
-        <div className="pointer-events-none absolute inset-x-4 top-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
-          {chartRows.map((row) => (
-            <div key={row.label} className="text-center text-[10px] leading-tight sm:text-xs">
-              <div className="font-medium tabular-nums">
-                {formatIndianPortfolioValue(row.finalValue)} ({formatPercent(row.cagrPercent, 1)})
+        {!isSmall ? (
+          <div className="pointer-events-none absolute inset-x-4 top-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
+            {chartRows.map((row) => (
+              <div key={row.label} className="text-center text-[10px] leading-tight sm:text-xs">
+                <div className="font-medium tabular-nums">
+                  {formatIndianPortfolioValue(row.finalValue)} ({formatPercent(row.cagrPercent, 1)})
+                </div>
+                {row.lowerByPercent > 0 ? (
+                  <div className="text-destructive">Lower by {formatPercent(row.lowerByPercent, 0)}</div>
+                ) : null}
               </div>
-              {row.lowerByPercent > 0 ? (
-                <div className="text-destructive">Lower by {formatPercent(row.lowerByPercent, 0)}</div>
-              ) : null}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : null}
+
+        {isSmall ? (
+          <ul className="mt-4 grid grid-cols-1 gap-2 border-t border-border/70 pt-4 text-xs dark:border-slate-700/60">
+            {chartRows.map((row) => (
+              <li key={row.label} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="font-medium text-foreground">{row.shortLabel}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatIndianPortfolioValue(row.finalValue)} ({formatPercent(row.cagrPercent, 1)})
+                  {row.lowerByPercent > 0 ? (
+                    <span className="ml-2 text-destructive">
+                      Lower by {formatPercent(row.lowerByPercent, 0)}
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {bestDays.proximityInsight.bestDaysNearWorst > 0 ? (
-          <aside className="mt-4 max-w-md rounded-lg border border-border bg-background/80 p-4 text-sm leading-relaxed sm:ml-auto">
+          <aside className="mt-4 max-w-md rounded-lg border border-border/70 bg-muted/50 p-4 text-sm leading-relaxed dark:border-slate-700/60 dark:bg-slate-900/60 sm:ml-auto">
             <p>
               {bestDays.proximityInsight.bestDaysNearWorst} of the top{' '}
               {bestDays.proximityInsight.topRankLimit} days occurred within two weeks of the worst{' '}

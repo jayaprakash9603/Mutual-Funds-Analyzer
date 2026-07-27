@@ -1,5 +1,8 @@
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { cn, formatPercent } from '@/lib/utils'
+import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import type { FundReportPerformance } from '../../schemas'
+import { ReportInsightCard } from '../layout/ReportInsightCard'
 
 type Insights = FundReportPerformance['calendarYearInsights']
 
@@ -20,9 +23,14 @@ function cellTone(value: number) {
 export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingComparisonTableProps) {
   if (profitBooking.rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        {profitBooking.headline || 'Need at least ten calendar years for profit-booking comparisons.'}
-      </p>
+      <ReportInsightCard
+        title="Never interrupt compounding — profit booking underperforms over long periods"
+        subtitle={`Rolling ${profitBooking.rollingWindowYears}-year windows vs a ${profitBooking.debtAnnualReturnPercent.toFixed(0)}% debt proxy`}
+      >
+        <p className="text-sm text-muted-foreground">
+          {profitBooking.headline || 'Need at least ten calendar years for profit-booking comparisons.'}
+        </p>
+      </ReportInsightCard>
     )
   }
 
@@ -30,32 +38,40 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
     { key: 'outperformanceAt20Percent' as const, label: 'Profit booking @ 20% gains' },
     { key: 'outperformanceAt30Percent' as const, label: 'Profit booking @ 30% gains' },
     { key: 'outperformanceAt50Percent' as const, label: 'Profit booking @ 50% gains' },
-    { key: 'outperformanceAtAllTimeHighPercent' as const, label: 'Profit booking @ all-time highs', highlight: true },
+    {
+      key: 'outperformanceAtAllTimeHighPercent' as const,
+      label: 'Profit booking @ all-time highs',
+      highlight: true,
+    },
   ]
 
+  const callout = profitBooking.headline ? (
+    <p className="rounded-xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100">
+      {profitBooking.headline}
+    </p>
+  ) : null
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-primary">
+    <ReportInsightCard
+      title={
+        <span className="text-emerald-700 dark:text-emerald-400">
           Never interrupt compounding — profit booking underperforms over long periods
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
+        </span>
+      }
+      subtitle={
+        <>
           Rolling {profitBooking.rollingWindowYears}-year windows: buy &amp; hold vs moving to a{' '}
           {profitBooking.debtAnnualReturnPercent.toFixed(0)}% debt proxy after each trigger
-        </p>
-      </div>
-
-      {profitBooking.headline ? (
-        <p className="rounded-xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100">
-          {profitBooking.headline}
-        </p>
-      ) : null}
-
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="min-w-[920px] w-full border-collapse text-sm">
+        </>
+      }
+      callout={callout}
+      footer={profitBooking.methodologyNote ?? undefined}
+    >
+      <ScrollTable minWidth={920} className="rounded-xl border border-border/70 bg-background">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-muted/60">
-              <th className="border border-border px-3 py-2 text-left font-semibold">
+              <th className={cn('border border-border px-3 py-2 text-left font-semibold', fiStickyLabelCell())}>
                 {profitBooking.rollingWindowYears}Y period
               </th>
               <th className="border border-border px-3 py-2 text-right font-semibold">
@@ -86,7 +102,7 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
           <tbody>
             {profitBooking.rows.map((row) => (
               <tr key={row.periodLabel}>
-                <td className="border border-border px-3 py-2 font-medium">{row.periodLabel}</td>
+                <td className={cn('border border-border px-3 py-2 font-medium', fiStickyLabelCell())}>{row.periodLabel}</td>
                 <td className="border border-border px-3 py-2 text-right font-mono tabular-nums">
                   {formatPercent(row.buyHoldCagrPercent, 1)}
                 </td>
@@ -106,11 +122,7 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
             ))}
           </tbody>
         </table>
-      </div>
-
-      {profitBooking.methodologyNote ? (
-        <p className="text-xs leading-relaxed text-muted-foreground">{profitBooking.methodologyNote}</p>
-      ) : null}
-    </div>
+      </ScrollTable>
+    </ReportInsightCard>
   )
 }

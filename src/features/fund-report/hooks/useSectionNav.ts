@@ -10,14 +10,17 @@ export function useSectionNav(sectionIds: string[], offsetPx = REPORT_SECTION_SC
   const lockRef = useRef(false)
   const rafRef = useRef<number | null>(null)
 
-  const scrollToSection = useCallback((id: string) => {
-    if (!scrollToReportSection(id)) return
-    lockRef.current = true
-    setActive(id)
-    window.setTimeout(() => {
-      lockRef.current = false
-    }, 900)
-  }, [])
+  const scrollToSection = useCallback(
+    (id: string) => {
+      if (!scrollToReportSection(id, offsetPx)) return
+      lockRef.current = true
+      setActive(id)
+      window.setTimeout(() => {
+        lockRef.current = false
+      }, 900)
+    },
+    [offsetPx],
+  )
 
   useEffect(() => {
     const ids = idsKey.split('|').filter(Boolean)

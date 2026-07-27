@@ -27,6 +27,9 @@ export const MAX_COMPARE_FUNDS = 5
 /** Tailwind's sm breakpoint, used by the media query hook to pick chart heights. */
 export const MOBILE_BREAKPOINT_PX = 639
 
+/** Tailwind lg minus 1px — tablet portrait/landscape upper bound for layout hooks. */
+export const TABLET_BREAKPOINT_PX = 1023
+
 export const CATEGORIES = [
   { label: 'All', value: 'All' },
   { label: 'Large Cap', value: 'Equity: Large Cap' },

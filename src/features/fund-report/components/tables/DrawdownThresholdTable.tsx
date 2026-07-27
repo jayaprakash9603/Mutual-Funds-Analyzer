@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchDrawdownPeers, type DrawdownPeers } from '../../api'
 import type { FundReport } from '../../schemas'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import {
   FI_TABLE,
   fiBodyCell,
   fiHeaderCell,
   fiMultiplyHeaderCell,
+  fiStickyLabelCell,
 } from '@/components/fundsindia/tableStyles'
 import { cn, formatPercent } from '@/lib/utils'
 
@@ -21,6 +23,20 @@ type DrawdownThresholdTableProps = {
 function formatThresholdLabel(threshold: number) {
   if (threshold === 0) return '< 0%'
   return `< ${threshold}%`
+}
+
+function rowHasData(
+  row: ThresholdRows[number],
+  peerValue: number | null | undefined,
+): boolean {
+  if (row.thresholdPercent === 0) {
+    return true
+  }
+  return (
+    row.fundPercentOfDays > 0 ||
+    row.benchmarkPercentOfDays > 0 ||
+    (peerValue != null && peerValue > 0)
+  )
 }
 
 export function DrawdownThresholdTable({
@@ -50,11 +66,18 @@ export function DrawdownThresholdTable({
       .finally(() => setLoading(false))
   }
 
+  const visibleRows = useMemo(() => {
+    const peerMap = new Map(
+      peers?.thresholdRows.map((r) => [r.thresholdPercent, r.peerMedianPercentOfDays]) ?? [],
+    )
+    return rows.filter((row) => rowHasData(row, peerMap.get(row.thresholdPercent)))
+  }, [rows, peers])
+
   const peerByThreshold = new Map(
     peers?.thresholdRows.map((r) => [r.thresholdPercent, r.peerMedianPercentOfDays]) ?? [],
   )
 
-  if (rows.length === 0) {
+  if (rows.length === 0 || visibleRows.length === 0) {
     return <p className="text-sm text-muted-foreground">No drawdown threshold data available.</p>
   }
 
@@ -65,18 +88,18 @@ export function DrawdownThresholdTable({
         Category peers show the median across funds in the same category (loaded on demand).
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={480} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
         <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th className={fiMultiplyHeaderCell()}>Drawdown from peak</th>
+              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Drawdown from peak</th>
               <th className={fiHeaderCell()}>Fund</th>
               <th className={fiHeaderCell()}>{benchmarkName}</th>
               <th className={fiHeaderCell()}>Category peers (median)</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => {
+            {visibleRows.map((row, index) => {
               const emphasize = row.thresholdPercent === -10 || row.thresholdPercent === -30
               const peerValue = peerByThreshold.get(row.thresholdPercent)
               return (
@@ -87,7 +110,7 @@ export function DrawdownThresholdTable({
                     emphasize && 'ring-1 ring-inset ring-primary/20',
                   )}
                 >
-                  <td className={cn(fiBodyCell(), 'font-medium')}>{formatThresholdLabel(row.thresholdPercent)}</td>
+                  <td className={fiBodyCell(fiStickyLabelCell('font-medium'))}>{formatThresholdLabel(row.thresholdPercent)}</td>
                   <td className={cn(fiBodyCell(), emphasize && 'font-semibold text-red-700 dark:text-red-400')}>
                     {formatPercent(row.fundPercentOfDays, 0)}
                   </td>
@@ -100,7 +123,7 @@ export function DrawdownThresholdTable({
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollTable>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

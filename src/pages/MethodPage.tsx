@@ -1,9 +1,10 @@
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Triangle, CheckCircle2, XCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function MethodPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <PageContainer width="narrow" className="py-10">
       <div className="mb-8 flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
           <Triangle className="h-6 w-6" aria-hidden="true" />
@@ -46,7 +47,7 @@ export function MethodPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 

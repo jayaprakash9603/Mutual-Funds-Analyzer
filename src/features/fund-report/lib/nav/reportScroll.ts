@@ -1,11 +1,14 @@
-/** Matches SectionShell scroll-mt-36 (header + sticky section nav). */
+/** Default offset when nav height has not been measured yet (header + sticky section nav). */
 export const REPORT_SECTION_SCROLL_OFFSET = 144
 
-export function scrollToReportSection(id: string) {
+export function scrollToReportSection(
+  id: string,
+  offsetPx: number = REPORT_SECTION_SCROLL_OFFSET,
+): boolean {
   const el = document.getElementById(id)
   if (!el) return false
 
-  const top = el.getBoundingClientRect().top + window.scrollY - REPORT_SECTION_SCROLL_OFFSET
+  const top = el.getBoundingClientRect().top + window.scrollY - offsetPx
   window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
   return true
 }

@@ -1,7 +1,7 @@
-/** Theme tokens — resolve correctly in both light and dark mode. */
-export const AXIS_STROKE = 'var(--muted-foreground)'
-export const GRID_STROKE = 'var(--border)'
-export const ZERO_LINE_STROKE = 'var(--foreground)'
+/** Theme tokens — resolved from CSS variables in index.css (light + dark). */
+export const AXIS_STROKE = 'var(--chart-axis)'
+export const GRID_STROKE = 'var(--chart-grid-stroke)'
+export const ZERO_LINE_STROKE = 'var(--chart-zero-line)'
 
 export const TICK_SM = { fontSize: 10, fill: AXIS_STROKE }
 export const TICK_MD = { fontSize: 11, fill: AXIS_STROKE }

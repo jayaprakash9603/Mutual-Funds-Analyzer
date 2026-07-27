@@ -6,6 +6,7 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
+import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import {
   AXIS_LINE,
   GRID_STROKE,
@@ -109,7 +110,7 @@ export function AthDeclineOutlookChart({ allTimeHighs, fundName }: AthDeclineOut
         </span>
       </div>
 
-      <div className="relative w-full rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
+      <div className={`relative w-full ${CHART_PANEL_CLASS}`}>
         <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full sm:h-[380px]">
           <LineChart data={chartRows} margin={{ ...MARGIN_LEFT, top: 12, right: 24, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />

@@ -1,7 +1,9 @@
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { cn } from '@/lib/utils'
 import {
   fiBodyCell,
   fiMultiplyHeaderCell,
+  fiStickyLabelCell,
   FI_TABLE,
 } from '@/components/fundsindia/tableStyles'
 import type { MatrixReport } from '../../schemas'
@@ -34,7 +36,7 @@ export function MultiplyProbabilityTable({
     <div className="space-y-4">
       <p className="text-base font-semibold leading-snug text-brand">{table.headline}</p>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
         <table className={FI_TABLE}>
           <thead>
             <tr>
@@ -43,7 +45,7 @@ export function MultiplyProbabilityTable({
               </th>
             </tr>
             <tr>
-              <th className={fiMultiplyHeaderCell('text-left')}>Multiply</th>
+              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Multiply</th>
               {table.holdingYears.map((y) => (
                 <th key={y} className={fiMultiplyHeaderCell()}>
                   {y} Year
@@ -54,7 +56,7 @@ export function MultiplyProbabilityTable({
           <tbody>
             {table.rows.map((row, rowIndex) => (
               <tr key={row.multiply} className={rowIndex % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20'}>
-                <td className={fiBodyCell('text-left font-semibold')}>{row.multiply} times</td>
+                <td className={fiBodyCell(fiStickyLabelCell('font-semibold'))}>{row.multiply} times</td>
                 {row.cells.map((cell) => {
                   const highlighted = isCellHighlighted(row, cell.holdingYears)
                   return (
@@ -73,7 +75,7 @@ export function MultiplyProbabilityTable({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollTable>
 
       <div className="grid gap-3 md:grid-cols-3">
         {table.rows

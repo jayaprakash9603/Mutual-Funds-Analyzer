@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { cn } from '@/lib/utils'
 import type { MatrixReport } from '../../schemas'
 import { trimMatrixToCalculatedValues } from '../../lib/matrix/matrixTableUtils'
@@ -25,8 +26,11 @@ export function HeatMatrix({ data }: { data: MatrixReport }) {
 
 export function HeatMatrixSkeleton() {
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-slate-300/90 bg-white dark:border-slate-600 dark:bg-card">
-      <table className="w-full min-w-[960px] border-collapse text-sm">
+    <ScrollTable
+      minWidth={960}
+      className="w-full rounded-xl border border-slate-300/90 bg-white dark:border-slate-600 dark:bg-card"
+    >
+      <table className="w-full border-collapse text-sm">
         <tbody>
           {Array.from({ length: 3 }, (_, r) => (
             <tr key={`summary-${r}`} className={cn('border-b', GRID_LINE)}>
@@ -67,6 +71,6 @@ export function HeatMatrixSkeleton() {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollTable>
   )
 }

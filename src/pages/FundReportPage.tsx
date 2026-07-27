@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ReportScrollProvider } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/components/layout/ReportSectionNav'
 import { useProgressiveFundReport } from '@/features/fund-report/hooks/useProgressiveFundReport'
 import { useSectionNav } from '@/features/fund-report/hooks/useSectionNav'
+import { REPORT_SECTION_SCROLL_OFFSET } from '@/features/fund-report/lib/nav/reportScroll'
 
 const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 
@@ -15,8 +18,10 @@ export function FundReportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
 
+  const [scrollOffset, setScrollOffset] = useState(REPORT_SECTION_SCROLL_OFFSET)
+
   const report = useProgressiveFundReport(scheme || null)
-  const { activeSection, scrollToSection } = useSectionNav(SECTION_IDS)
+  const { activeSection, scrollToSection } = useSectionNav(SECTION_IDS, scrollOffset)
 
   const selectScheme = (next: string) => {
     setScheme(next)
@@ -37,7 +42,8 @@ export function FundReportPage() {
     )
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-6">
+    <PageContainer width="wide">
+      <ReportScrollProvider offset={scrollOffset}>
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Fund Report</h1>
         <p className="text-muted-foreground">
@@ -49,7 +55,11 @@ export function FundReportPage() {
 
       <FundSelector mode="fund-only" selectedScheme={scheme} onSelectScheme={selectScheme} />
 
-      <ReportSectionNav activeSection={activeSection} onSectionSelect={scrollToSection} />
+      <ReportSectionNav
+        activeSection={activeSection}
+        onSectionSelect={scrollToSection}
+        onOffsetChange={setScrollOffset}
+      />
 
       {showInitialLoading && (
         <div className="space-y-4" aria-busy="true" aria-live="polite">
@@ -90,7 +100,8 @@ export function FundReportPage() {
           assessment={report.assessment}
         />
       )}
-    </div>
+      </ReportScrollProvider>
+    </PageContainer>
   )
 }
 

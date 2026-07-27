@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Info } from 'lucide-react'
+import { useReportScrollOffset } from '../../context/ReportScrollContext'
 import { explainMetric } from '../../lib/nav/metricDictionary'
 
 export function SectionShell({
@@ -15,8 +16,11 @@ export function SectionShell({
   description?: string
   children: ReactNode
 }) {
+  const scrollOffset = useReportScrollOffset()
+  const scrollStyle: CSSProperties = { scrollMarginTop: scrollOffset }
+
   return (
-    <section id={id} className="scroll-mt-36">
+    <section id={id} style={scrollStyle}>
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>{title}</CardTitle>

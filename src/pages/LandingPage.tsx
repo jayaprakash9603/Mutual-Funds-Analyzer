@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ArrowRight, BarChart3, Shield, TrendingUp, Triangle } from 'lucide-react'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AnimatedStockGraph } from '@/components/landing/AnimatedStockGraph'
@@ -28,7 +29,7 @@ export function LandingPage() {
     <div className="relative overflow-hidden">
       <AnimatedStockGraph />
 
-      <section className="relative mx-auto flex min-h-[calc(100dvh-4rem)] max-w-7xl flex-col justify-center px-4 py-16 sm:px-6">
+      <PageContainer width="default" className="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-16">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -83,7 +84,7 @@ export function LandingPage() {
             </Card>
           ))}
         </motion.div>
-      </section>
+      </PageContainer>
     </div>
   )
 }

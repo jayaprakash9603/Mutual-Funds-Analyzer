@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import {
   Table,
   TableBody,
@@ -8,10 +9,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import type { PeerComparison } from '@/features/fund-report/schemas'
 import { CHART_COLORS, TABLE_HEAD_CLASS, TABLE_SUBHEAD_CLASS, cobColor } from '@/lib/charts/chartColors'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 import { formatPercent } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { PeerLongRunAnalysisTable } from './PeerLongRunAnalysisTable'
+import { ReportInsightCard } from '../layout/ReportInsightCard'
 
 interface PeerComparisonTableProps {
   data: PeerComparison | null
@@ -26,6 +31,7 @@ function statColor(value: number, invert = false) {
 }
 
 export function PeerComparisonTable({ data, loading, error }: PeerComparisonTableProps) {
+  const isSmall = useIsSmallScreen()
   if (loading) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-6 py-8 text-sm text-muted-foreground">
@@ -52,30 +58,29 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
-      <div className="border-b border-border/60 bg-muted/20 px-6 py-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h3 className="text-lg font-semibold tracking-tight text-brand">Category peers</h3>
-          <Badge variant="outline" className="border-brand/30 text-brand">
-            {data.periodLabel} rolling windows
-          </Badge>
-        </div>
-        {data.highlights.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {data.highlights.map((highlight) => (
-              <Badge key={highlight} variant="secondary" className="font-normal">
-                {highlight}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </div>
+    <div className="space-y-8">
+      <PeerLongRunAnalysisTable data={data} compact={isSmall} />
 
-      <div className="overflow-x-auto">
+      <ReportInsightCard
+        title="Category peers"
+        subtitle={`${data.periodLabel} rolling windows`}
+        callout={
+          data.highlights.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {data.highlights.map((highlight) => (
+                <Badge key={highlight} variant="secondary" className="font-normal">
+                  {highlight}
+                </Badge>
+              ))}
+            </div>
+          ) : null
+        }
+      >
+      <ScrollTable minWidth={960} className="rounded-xl border border-border/60 bg-background">
         <Table>
           <TableHeader>
             <TableRow className="border-0 hover:bg-transparent">
-              <TableHead rowSpan={2} className={`sticky left-0 z-10 min-w-[240px] text-left ${TABLE_HEAD_CLASS}`}>
+              <TableHead rowSpan={2} className={cn('text-left', fiStickyLabelCell('z-20 min-w-[240px] normal-case'), TABLE_HEAD_CLASS)}>
                 Fund
               </TableHead>
               <TableHead colSpan={4} className={`text-center ${TABLE_HEAD_CLASS}`}>
@@ -109,7 +114,7 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
                   key={peer.scheme}
                   className={cn(stripe, peer.selected && 'ring-1 ring-inset ring-brand/40')}
                 >
-                  <TableCell className={cn('sticky left-0 z-10 min-w-[240px] bg-inherit align-top', stripe)}>
+                  <TableCell className={cn(fiStickyLabelCell('min-w-[240px] align-top'), stripe)}>
                     <div className="flex items-start gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-semibold leading-snug">{peer.scheme}</div>
@@ -148,7 +153,8 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
             })}
           </TableBody>
         </Table>
-      </div>
+      </ScrollTable>
+      </ReportInsightCard>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildContinuousPhaseTimelineModel,
   buildCycleChartModel,
   buildDeclineRecoveryCycles,
   buildIndexedNavTimelineModel,
@@ -65,6 +66,21 @@ describe('declineRecoveryCycles', () => {
     expect(cycles[0]?.declinePercent).toBe(31)
     expect(cycles[0]?.recoveryPercent).toBe(46)
     expect(cycles[0]?.label).toBe('2020')
+  })
+
+  it('builds a continuous phase timeline with declines below zero and upsides above zero', () => {
+    const cycles = buildDeclineRecoveryCycles(phases)
+    const model = buildContinuousPhaseTimelineModel(phases, indexedNav, cycles)
+
+    expect(model.usesRealNav).toBe(true)
+    expect(model.points.length).toBeGreaterThan(6)
+    expect(model.points.some((point) => point.decline != null && point.decline < 0)).toBe(true)
+    expect(model.points.some((point) => point.upside != null && point.upside > 0)).toBe(true)
+    expect(model.bands).toHaveLength(1)
+    expect(model.annotations.length).toBeGreaterThanOrEqual(2)
+    expect(model.markers.length).toBeGreaterThanOrEqual(2)
+    expect(model.markers.some((marker) => marker.tone === 'decline')).toBe(true)
+    expect(model.markers.some((marker) => marker.tone === 'upside')).toBe(true)
   })
 
   it('splits chart points by phase so decline and recovery legs both render', () => {

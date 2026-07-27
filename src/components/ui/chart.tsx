@@ -24,10 +24,10 @@ function useChart() {
   return context
 }
 
-/** Theme-aware hover band for bar/area charts (works in light + dark). */
+/** Theme-aware hover band — uses --chart-tooltip-cursor from index.css. */
 export const CHART_TOOLTIP_CURSOR = {
-  fill: 'var(--muted)',
-  opacity: 0.45,
+  fill: 'var(--chart-tooltip-cursor)',
+  opacity: 1,
 } as const
 
 const ChartContainer = React.forwardRef<
@@ -46,10 +46,10 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          'flex aspect-video justify-center text-xs',
-          '[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground',
-          '[&_.recharts-cartesian-grid_line]:stroke-border',
-          '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted',
+          'flex aspect-video justify-center rounded-lg bg-[var(--chart-surface)] text-xs text-foreground',
+          '[&_.recharts-cartesian-axis-tick_text]:fill-[var(--chart-axis)]',
+          '[&_.recharts-cartesian-grid_line]:stroke-[var(--chart-grid-stroke)]',
+          '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[var(--chart-tooltip-cursor)]',
           className,
         )}
         {...props}

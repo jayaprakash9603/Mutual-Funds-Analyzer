@@ -2,15 +2,15 @@ import { COB_MODERATE, COB_STRONG, VOLATILITY_ELEVATED, VOLATILITY_HIGH } from '
 
 export const CHART_COLORS = {
   /** Mirrors the --brand CSS variable, for SVG fills that cannot use a Tailwind class. */
-  brand: '#1a8354',
-  fund: '#16a34a',
-  benchmark: '#ea580c',
-  amber: '#f59e0b',
-  violet: '#8b5cf6',
-  red: '#dc2626',
-  blue: '#2563eb',
-  muted: '#94a3b8',
-  track: '#e2e8f0',
+  brand: '#34d399',
+  fund: '#34d399',
+  benchmark: '#fb923c',
+  amber: '#fbbf24',
+  violet: '#a78bfa',
+  red: '#f87171',
+  blue: '#3b82f6',
+  muted: '#64748b',
+  track: '#1e293b',
 } as const
 
 export const CHART_SERIES = [

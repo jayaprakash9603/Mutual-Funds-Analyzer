@@ -5,6 +5,7 @@ import type { AnalysisInput, RollingReturnRow } from './types'
 
 export interface RollingReturnChartPoint {
   label: string
+  shortLabel: string
   tooltipRange: string
   fund: number
   benchmark: number
@@ -81,6 +82,10 @@ function formatAxisLabel(start: Date, end: Date) {
   return `${format(start, 'MMM yyyy')} to ${format(end, 'MMM yyyy')}`
 }
 
+function formatShortAxisLabel(end: Date) {
+  return format(end, 'MMM yyyy')
+}
+
 function buildChartPoints(fund: RollingReturnRow[], benchmarkReturns: Map<string, number>) {
   return fund
     .map((row) => {
@@ -91,6 +96,7 @@ function buildChartPoints(fund: RollingReturnRow[], benchmarkReturns: Map<string
 
       return {
         label: formatAxisLabel(start, end),
+        shortLabel: formatShortAxisLabel(end),
         tooltipRange: formatRange(start, end),
         fund: row.scheme_rolling_returns,
         benchmark: bench,

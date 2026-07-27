@@ -66,6 +66,7 @@ import {
   yLabel,
 } from '@/lib/charts/chartAxes'
 import { CHART_COLORS, cobColor, signedReturnColor } from '@/lib/charts/chartColors'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { ChartShell, chartHeightForGuide } from '@/components/charts/ChartShell'
 
 const lineConfig = {
@@ -156,6 +157,9 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
     consistency: consistencyData,
   } = metricData
 
+  const axis = useResponsiveAxis()
+  const denseAxis = useResponsiveAxis({ dense: true })
+
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <ChartShell guide={CHART_GUIDES.rollingComparison} loading={loading}>
@@ -165,7 +169,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
               <Label {...xLabel('Rolling window', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -222,7 +226,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
               <Label {...xLabel('Date', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -248,7 +252,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Entity', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Alpha (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -264,7 +268,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis type="number" dataKey="risk" name="Risk" unit="%" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Risk (%)', -4)} />
             </XAxis>
-            <YAxis type="number" dataKey="return" name="Return" unit="%" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+            <YAxis type="number" dataKey="return" name="Return" unit="%" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ZAxis type="number" dataKey="size" range={SCATTER_BUBBLE_RANGE} />
@@ -281,7 +285,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
               <Label {...xLabel('Date', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Drawdown (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -329,10 +333,10 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
         <ChartContainer config={heatmapConfig} className={chartHeightForGuide(CHART_GUIDES.monthlyHeatmap)}>
           <BarChart data={heatmapData} margin={MARGIN_X}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis dataKey="month" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={-45} textAnchor="end" height={60} interval={DENSE_TICK_INTERVAL} tick={TICK_MD}>
-              <Label {...xLabel('Month', -8)} />
+            <XAxis dataKey="month" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={denseAxis.xAngle} textAnchor={denseAxis.xAnchor} height={denseAxis.xHeight} interval={DENSE_TICK_INTERVAL} tick={denseAxis.tick}>
+              <Label {...xLabel('Month', denseAxis.xAngle === 0 ? -4 : -8)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent format="percent" />} />
@@ -352,7 +356,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="year" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Year', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -370,7 +374,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
               <Label {...xLabel('Rolling window', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Return (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -386,7 +390,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Metric', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Contribution (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -402,7 +406,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Metric', -4)} />
             </XAxis>
-            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Score')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -418,7 +422,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="name" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} height={50}>
               <Label {...xLabel('Risk level', -4)} />
             </XAxis>
-            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+            <YAxis domain={DOMAIN_0_100} tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Score')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -438,7 +442,7 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
             <XAxis dataKey="date" tickLine={TICK_LINE} axisLine={AXIS_LINE} minTickGap={40} tick={TICK_MD} height={50}>
               <Label {...xLabel('Date', -4)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} unit="%" tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Volatility (%)')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -451,10 +455,10 @@ export function ChartsGrid({ input, result, loading }: ChartsGridProps) {
         <ChartContainer config={histogramConfig} className={chartHeightForGuide(CHART_GUIDES.distribution)}>
           <BarChart data={histogramData} margin={MARGIN_X}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis dataKey="range" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={-45} textAnchor="end" height={60} interval={DENSE_TICK_INTERVAL} tick={TICK_MD}>
-              <Label {...xLabel('Return range (%)', -8)} />
+            <XAxis dataKey="range" tickLine={TICK_LINE} axisLine={AXIS_LINE} angle={denseAxis.xAngle} textAnchor={denseAxis.xAnchor} height={denseAxis.xHeight} interval={DENSE_TICK_INTERVAL} tick={denseAxis.tick}>
+              <Label {...xLabel('Return range (%)', denseAxis.xAngle === 0 ? -4 : -8)} />
             </XAxis>
-            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={TICK_MD} width={52}>
+            <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick} width={axis.yWidth}>
               <Label {...yLabel('Frequency')} />
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
