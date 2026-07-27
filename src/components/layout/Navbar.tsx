@@ -59,11 +59,8 @@ export function Navbar() {
           <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary shadow-inner ring-1 ring-primary/15 transition-transform duration-200 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
             <BarChart3 className="size-5" aria-hidden="true" />
           </div>
-          <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-sm font-semibold leading-tight tracking-tight">Golden Triangle</p>
-            <p className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Analyzer
-            </p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-tight tracking-tight sm:text-base">Analyzer</p>
           </div>
         </Link>
 

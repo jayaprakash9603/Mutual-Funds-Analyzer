@@ -1,6 +1,9 @@
 package in.goldentriangle.mfa.application.compare;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import in.goldentriangle.mfa.adapter.out.persistence.mapper.PeerSnapshotMapper;
 import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.config.properties.AnalyticsProperties;
 import in.goldentriangle.mfa.config.properties.UpstreamProperties;
@@ -10,6 +13,8 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalc
 import in.goldentriangle.mfa.domain.model.AnalysisInput;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;
 import in.goldentriangle.mfa.domain.model.FundMetrics;
+import in.goldentriangle.mfa.domain.model.PeerComparisonSnapshot;
+import in.goldentriangle.mfa.domain.model.PeerFundSnapshot;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
@@ -18,6 +23,8 @@ import in.goldentriangle.mfa.domain.model.report.PeerComparisonReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.port.in.GetPeerComparisonUseCase;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
+import in.goldentriangle.mfa.domain.port.out.PeerComparisonSnapshotPort;
+import in.goldentriangle.mfa.domain.port.out.PeerFundSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.RollingReturnsPort;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -32,51 +39,99 @@ import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
 public class PeerComparisonService implements GetPeerComparisonUseCase {
 
-    private static final int MAX_PEERS = 10;
+    public static final int PEER_SCHEMA_VERSION = 1;
+
     private static final List<String> LONG_RUN_HORIZONS = List.of(
             "1 Year", "3 Year", "5 Year", "10 Year", "15 Year", "20 Year");
 
     private final RollingReturnsPort rollingReturnsPort;
     private final NavHistoryPort navHistoryPort;
     private final PeerDiscoveryService peerDiscoveryService;
+    private final PeerFundSnapshotPort peerFundSnapshotPort;
+    private final PeerComparisonSnapshotPort peerComparisonSnapshotPort;
     private final FeatureGuard featureGuard;
     private final UpstreamProperties upstreamProperties;
     private final MetricsCalculator metricsCalculator;
     private final TrailingReturnsCalculator trailingReturnsCalculator;
+    private final ObjectMapper objectMapper;
     private final Executor upstreamExecutor;
+    private final Executor computeExecutor;
+    private final SingleFlightCoordinator singleFlightCoordinator;
+    private final Clock clock;
+    private final Set<String> refreshingKeys = ConcurrentHashMap.newKeySet();
 
     public PeerComparisonService(
             RollingReturnsPort rollingReturnsPort,
             NavHistoryPort navHistoryPort,
             PeerDiscoveryService peerDiscoveryService,
+            PeerFundSnapshotPort peerFundSnapshotPort,
+            PeerComparisonSnapshotPort peerComparisonSnapshotPort,
             FeatureGuard featureGuard,
             AnalyticsProperties analyticsProperties,
             UpstreamProperties upstreamProperties,
             Clock clock,
             TrailingReturnsCalculator trailingReturnsCalculator,
-            @Qualifier("upstreamExecutor") Executor upstreamExecutor) {
+            ObjectMapper objectMapper,
+            @Qualifier("upstreamExecutor") Executor upstreamExecutor,
+            @Qualifier("computeExecutor") Executor computeExecutor,
+            SingleFlightCoordinator singleFlightCoordinator) {
         this.rollingReturnsPort = rollingReturnsPort;
         this.navHistoryPort = navHistoryPort;
         this.peerDiscoveryService = peerDiscoveryService;
+        this.peerFundSnapshotPort = peerFundSnapshotPort;
+        this.peerComparisonSnapshotPort = peerComparisonSnapshotPort;
         this.featureGuard = featureGuard;
         this.upstreamProperties = upstreamProperties;
         this.trailingReturnsCalculator = trailingReturnsCalculator;
+        this.objectMapper = objectMapper;
+        this.upstreamExecutor = upstreamExecutor;
+        this.computeExecutor = computeExecutor;
+        this.singleFlightCoordinator = singleFlightCoordinator;
+        this.clock = clock;
         this.metricsCalculator = new MetricsCalculator(
                 analyticsProperties.riskFreeRate(), analyticsProperties.tradingDays(), clock);
-        this.upstreamExecutor = upstreamExecutor;
     }
 
     @Override
     public PeerComparisonReport compare(String scheme, String category) {
         featureGuard.require(FeatureKeys.ANALYSIS_PEER_COMPARISON);
 
+        String normalizedCategory = normalizeCategory(category);
+        String startDate = upstreamProperties.defaultStartDate();
+        String flightKey = comparisonKey(scheme, normalizedCategory, startDate);
+
+        return singleFlightCoordinator.run(flightKey, () -> loadComparison(scheme, normalizedCategory, startDate));
+    }
+
+    private PeerComparisonReport loadComparison(String scheme, String category, String startDate) {
+        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+        Optional<PeerComparisonSnapshot> stored =
+                peerComparisonSnapshotPort.find(scheme, category, startDate);
+
+        if (stored.isPresent() && stored.get().schemaVersion() == PEER_SCHEMA_VERSION) {
+            PeerComparisonReport report = PeerSnapshotMapper.readComparisonReport(stored.get(), objectMapper);
+            if (isFresh(stored.get().watermarkNavDate(), liveWatermark)) {
+                return report;
+            }
+            scheduleRefresh(scheme, category, startDate);
+            return report;
+        }
+
+        return materializeComparison(scheme, category, startDate);
+    }
+
+    private PeerComparisonReport materializeComparison(String scheme, String category, String startDate) {
         List<String> peerNames = peerDiscoveryService.findPeers(scheme, category);
 
         List<String> schemes = new ArrayList<>(peerNames.size() + 1);
@@ -85,25 +140,62 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
         List<CompletableFuture<PeerComparisonReport.PeerRow>> futures = schemes.stream()
                 .map(name -> CompletableFuture.supplyAsync(
-                        () -> buildRow(name, name.equals(scheme)),
+                        () -> resolvePeerRow(name, name.equals(scheme), startDate),
                         upstreamExecutor))
                 .toList();
 
         List<PeerComparisonReport.PeerRow> rows = futures.stream()
                 .map(CompletableFuture::join)
-                .filter(row -> row != null)
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparingDouble(PeerComparisonReport.PeerRow::average).reversed())
                 .toList();
 
         List<String> highlights = buildHighlights(rows);
-        PeerComparisonReport.LongRunAnalysis longRunAnalysis = buildLongRunAnalysis(rows, category);
-        return new PeerComparisonReport(rows, highlights, Period.Labels.FIVE_YEAR, longRunAnalysis);
+        PeerComparisonReport.LongRunAnalysis longRunAnalysis = buildLongRunAnalysis(rows, category, startDate);
+        PeerComparisonReport report =
+                new PeerComparisonReport(rows, highlights, Period.Labels.FIVE_YEAR, longRunAnalysis);
+
+        persistComparison(scheme, category, startDate, peerNames, report);
+        return report;
     }
 
-    private PeerComparisonReport.PeerRow buildRow(String schemeName, boolean selected) {
+    private PeerComparisonReport.PeerRow resolvePeerRow(
+            String schemeName,
+            boolean selected,
+            String startDate) {
+        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(schemeName);
+        Optional<PeerFundSnapshot> cached = peerFundSnapshotPort.find(schemeName, startDate);
+
+        if (cached.isPresent() && cached.get().schemaVersion() == PEER_SCHEMA_VERSION) {
+            if (isFresh(cached.get().watermarkNavDate(), liveWatermark)) {
+                PeerComparisonReport.PeerRow row =
+                        PeerSnapshotMapper.readFundRow(cached.get(), objectMapper);
+                return withSelected(row, selected);
+            }
+        }
+
+        PeerComparisonReport.PeerRow row = buildRowParallel(schemeName, selected, startDate);
+        if (row != null) {
+            persistFundRow(schemeName, startDate, row, liveWatermark.orElse(null), cached);
+        }
+        return row;
+    }
+
+    private PeerComparisonReport.PeerRow buildRowParallel(
+            String schemeName,
+            boolean selected,
+            String startDate) {
         try {
-            RollingReturnsData data = rollingReturnsPort.fetch(new AnalysisQuery(
-                    schemeName, Period.FIVE_YEAR, upstreamProperties.defaultStartDate()));
+            AnalysisQuery query = new AnalysisQuery(schemeName, Period.FIVE_YEAR, startDate);
+
+            CompletableFuture<RollingReturnsData> rollingFuture = CompletableFuture.supplyAsync(
+                    () -> rollingReturnsPort.fetch(query), upstreamExecutor);
+            CompletableFuture<NavHistory> navFuture = CompletableFuture.supplyAsync(
+                    () -> navHistoryPort.fetch(schemeName, startDate), upstreamExecutor);
+
+            RollingReturnsData data = rollingFuture.join();
+            NavHistory history = navFuture.join();
+
             List<Double> returns = data.fund().stream()
                     .map(RollingReturnRow::schemeRollingReturns)
                     .toList();
@@ -127,15 +219,14 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                     metrics.maxDrawdown(),
                     metrics.consistencyScore(),
                     selected,
-                    buildHorizonReturns(schemeName));
+                    buildHorizonReturnsFromHistory(history));
         } catch (RuntimeException ignored) {
             return null;
         }
     }
 
-    private List<PeerComparisonReport.HorizonReturn> buildHorizonReturns(String schemeName) {
+    private List<PeerComparisonReport.HorizonReturn> buildHorizonReturnsFromHistory(NavHistory history) {
         try {
-            NavHistory history = navHistoryPort.fetch(schemeName, upstreamProperties.defaultStartDate());
             TrailingReturnsReport trailing = trailingReturnsCalculator.compute(history);
             Map<String, TrailingReturnsReport.PeriodReturn> byLabel = trailing.periods().stream()
                     .collect(Collectors.toMap(
@@ -163,25 +254,25 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
     private PeerComparisonReport.LongRunAnalysis buildLongRunAnalysis(
             List<PeerComparisonReport.PeerRow> rows,
-            String category) {
+            String category,
+            String startDate) {
         String categoryLabel = category == null || category.isBlank() || "All".equals(category)
                 ? "Category peers"
                 : category;
 
-        Instant asOf = rows.stream()
+        String asOfDate = rows.stream()
                 .filter(PeerComparisonReport.PeerRow::selected)
                 .findFirst()
-                .flatMap(row -> latestNavDate(row.scheme()))
-                .orElseGet(() -> rows.stream()
+                .flatMap(row -> peerFundSnapshotPort.find(row.scheme(), startDate)
+                        .map(PeerFundSnapshot::watermarkNavDate)
+                        .or(() -> navHistoryPort.latestNavWatermark(row.scheme())))
+                .or(() -> rows.stream()
                         .findFirst()
-                        .flatMap(row -> latestNavDate(row.scheme()))
-                        .orElse(null));
-
-        String asOfDate = asOf == null
-                ? ""
-                : DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH)
+                        .flatMap(row -> navHistoryPort.latestNavWatermark(row.scheme())))
+                .map(instant -> DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH)
                         .withZone(ZoneOffset.UTC)
-                        .format(asOf);
+                        .format(instant))
+                .orElse("");
 
         List<Double> twentyYearCagrs = new ArrayList<>();
         List<Double> twentyYearMultiples = new ArrayList<>();
@@ -209,15 +300,100 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                 maxOrNull(twentyYearMultiples));
     }
 
-    private java.util.Optional<Instant> latestNavDate(String schemeName) {
-        try {
-            NavHistory history = navHistoryPort.fetch(schemeName, upstreamProperties.defaultStartDate());
-            return history.fundNav().isEmpty()
-                    ? java.util.Optional.empty()
-                    : java.util.Optional.of(history.lastNavDate());
-        } catch (RuntimeException ignored) {
-            return java.util.Optional.empty();
+    private void persistFundRow(
+            String schemeName,
+            String startDate,
+            PeerComparisonReport.PeerRow row,
+            Instant watermark,
+            Optional<PeerFundSnapshot> existing) {
+        PeerComparisonReport.PeerRow cachePayload = withSelected(row, false);
+        peerFundSnapshotPort.save(new PeerFundSnapshot(
+                schemeName,
+                startDate,
+                PeerSnapshotMapper.writeJson(cachePayload, objectMapper),
+                watermark,
+                clock.instant(),
+                PEER_SCHEMA_VERSION,
+                existing.map(PeerFundSnapshot::version).orElse(0L)));
+    }
+
+    private void persistComparison(
+            String scheme,
+            String category,
+            String startDate,
+            List<String> peerNames,
+            PeerComparisonReport report) {
+        Instant watermark = navHistoryPort.latestNavWatermark(scheme).orElse(null);
+        Optional<PeerComparisonSnapshot> existing =
+                peerComparisonSnapshotPort.find(scheme, category, startDate);
+
+        peerComparisonSnapshotPort.save(new PeerComparisonSnapshot(
+                scheme,
+                category,
+                startDate,
+                PeerSnapshotMapper.writeJson(peerNames, objectMapper),
+                PeerSnapshotMapper.writeJson(report, objectMapper),
+                watermark,
+                clock.instant(),
+                PEER_SCHEMA_VERSION,
+                existing.map(PeerComparisonSnapshot::version).orElse(0L)));
+    }
+
+    private void scheduleRefresh(String scheme, String category, String startDate) {
+        String key = refreshKey(scheme, category, startDate);
+        if (!refreshingKeys.add(key)) {
+            return;
         }
+        computeExecutor.execute(() -> {
+            try {
+                singleFlightCoordinator.run(key, () -> {
+                    materializeComparison(scheme, category, startDate);
+                    return null;
+                });
+            } finally {
+                refreshingKeys.remove(key);
+            }
+        });
+    }
+
+    private static boolean isFresh(Instant storedWatermark, Optional<Instant> liveWatermark) {
+        if (storedWatermark == null) {
+            return false;
+        }
+        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    }
+
+    private static PeerComparisonReport.PeerRow withSelected(
+            PeerComparisonReport.PeerRow row,
+            boolean selected) {
+        return new PeerComparisonReport.PeerRow(
+                row.scheme(),
+                row.average(),
+                row.maximum(),
+                row.minimum(),
+                row.stdDev(),
+                row.cob(),
+                row.totalRecords(),
+                row.sharpe(),
+                row.maxDrawdown(),
+                row.consistencyScore(),
+                selected,
+                row.horizonReturns());
+    }
+
+    private static String normalizeCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return "All";
+        }
+        return category.trim();
+    }
+
+    private static String comparisonKey(String scheme, String category, String startDate) {
+        return "peer-comparison:" + scheme + ":" + category + ":" + startDate;
+    }
+
+    private static String refreshKey(String scheme, String category, String startDate) {
+        return "peer-refresh:" + scheme + ":" + category + ":" + startDate;
     }
 
     private static Double minOrNull(List<Double> values) {

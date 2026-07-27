@@ -19,6 +19,7 @@ dist-ssr
 
 # Test and automation artifacts
 .playwright-mcp
+.playwright-cli
 .screenshots
 coverage/
 
@@ -40,4 +41,3 @@ coverage/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/data/
-

@@ -27,6 +27,9 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --color-brand: var(--brand);
+  --color-headline-ink: var(--headline-ink);
+  --color-headline-accent: var(--headline-accent);
+  --color-headline-alert: var(--headline-alert);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -39,6 +42,14 @@
   --radius: 0.75rem;
   /* Report green used by the rolling-returns tables and headings. */
   --brand: #1a8354;
+  /* Presentation one-liners: deck ink #0456a0, highlight #00b050, alert #c00000. */
+  --headline-ink: #0a4d8f;
+  --headline-accent: #00874a;
+  --headline-alert: #b91c1c;
+  --headline-accent-soft: rgba(0, 176, 80, 0.14);
+  --headline-alert-soft: rgba(192, 0, 0, 0.1);
+  --headline-surface: rgba(4, 86, 160, 0.05);
+  --headline-rule: rgba(4, 86, 160, 0.22);
   --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.02 240);
   --card: oklch(1 0 0);
@@ -82,6 +93,13 @@
 }
 
 .dark {
+  --headline-ink: #cadff7;
+  --headline-accent: #3ddc84;
+  --headline-alert: #fca5a5;
+  --headline-accent-soft: rgba(61, 220, 132, 0.14);
+  --headline-alert-soft: rgba(252, 165, 165, 0.12);
+  --headline-surface: rgba(125, 179, 240, 0.07);
+  --headline-rule: rgba(125, 179, 240, 0.24);
   --background: oklch(0.16 0.015 240);
   --foreground: oklch(0.95 0.01 240);
   --card: oklch(0.22 0.02 240 / 0.65);

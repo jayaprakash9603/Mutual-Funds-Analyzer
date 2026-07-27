@@ -8,7 +8,9 @@ import {
 } from '@/components/fundsindia/tableStyles'
 import type { MatrixReport } from '../../schemas'
 import { buildMultiplyProbability, isCellHighlighted } from '../../lib/matrix/multiplyProbability'
+import { buildMultiplyHeadline, shortFundName } from '../../lib/headlines/sectionHeadlines'
 import { trimMatrixToCalculatedValues } from '../../lib/matrix/matrixTableUtils'
+import { SectionHeadline } from '../layout/StatHeadline'
 
 export function MultiplyProbabilityTable({
   matrix,
@@ -34,7 +36,7 @@ export function MultiplyProbabilityTable({
 
   return (
     <div className="space-y-4">
-      <p className="text-base font-semibold leading-snug text-brand">{table.headline}</p>
+      <SectionHeadline headline={buildMultiplyHeadline(table, fundName)} />
 
       <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
         <table className={FI_TABLE}>
@@ -84,15 +86,16 @@ export function MultiplyProbabilityTable({
           .map((row) => (
             <div
               key={row.multiply}
-              className="rounded-xl border border-dashed border-slate-400/70 bg-slate-50/50 px-4 py-3 text-sm leading-relaxed dark:border-slate-600 dark:bg-muted/20"
+              className="rounded-xl border-2 border-dashed border-[var(--headline-rule)] bg-[var(--headline-surface)] px-4 py-3 text-sm font-semibold leading-relaxed text-headline-ink sm:text-base"
             >
-              <span className="font-bold text-brand">{Math.round(row.calloutPercent!)}%</span>
-              {' of the times '}
-              {fundName} reached{' '}
-              <strong>{row.multiply}x</strong> in{' '}
-              <strong>
+              <span className="text-headline-accent">
+                {Math.round(row.calloutPercent!)}% of the times
+              </span>{' '}
+              {shortFundName(fundName)} reached{' '}
+              <span className="text-headline-accent">{row.multiply}x</span> in{' '}
+              <span className="text-headline-accent">
                 {row.highlightYears![0]}-{row.highlightYears![1]} years
-              </strong>
+              </span>
               .
             </div>
           ))}

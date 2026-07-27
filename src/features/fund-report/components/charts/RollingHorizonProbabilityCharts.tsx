@@ -150,10 +150,6 @@ function HorizonProbabilityCard({
   rows: HorizonProbabilityRow[]
   metric: HorizonProbabilityMetric
 }) {
-  if (rows.length === 0) {
-    return null
-  }
-
   const maxY = Math.max(...rows.map((row) => row.value), 5)
   const yDomainMax = Math.ceil(maxY * 1.12)
   const windowCount = rows.reduce((max, row) => Math.max(max, row.count), 0)
@@ -177,6 +173,10 @@ function HorizonProbabilityCard({
       )
     }
   }, [metric, rows, yDomainMax])
+
+  if (rows.length === 0) {
+    return null
+  }
 
   return (
     <ReportInsightCard

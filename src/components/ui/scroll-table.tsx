@@ -4,15 +4,10 @@ import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 
 type ScrollTableProps = {
   children: ReactNode
+  /** CSS length. Numbers are treated as px. Forces horizontal scroll below this width. */
   minWidth?: number | string
   className?: string
   hint?: string
-}
-
-function toMinWidthClass(minWidth: number | string | undefined): string | undefined {
-  if (minWidth == null) return undefined
-  if (typeof minWidth === 'number') return `min-w-[${minWidth}px]`
-  return minWidth.startsWith('min-w-') ? minWidth : `min-w-[${minWidth}]`
 }
 
 export function ScrollTable({
@@ -49,8 +44,6 @@ export function ScrollTable({
     }
   }, [updateScrollState, children])
 
-  const minWidthClass = toMinWidthClass(minWidth)
-
   return (
     <div className={cn('relative', className)}>
       <div
@@ -58,7 +51,9 @@ export function ScrollTable({
         onScroll={updateScrollState}
         className="scrollbar-thin w-full overflow-x-auto"
       >
-        <div className={cn('inline-block min-w-full align-top', minWidthClass)}>{children}</div>
+        <div className="w-full" style={minWidth == null ? undefined : { minWidth }}>
+          {children}
+        </div>
       </div>
 
       {overflows && !atEnd ? (

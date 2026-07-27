@@ -84,7 +84,7 @@ analytics:
   refreshAfter: 7d
   computePoolSize: # defaults to availableProcessors (minimum 2)
   computeQueueCapacity: 64
-  upstreamPoolSize: 8
+  upstreamPoolSize: 16
   upstreamQueueCapacity: 64
   matrixPoolSize: 6
   matrixQueueCapacity: 24

@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.application.compare;
 
+import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.SchemeCatalogPort;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +18,20 @@ public class PeerDiscoveryService {
     private static final Pattern PAYOUT_PLAN = Pattern.compile("(?i)\\b(idcw|dividend|payout|bonus)\\b");
 
     private final SchemeCatalogPort schemeCatalogPort;
+    private final CachePort cachePort;
 
-    public PeerDiscoveryService(SchemeCatalogPort schemeCatalogPort) {
+    public PeerDiscoveryService(SchemeCatalogPort schemeCatalogPort, CachePort cachePort) {
         this.schemeCatalogPort = schemeCatalogPort;
+        this.cachePort = cachePort;
     }
 
     public List<String> findPeers(String scheme, String category) {
         String keywords = categoryKeywords(category);
+        String cacheKey = "peer-discovery:" + scheme + ":" + keywords;
+        return cachePort.getOrLoad(cacheKey, List.class, () -> discoverPeers(scheme, keywords));
+    }
+
+    private List<String> discoverPeers(String scheme, String keywords) {
         List<String> candidates = searchQuietly(keywords);
         if (candidates.isEmpty()) {
             candidates = searchQuietly(lastTwoWords(keywords));

@@ -29,7 +29,6 @@ import {
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReport } from '../../schemas'
 import {
-  buildAnnualStressHeadline,
   computeAnnualStressStats,
   type CalendarYearRow,
 } from '../../lib/stress/annualStressAnalysis'
@@ -71,7 +70,6 @@ export function AnnualStressAnalysis({
   }, [calendarYears, dataTo, maxYears])
 
   const stats = useMemo(() => computeAnnualStressStats(rows), [rows])
-  const headline = useMemo(() => buildAnnualStressHeadline(stats, fundName), [stats, fundName])
 
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">No calendar-year history available.</p>
@@ -79,26 +77,21 @@ export function AnnualStressAnalysis({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-sky-200/80 bg-sky-50/60 px-5 py-4 dark:border-sky-900/50 dark:bg-sky-950/20">
-        <p className="text-sm font-semibold leading-relaxed text-sky-950 dark:text-sky-100">
-          {headline}
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <StatPill
-            label="Years with ≥10% intra-year fall"
-            value={`${stats.yearsWithTenPlusDrawdown}/${stats.totalYears}`}
-          />
-          <StatPill
-            label="Years ending positive"
-            value={`${stats.positiveYears}/${stats.totalYears} (${stats.positiveYearRate.toFixed(0)}%)`}
-            tone="good"
-          />
-          <StatPill
-            label="Average intra-year drawdown"
-            value={formatPercent(-stats.averageDrawdown)}
-            tone="warn"
-          />
-        </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatPill
+          label="Years with ≥10% intra-year fall"
+          value={`${stats.yearsWithTenPlusDrawdown}/${stats.totalYears}`}
+        />
+        <StatPill
+          label="Years ending positive"
+          value={`${stats.positiveYears}/${stats.totalYears} (${stats.positiveYearRate.toFixed(0)}%)`}
+          tone="good"
+        />
+        <StatPill
+          label="Average intra-year drawdown"
+          value={formatPercent(-stats.averageDrawdown)}
+          tone="warn"
+        />
       </div>
 
       <div className="grid gap-0 overflow-hidden rounded-xl border border-border/70 bg-[var(--chart-surface)] shadow-inner lg:grid-cols-[minmax(0,1fr)_220px]">

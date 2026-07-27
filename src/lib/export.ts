@@ -4,7 +4,7 @@ export async function exportAnalysisPdf(result: GoldenTriangleResult, insights: 
   const { default: jsPDF } = await import('jspdf')
   const doc = new jsPDF()
   doc.setFontSize(18)
-  doc.text('Golden Triangle Analysis Report', 20, 20)
+  doc.text('Analyzer — Fund Analysis Report', 20, 20)
   doc.setFontSize(12)
   doc.text(`Fund: ${result.fundName}`, 20, 35)
   doc.text(`Benchmark: ${result.benchmarkName}`, 20, 45)
@@ -26,10 +26,10 @@ export async function exportAnalysisPdf(result: GoldenTriangleResult, insights: 
 
 export async function shareAnalysis(result: GoldenTriangleResult) {
   const url = `${window.location.origin}/dashboard?scheme=${encodeURIComponent(result.fundName)}`
-  const text = `Golden Triangle Analysis: ${result.fundName} — ${result.passCount}/3 ${result.overallRating}`
+  const text = `Analyzer: ${result.fundName} — ${result.passCount}/3 ${result.overallRating}`
 
   if (navigator.share) {
-    await navigator.share({ title: 'Golden Triangle Analysis', text, url })
+    await navigator.share({ title: 'Analyzer', text, url })
     return
   }
 

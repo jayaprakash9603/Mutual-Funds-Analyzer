@@ -3,7 +3,9 @@ import { INSIDE_CARD_TABLE_CLASS } from '@/lib/charts/chartSurface'
 import { cn, formatPercent } from '@/lib/utils'
 import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import type { FundReportPerformance } from '../../schemas'
+import { buildProfitBookingHeadline } from '../../lib/headlines/sectionHeadlines'
 import { ReportInsightCard } from '../layout/ReportInsightCard'
+import { SectionHeadline } from '../layout/StatHeadline'
 
 type Insights = FundReportPerformance['calendarYearInsights']
 
@@ -46,11 +48,14 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
     },
   ]
 
-  const callout = profitBooking.headline ? (
-    <p className="rounded-lg border border-sky-200/70 bg-sky-50/80 px-3 py-2.5 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100 sm:px-4 sm:py-3">
-      {profitBooking.headline}
-    </p>
-  ) : null
+  const callout = (
+    <>
+      <SectionHeadline size="md" headline={buildProfitBookingHeadline(profitBooking)} />
+      {profitBooking.headline ? (
+        <p className="text-sm leading-relaxed text-muted-foreground">{profitBooking.headline}</p>
+      ) : null}
+    </>
+  )
 
   return (
     <ReportInsightCard

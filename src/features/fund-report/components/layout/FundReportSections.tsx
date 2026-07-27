@@ -50,6 +50,22 @@ import type {
 } from '../../schemas'
 import { AnnualStressAnalysis } from './AnnualStressAnalysis'
 import { ReportInsightCard } from './ReportInsightCard'
+import { SectionHeadline } from './StatHeadline'
+import {
+  buildAllTimeHighsHeadline,
+  buildBearMarketHeadline,
+  buildBenchmarkHeadline,
+  buildBestDaysHeadline,
+  buildDistributionHeadline,
+  buildDrawdownHeadline,
+  buildIntraYearDeclineHeadline,
+  buildLumpsumHeadline,
+  buildProbabilityHeadline,
+  buildRollingReturnsHeadline,
+  buildSipHeadline,
+  buildSortedReturnsHeadline,
+  buildTrailingReturnsHeadline,
+} from '../../lib/headlines/sectionHeadlines'
 import {
   BearMarketDecadeChart,
   hasDecadeHistory,
@@ -178,7 +194,12 @@ export function FundReportSections({
       <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <TrailingReturnsTable periods={data.trailingReturns.periods} fundName={fundName} />
+            <div className="space-y-4">
+              <SectionHeadline
+                headline={buildTrailingReturnsHeadline(data.trailingReturns, fundName)}
+              />
+              <TrailingReturnsTable periods={data.trailingReturns.periods} fundName={fundName} />
+            </div>
           )}
         </ReportGroupBoundary>
       </SectionShell>
@@ -190,11 +211,16 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <FundRollingReturnsTable
-              rollingReturns={data.rollingReturns}
-              fundName={fundName}
-              dataTo={dataTo}
-            />
+            <div className="space-y-4">
+              <SectionHeadline
+                headline={buildRollingReturnsHeadline(data.rollingReturns, fundName)}
+              />
+              <FundRollingReturnsTable
+                rollingReturns={data.rollingReturns}
+                fundName={fundName}
+                dataTo={dataTo}
+              />
+            </div>
           )}
         </ReportGroupBoundary>
       </SectionShell>
@@ -208,6 +234,9 @@ export function FundReportSections({
         <ReportGroupBoundary state={performance} skeleton={<ChartSkeleton />}>
           {(data) => (
             <div className="space-y-4 sm:space-y-5">
+              <SectionHeadline
+                headline={buildDistributionHeadline(data.calendarYearInsights.distribution)}
+              />
               <AnnualReturnDistributionChart
                 distribution={data.calendarYearInsights.distribution}
                 fundName={fundName}
@@ -215,6 +244,10 @@ export function FundReportSections({
               <RollingHorizonProbabilityCharts
                 rollingReturns={data.rollingReturns}
                 fundName={fundName}
+              />
+              <SectionHeadline
+                size="md"
+                headline={buildSortedReturnsHeadline(data.calendarYearInsights.sortedReturns)}
               />
               <SortedCalendarReturnsChart
                 sortedReturns={data.calendarYearInsights.sortedReturns}
@@ -230,6 +263,14 @@ export function FundReportSections({
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) => (
             <>
+              <SectionHeadline
+                className="mb-4"
+                headline={buildBenchmarkHeadline(
+                  data.benchmarkComparison,
+                  fundName,
+                  benchmarkName,
+                )}
+              />
               <div className="grid gap-4 md:grid-cols-3">
                 <MetricTile
                   label="Fund Return"
@@ -259,6 +300,10 @@ export function FundReportSections({
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={6} />}>
           {(data) => (
             <>
+              <SectionHeadline
+                className="mb-5"
+                headline={buildProbabilityHeadline(data.probability, fundName)}
+              />
               <div className="mb-6 grid gap-4 md:grid-cols-2">
                 <ProbabilityBar label="Positive return" value={data.probability.positiveReturn} />
                 <ProbabilityBar label="Beat inflation (~7%)" value={data.probability.beatInflation} />
@@ -320,6 +365,10 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <>
+              <SectionHeadline
+                className="mb-4"
+                headline={buildIntraYearDeclineHeadline(data.consistency, fundName)}
+              />
               <div className="mb-4 flex flex-wrap gap-2">
                 <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-400">
                   Best year: {formatPercent(data.consistency.bestYear)}
@@ -346,6 +395,8 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={investment} skeleton={<TableSkeleton rows={4} />}>
           {(data) => (
+            <>
+            <SectionHeadline className="mb-4" headline={buildSipHeadline(data.sip)} />
             <ScrollTable minWidth={960} className="rounded-xl border border-border/70">
               <table className="w-full text-sm">
                 <thead>
@@ -401,11 +452,17 @@ export function FundReportSections({
                 </tbody>
               </table>
             </ScrollTable>
+            </>
           )}
         </ReportGroupBoundary>
       </SectionShell>
 
       <SectionShell id="lumpsum" title="Lump Sum Analysis">
+        <ReportGroupBoundary state={investment} skeleton={null}>
+          {(data) => (
+            <SectionHeadline className="mb-4" headline={buildLumpsumHeadline(data.lumpsum)} />
+          )}
+        </ReportGroupBoundary>
         <Tabs value={matrixMode} onValueChange={(v) => setMatrixMode(v as typeof matrixMode)}>
           <TabsList scrollable>
             <TabsTrigger value="LUMPSUM">CAGR Matrix</TabsTrigger>
@@ -464,6 +521,10 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <>
+              <SectionHeadline
+                className="mb-4"
+                headline={buildDrawdownHeadline(data.drawdown, fundName)}
+              />
               <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <MetricTile
                   label="Biggest crash"
@@ -545,6 +606,8 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <div className="space-y-4 sm:space-y-5">
+              <SectionHeadline headline={buildBearMarketHeadline(data.drawdown, fundName)} />
+
               <ReportInsightCard title="Decade-wise bear market exposure">
                 {hasDecadeHistory(dataFrom, dataTo) ? (
                   <BearMarketDecadeChart decades={data.drawdown.bearMarketDecades} fundName={fundName} />
@@ -586,6 +649,7 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <div className="space-y-4 sm:space-y-5">
+              <SectionHeadline headline={buildBestDaysHeadline(data.bestDays, fundName)} />
               <MissingBestDaysChart bestDays={data.bestDays} fundName={fundName} />
               <BestDaysInCrashAnalysis bestDays={data.bestDays} fundName={fundName} />
             </div>
@@ -602,6 +666,7 @@ export function FundReportSections({
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
             <div className="space-y-4 sm:space-y-5">
+              <SectionHeadline headline={buildAllTimeHighsHeadline(data.allTimeHighs, fundName)} />
               <AllTimeHighsChart allTimeHighs={data.allTimeHighs} fundName={fundName} />
               <AllTimeHighsYearTable allTimeHighs={data.allTimeHighs} fundName={fundName} />
               <PostAthReturnsTable
@@ -723,17 +788,18 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setPeers(null)
-    setLoading(false)
-    setError(null)
-  }, [scheme, category])
+    if (!scheme) {
+      setPeers(null)
+      setLoading(false)
+      setError(null)
+      return
+    }
 
-  const load = () => {
-    if (!scheme) return
     const controller = new AbortController()
     setPeers(null)
     setError(null)
     setLoading(true)
+
     fetchPeerComparison(scheme, category || 'All', controller.signal)
       .then(setPeers)
       .catch((err) => {
@@ -741,7 +807,9 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
         setError(err instanceof Error ? err.message : 'Failed to load peer comparison')
       })
       .finally(() => setLoading(false))
-  }
+
+    return () => controller.abort()
+  }, [scheme, category])
 
   return (
     <SectionShell
@@ -750,14 +818,6 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
       title="Peer Comparison"
       description="Top funds in the same category."
     >
-      <button
-        type="button"
-        onClick={load}
-        disabled={loading || !scheme}
-        className="mb-6 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
-      >
-        {loading ? 'Loading…' : 'Load peer comparison'}
-      </button>
       {(loading || peers || error) && (
         <PeerComparisonTable data={peers} loading={loading} error={error} />
       )}

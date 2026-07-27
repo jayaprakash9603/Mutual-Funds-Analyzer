@@ -1,18 +1,21 @@
 package in.goldentriangle.mfa.application.compare;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.config.properties.AnalyticsProperties;
 import in.goldentriangle.mfa.config.properties.UpstreamProperties;
-import in.goldentriangle.mfa.domain.model.AnalysisQuery;
-import in.goldentriangle.mfa.domain.model.Period;
+import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
+import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
-import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
-import in.goldentriangle.mfa.domain.model.report.PeerComparisonReport;
-import in.goldentriangle.mfa.domain.port.out.SchemeCatalogPort;
-import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
+import in.goldentriangle.mfa.domain.model.report.PeerComparisonReport;
+import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
+import in.goldentriangle.mfa.domain.port.out.PeerComparisonSnapshotPort;
+import in.goldentriangle.mfa.domain.port.out.PeerFundSnapshotPort;
+import in.goldentriangle.mfa.domain.port.out.SchemeCatalogPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +24,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,27 +46,52 @@ class PeerComparisonServiceTest {
     @BeforeEach
     void setUp() {
         schemeCatalogPort = mock(SchemeCatalogPort.class);
-        peerDiscoveryService = new PeerDiscoveryService(schemeCatalogPort);
+        CachePort cachePort = new CachePort() {
+            @Override
+            public <T> Optional<T> get(String key, Class<T> type) {
+                return Optional.empty();
+            }
+
+            @Override
+            public <T> T getOrLoad(String key, Class<T> type, Supplier<T> loader) {
+                return loader.get();
+            }
+
+            @Override
+            public void evict(String key) {
+            }
+        };
+        peerDiscoveryService = new PeerDiscoveryService(schemeCatalogPort, cachePort);
         in.goldentriangle.mfa.domain.port.out.RollingReturnsPort rollingReturnsPort =
                 mock(in.goldentriangle.mfa.domain.port.out.RollingReturnsPort.class);
         NavHistoryPort navHistoryPort = mock(NavHistoryPort.class);
+        PeerFundSnapshotPort peerFundSnapshotPort = mock(PeerFundSnapshotPort.class);
+        PeerComparisonSnapshotPort peerComparisonSnapshotPort = mock(PeerComparisonSnapshotPort.class);
         FeatureGuard featureGuard = mock(FeatureGuard.class);
 
         when(schemeCatalogPort.search(any(), any())).thenReturn(List.of("Peer A", "Peer B"));
         when(rollingReturnsPort.fetch(any())).thenReturn(sampleData());
         when(navHistoryPort.fetch(any(), any())).thenReturn(sampleNavHistory());
+        when(navHistoryPort.latestNavWatermark(any())).thenReturn(Optional.of(Instant.parse("2026-01-01T00:00:00Z")));
+        when(peerFundSnapshotPort.find(any(), any())).thenReturn(Optional.empty());
+        when(peerComparisonSnapshotPort.find(any(), any(), any())).thenReturn(Optional.empty());
 
         service = new PeerComparisonService(
                 rollingReturnsPort,
                 navHistoryPort,
                 peerDiscoveryService,
+                peerFundSnapshotPort,
+                peerComparisonSnapshotPort,
                 featureGuard,
                 new AnalyticsProperties(),
                 new UpstreamProperties(
                         "analysis.investt.in", "/mutual-funds-research", Duration.ofSeconds(60), "01-01-2013"),
                 Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC),
                 new TrailingReturnsCalculator(),
-                Executors.newSingleThreadExecutor());
+                new ObjectMapper(),
+                Executors.newFixedThreadPool(4),
+                Executors.newSingleThreadExecutor(),
+                new SingleFlightCoordinator());
     }
 
     @Test
