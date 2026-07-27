@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.application.report;
 
 import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixRecoveryAnalyzer;
 import in.goldentriangle.mfa.domain.model.MatrixSnapshot;
@@ -13,6 +14,7 @@ import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
 import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.MatrixSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
@@ -23,12 +25,15 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 @Service
 public class FundReportService implements GetFundReportUseCase {
 
-    /** Bumped when matrix caches recovery analysis with snapshot reuse. */
-    private static final String MATRIX_CACHE_PREFIX = "fund-report-matrix:v5:";
+    /** Bumped when matrix fast-path / stale-while-revalidate logic changes. */
+    private static final String MATRIX_CACHE_PREFIX = "fund-report-matrix:v6:";
 
     private final NavHistoryPort navHistoryPort;
     private final FundReportEngine fundReportEngine;
@@ -38,6 +43,9 @@ public class FundReportService implements GetFundReportUseCase {
     private final FeatureFlags featureFlags;
     private final CachePort cachePort;
     private final Clock clock;
+    private final Executor computeExecutor;
+    private final SingleFlightCoordinator singleFlightCoordinator;
+    private final Set<String> refreshingKeys = ConcurrentHashMap.newKeySet();
 
     public FundReportService(
             NavHistoryPort navHistoryPort,
@@ -47,7 +55,9 @@ public class FundReportService implements GetFundReportUseCase {
             FeatureGuard featureGuard,
             FeatureFlags featureFlags,
             CachePort cachePort,
-            Clock clock) {
+            Clock clock,
+            @Qualifier("computeExecutor") Executor computeExecutor,
+            SingleFlightCoordinator singleFlightCoordinator) {
         this.navHistoryPort = navHistoryPort;
         this.fundReportEngine = fundReportEngine;
         this.matrixSnapshotPort = matrixSnapshotPort;
@@ -56,6 +66,8 @@ public class FundReportService implements GetFundReportUseCase {
         this.featureFlags = featureFlags;
         this.cachePort = cachePort;
         this.clock = clock;
+        this.computeExecutor = computeExecutor;
+        this.singleFlightCoordinator = singleFlightCoordinator;
     }
 
     @Override
@@ -84,40 +96,106 @@ public class FundReportService implements GetFundReportUseCase {
     }
 
     private CachedMatrix buildMatrix(String scheme, String startDate, MatrixMode mode) {
-        NavHistory history = navHistoryPort.fetch(scheme, startDate);
-        Instant lastNavDate = history.lastNavDate();
         boolean snapshotsEnabled = featureFlags.getAnalysis().isIncrementalMatrixSnapshots();
+        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
 
         Optional<MatrixSnapshot> stored = snapshotsEnabled
                 ? matrixSnapshotPort.find(scheme, mode, startDate)
                 : Optional.empty();
 
-        MatrixReport report;
-        Instant computedAt;
-        boolean fromSnapshot;
-
-        if (stored.isPresent() && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
-            report = stored.get().report();
-            computedAt = stored.get().computedAt();
-            fromSnapshot = true;
-        } else {
-            report = fundReportEngine.buildMatrix(history, mode);
-            computedAt = Instant.now(clock);
-            fromSnapshot = false;
-            if (snapshotsEnabled) {
-                matrixSnapshotPort.save(new MatrixSnapshot(
-                        scheme,
-                        mode,
-                        startDate,
-                        report,
-                        lastNavDate,
-                        computedAt,
-                        stored.map(MatrixSnapshot::version).orElse(0L)));
+        if (stored.isPresent()) {
+            if (watermarkMatches(stored.get().watermarkNavDate(), liveWatermark)) {
+                return fromSnapshot(stored.get(), true);
             }
+            scheduleRefresh(scheme, startDate, mode);
+            return fromSnapshot(stored.get(), true);
         }
 
+        return materializeMatrix(scheme, startDate, mode, Optional.empty());
+    }
+
+    private CachedMatrix materializeMatrix(
+            String scheme,
+            String startDate,
+            MatrixMode mode,
+            Optional<MatrixSnapshot> stored) {
+        NavHistory history = navHistoryPort.fetch(scheme, startDate);
+        Instant lastNavDate = history.lastNavDate();
+        boolean snapshotsEnabled = featureFlags.getAnalysis().isIncrementalMatrixSnapshots();
+
+        Optional<MatrixSnapshot> current = stored.isPresent()
+                ? stored
+                : snapshotsEnabled ? matrixSnapshotPort.find(scheme, mode, startDate) : Optional.empty();
+
+        if (current.isPresent() && Objects.equals(current.get().watermarkNavDate(), lastNavDate)) {
+            return fromSnapshot(current.get(), true);
+        }
+
+        MatrixReport report = fundReportEngine.buildMatrix(history, mode);
+        Instant computedAt = Instant.now(clock);
+        if (snapshotsEnabled) {
+            matrixSnapshotPort.save(new MatrixSnapshot(
+                    scheme,
+                    mode,
+                    startDate,
+                    report,
+                    lastNavDate,
+                    computedAt,
+                    current.map(MatrixSnapshot::version).orElse(0L)));
+        }
+        return wrap(report, lastNavDate, computedAt, false);
+    }
+
+    private void scheduleRefresh(String scheme, String startDate, MatrixMode mode) {
+        String key = refreshKey(scheme, startDate, mode);
+        if (!refreshingKeys.add(key)) {
+            return;
+        }
+        computeExecutor.execute(() -> {
+            try {
+                singleFlightCoordinator.run(key, () -> {
+                    materializeMatrix(scheme, startDate, mode, Optional.empty());
+                    evictMatrixCache(scheme, startDate, mode);
+                    return null;
+                });
+            } finally {
+                refreshingKeys.remove(key);
+            }
+        });
+    }
+
+    private void evictMatrixCache(String scheme, String startDate, MatrixMode mode) {
+        cachePort.evict(MATRIX_CACHE_PREFIX + scheme + ":" + startDate + ":" + mode.name());
+    }
+
+    private static CachedMatrix fromSnapshot(MatrixSnapshot stored, boolean fromSnapshot) {
+        MatrixRecoveryAnalysis recovery = MatrixRecoveryAnalyzer.analyze(stored.report());
+        return new CachedMatrix(
+                stored.report(),
+                recovery,
+                stored.watermarkNavDate(),
+                stored.computedAt(),
+                fromSnapshot);
+    }
+
+    private static CachedMatrix wrap(
+            MatrixReport report,
+            Instant lastNavDate,
+            Instant computedAt,
+            boolean fromSnapshot) {
         MatrixRecoveryAnalysis recovery = MatrixRecoveryAnalyzer.analyze(report);
         return new CachedMatrix(report, recovery, lastNavDate, computedAt, fromSnapshot);
+    }
+
+    private static boolean watermarkMatches(Instant storedWatermark, Optional<Instant> liveWatermark) {
+        if (storedWatermark == null) {
+            return false;
+        }
+        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    }
+
+    private static String refreshKey(String scheme, String startDate, MatrixMode mode) {
+        return "matrix-refresh:" + scheme + ":" + startDate + ":" + mode.name();
     }
 
     private record CachedMatrix(

@@ -1,50 +1,82 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchFundReportMatrix, type MatrixReport } from '../api'
+import type { MatrixReport } from '../api'
+import {
+  fetchMatrixCached,
+  invalidateMatrixCache,
+  peekMatrixCache,
+  type MatrixMode,
+} from '../lib/matrix/matrixCache'
 
 export function useFundReportMatrix(
   scheme: string | null,
-  mode: 'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M',
+  mode: MatrixMode,
   enabled = true,
 ) {
-  const [data, setData] = useState<MatrixReport | null>(null)
-  const [loading, setLoading] = useState(false)
+  const cached = scheme && enabled ? peekMatrixCache(scheme, mode) : null
+  const [data, setData] = useState<MatrixReport | null>(cached)
+  const [loading, setLoading] = useState(enabled && !!scheme && !cached)
   const [error, setError] = useState<string | null>(null)
   const [retryToken, setRetryToken] = useState(0)
 
   useEffect(() => {
-    setData(null)
+    if (!scheme) {
+      setData(null)
+      setLoading(false)
+      setError(null)
+      return
+    }
+
+    const warm = peekMatrixCache(scheme, mode)
+    setData(warm)
     setError(null)
-  }, [scheme, mode])
+    setLoading(enabled && !warm)
+  }, [scheme, mode, enabled])
 
   const retry = useCallback(() => {
+    if (scheme) {
+      invalidateMatrixCache(scheme)
+    }
     setRetryToken((value) => value + 1)
-  }, [])
+  }, [scheme])
 
-  const load = useCallback(async (signal: AbortSignal) => {
+  useEffect(() => {
     if (!scheme || !enabled) {
       setLoading(false)
       return
     }
+
+    const warm = peekMatrixCache(scheme, mode)
+    if (warm) {
+      setData(warm)
+      setLoading(false)
+      setError(null)
+      return
+    }
+
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
-    try {
-      const matrix = await fetchFundReportMatrix(scheme, mode, undefined, signal)
-      if (!signal.aborted) setData(matrix)
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return
-      if (!signal.aborted) {
-        setError(e instanceof Error ? e.message : 'Failed to load matrix')
-      }
-    } finally {
-      if (!signal.aborted) setLoading(false)
-    }
-  }, [scheme, mode, enabled])
 
-  useEffect(() => {
-    const controller = new AbortController()
-    load(controller.signal)
+    fetchMatrixCached(scheme, mode, controller.signal)
+      .then((matrix) => {
+        if (!controller.signal.aborted) {
+          setData(matrix)
+        }
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : 'Failed to load matrix')
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      })
+
     return () => controller.abort()
-  }, [load, retryToken])
+  }, [scheme, mode, enabled, retryToken])
 
   return { data, loading, error, retry }
 }

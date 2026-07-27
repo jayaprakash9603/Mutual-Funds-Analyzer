@@ -8,8 +8,8 @@ import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.config.properties.AnalyticsProperties;
 import in.goldentriangle.mfa.config.properties.UpstreamProperties;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
+import in.goldentriangle.mfa.domain.analytics.NavDateParser;
 import in.goldentriangle.mfa.domain.analytics.Statistics;
-import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.model.AnalysisInput;
 import in.goldentriangle.mfa.domain.model.AnalysisQuery;
 import in.goldentriangle.mfa.domain.model.FundMetrics;
@@ -18,11 +18,8 @@ import in.goldentriangle.mfa.domain.model.PeerFundSnapshot;
 import in.goldentriangle.mfa.domain.model.Period;
 import in.goldentriangle.mfa.domain.model.RollingReturnRow;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
-import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.PeerComparisonReport;
-import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.port.in.GetPeerComparisonUseCase;
-import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import in.goldentriangle.mfa.domain.port.out.PeerComparisonSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.PeerFundSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.RollingReturnsPort;
@@ -36,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,25 +43,30 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 @Service
 public class PeerComparisonService implements GetPeerComparisonUseCase {
 
-    public static final int PEER_SCHEMA_VERSION = 1;
+    /** Bumped when peer rows switched to investt rolling returns only (no mfapi NAV). */
+    public static final int PEER_SCHEMA_VERSION = 2;
 
     private static final List<String> LONG_RUN_HORIZONS = List.of(
             "1 Year", "3 Year", "5 Year", "10 Year", "15 Year", "20 Year");
 
+    private static final Map<String, Period> HORIZON_PERIOD_BY_LABEL = Map.of(
+            "1 Year", Period.ONE_YEAR,
+            "3 Year", Period.THREE_YEAR,
+            "5 Year", Period.FIVE_YEAR,
+            "10 Year", Period.TEN_YEAR,
+            "15 Year", Period.FIFTEEN_YEAR);
+
     private final RollingReturnsPort rollingReturnsPort;
-    private final NavHistoryPort navHistoryPort;
     private final PeerDiscoveryService peerDiscoveryService;
     private final PeerFundSnapshotPort peerFundSnapshotPort;
     private final PeerComparisonSnapshotPort peerComparisonSnapshotPort;
     private final FeatureGuard featureGuard;
     private final UpstreamProperties upstreamProperties;
     private final MetricsCalculator metricsCalculator;
-    private final TrailingReturnsCalculator trailingReturnsCalculator;
     private final ObjectMapper objectMapper;
     private final Executor upstreamExecutor;
     private final Executor computeExecutor;
@@ -73,7 +76,6 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
     public PeerComparisonService(
             RollingReturnsPort rollingReturnsPort,
-            NavHistoryPort navHistoryPort,
             PeerDiscoveryService peerDiscoveryService,
             PeerFundSnapshotPort peerFundSnapshotPort,
             PeerComparisonSnapshotPort peerComparisonSnapshotPort,
@@ -81,19 +83,16 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             AnalyticsProperties analyticsProperties,
             UpstreamProperties upstreamProperties,
             Clock clock,
-            TrailingReturnsCalculator trailingReturnsCalculator,
             ObjectMapper objectMapper,
             @Qualifier("upstreamExecutor") Executor upstreamExecutor,
             @Qualifier("computeExecutor") Executor computeExecutor,
             SingleFlightCoordinator singleFlightCoordinator) {
         this.rollingReturnsPort = rollingReturnsPort;
-        this.navHistoryPort = navHistoryPort;
         this.peerDiscoveryService = peerDiscoveryService;
         this.peerFundSnapshotPort = peerFundSnapshotPort;
         this.peerComparisonSnapshotPort = peerComparisonSnapshotPort;
         this.featureGuard = featureGuard;
         this.upstreamProperties = upstreamProperties;
-        this.trailingReturnsCalculator = trailingReturnsCalculator;
         this.objectMapper = objectMapper;
         this.upstreamExecutor = upstreamExecutor;
         this.computeExecutor = computeExecutor;
@@ -115,7 +114,7 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
     }
 
     private PeerComparisonReport loadComparison(String scheme, String category, String startDate) {
-        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+        Optional<Instant> liveWatermark = latestRollingWatermark(scheme, startDate);
         Optional<PeerComparisonSnapshot> stored =
                 peerComparisonSnapshotPort.find(scheme, category, startDate);
 
@@ -163,7 +162,7 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             String schemeName,
             boolean selected,
             String startDate) {
-        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(schemeName);
+        Optional<Instant> liveWatermark = latestRollingWatermark(schemeName, startDate);
         Optional<PeerFundSnapshot> cached = peerFundSnapshotPort.find(schemeName, startDate);
 
         if (cached.isPresent() && cached.get().schemaVersion() == PEER_SCHEMA_VERSION) {
@@ -174,29 +173,23 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             }
         }
 
-        PeerComparisonReport.PeerRow row = buildRowParallel(schemeName, selected, startDate);
+        PeerComparisonReport.PeerRow row = buildRowFromInvestt(schemeName, selected, startDate);
         if (row != null) {
             persistFundRow(schemeName, startDate, row, liveWatermark.orElse(null), cached);
         }
         return row;
     }
 
-    private PeerComparisonReport.PeerRow buildRowParallel(
+    /** Builds peer metrics from investt.in rolling returns — no mfapi NAV fetch per peer. */
+    private PeerComparisonReport.PeerRow buildRowFromInvestt(
             String schemeName,
             boolean selected,
             String startDate) {
         try {
-            AnalysisQuery query = new AnalysisQuery(schemeName, Period.FIVE_YEAR, startDate);
+            RollingReturnsData fiveYear = rollingReturnsPort.fetch(
+                    new AnalysisQuery(schemeName, Period.FIVE_YEAR, startDate));
 
-            CompletableFuture<RollingReturnsData> rollingFuture = CompletableFuture.supplyAsync(
-                    () -> rollingReturnsPort.fetch(query), upstreamExecutor);
-            CompletableFuture<NavHistory> navFuture = CompletableFuture.supplyAsync(
-                    () -> navHistoryPort.fetch(schemeName, startDate), upstreamExecutor);
-
-            RollingReturnsData data = rollingFuture.join();
-            NavHistory history = navFuture.join();
-
-            List<Double> returns = data.fund().stream()
+            List<Double> returns = fiveYear.fund().stream()
                     .map(RollingReturnRow::schemeRollingReturns)
                     .toList();
             if (returns.isEmpty()) {
@@ -204,8 +197,11 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             }
 
             FundMetrics metrics = metricsCalculator.compute(new AnalysisInput(
-                    data.fund(), data.benchmark(), Period.Labels.FIVE_YEAR));
+                    fiveYear.fund(), fiveYear.benchmark(), Period.Labels.FIVE_YEAR));
             DoubleSummaryStatistics summary = returns.stream().mapToDouble(Double::doubleValue).summaryStatistics();
+
+            List<PeerComparisonReport.HorizonReturn> horizons =
+                    buildHorizonReturnsFromInvestt(schemeName, startDate, fiveYear);
 
             return new PeerComparisonReport.PeerRow(
                     schemeName,
@@ -219,37 +215,58 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                     metrics.maxDrawdown(),
                     metrics.consistencyScore(),
                     selected,
-                    buildHorizonReturnsFromHistory(history));
+                    horizons);
         } catch (RuntimeException ignored) {
             return null;
         }
     }
 
-    private List<PeerComparisonReport.HorizonReturn> buildHorizonReturnsFromHistory(NavHistory history) {
-        try {
-            TrailingReturnsReport trailing = trailingReturnsCalculator.compute(history);
-            Map<String, TrailingReturnsReport.PeriodReturn> byLabel = trailing.periods().stream()
-                    .collect(Collectors.toMap(
-                            TrailingReturnsReport.PeriodReturn::label,
-                            period -> period,
-                            (left, right) -> left));
-
-            List<PeerComparisonReport.HorizonReturn> horizons = new ArrayList<>(LONG_RUN_HORIZONS.size());
-            for (String label : LONG_RUN_HORIZONS) {
-                TrailingReturnsReport.PeriodReturn period = byLabel.get(label);
-                if (period == null) {
-                    horizons.add(new PeerComparisonReport.HorizonReturn(label, null, null));
-                } else {
-                    horizons.add(new PeerComparisonReport.HorizonReturn(
-                            label, period.cagr(), period.moneyMultiplied()));
-                }
+    private List<PeerComparisonReport.HorizonReturn> buildHorizonReturnsFromInvestt(
+            String schemeName,
+            String startDate,
+            RollingReturnsData fiveYearData) {
+        Map<String, CompletableFuture<RollingReturnsData>> pending = new LinkedHashMap<>();
+        for (String label : LONG_RUN_HORIZONS) {
+            if ("5 Year".equals(label)) {
+                continue;
             }
-            return horizons;
-        } catch (RuntimeException ignored) {
-            return LONG_RUN_HORIZONS.stream()
-                    .map(label -> new PeerComparisonReport.HorizonReturn(label, null, null))
-                    .toList();
+            Period period = HORIZON_PERIOD_BY_LABEL.get(label);
+            if (period == null) {
+                continue;
+            }
+            pending.put(label, CompletableFuture.supplyAsync(
+                    () -> rollingReturnsPort.fetch(new AnalysisQuery(schemeName, period, startDate)),
+                    upstreamExecutor));
         }
+
+        List<PeerComparisonReport.HorizonReturn> horizons = new ArrayList<>(LONG_RUN_HORIZONS.size());
+        for (String label : LONG_RUN_HORIZONS) {
+            try {
+                RollingReturnsData data = "5 Year".equals(label)
+                        ? fiveYearData
+                        : pending.containsKey(label) ? pending.get(label).join() : null;
+                horizons.add(toHorizonReturn(label, data));
+            } catch (RuntimeException ignored) {
+                horizons.add(new PeerComparisonReport.HorizonReturn(label, null, null));
+            }
+        }
+        return horizons;
+    }
+
+    private static PeerComparisonReport.HorizonReturn toHorizonReturn(String label, RollingReturnsData data) {
+        if (data == null || data.fund().isEmpty()) {
+            return new PeerComparisonReport.HorizonReturn(label, null, null);
+        }
+        double avg = data.fund().stream()
+                .mapToDouble(RollingReturnRow::schemeRollingReturns)
+                .average()
+                .orElse(Double.NaN);
+        if (!Double.isFinite(avg)) {
+            return new PeerComparisonReport.HorizonReturn(label, null, null);
+        }
+        int years = horizonYears(label);
+        Double multiple = years > 0 ? moneyMultiple(avg, years) : null;
+        return new PeerComparisonReport.HorizonReturn(label, avg, multiple);
     }
 
     private PeerComparisonReport.LongRunAnalysis buildLongRunAnalysis(
@@ -264,11 +281,10 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                 .filter(PeerComparisonReport.PeerRow::selected)
                 .findFirst()
                 .flatMap(row -> peerFundSnapshotPort.find(row.scheme(), startDate)
-                        .map(PeerFundSnapshot::watermarkNavDate)
-                        .or(() -> navHistoryPort.latestNavWatermark(row.scheme())))
+                        .map(PeerFundSnapshot::watermarkNavDate))
                 .or(() -> rows.stream()
                         .findFirst()
-                        .flatMap(row -> navHistoryPort.latestNavWatermark(row.scheme())))
+                        .flatMap(row -> latestRollingWatermark(row.scheme(), startDate)))
                 .map(instant -> DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH)
                         .withZone(ZoneOffset.UTC)
                         .format(instant))
@@ -300,6 +316,23 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                 maxOrNull(twentyYearMultiples));
     }
 
+    private Optional<Instant> latestRollingWatermark(String schemeName, String startDate) {
+        try {
+            RollingReturnsData data = rollingReturnsPort.fetch(
+                    new AnalysisQuery(schemeName, Period.FIVE_YEAR, startDate));
+            return watermarkFromRolling(data);
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<Instant> watermarkFromRolling(RollingReturnsData data) {
+        return data.fund().stream()
+                .map(row -> NavDateParser.parse(row.schemeForwardDate()))
+                .flatMap(Optional::stream)
+                .max(Instant::compareTo);
+    }
+
     private void persistFundRow(
             String schemeName,
             String startDate,
@@ -323,7 +356,7 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             String startDate,
             List<String> peerNames,
             PeerComparisonReport report) {
-        Instant watermark = navHistoryPort.latestNavWatermark(scheme).orElse(null);
+        Instant watermark = latestRollingWatermark(scheme, startDate).orElse(null);
         Optional<PeerComparisonSnapshot> existing =
                 peerComparisonSnapshotPort.find(scheme, category, startDate);
 
@@ -379,6 +412,22 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                 row.consistencyScore(),
                 selected,
                 row.horizonReturns());
+    }
+
+    private static int horizonYears(String label) {
+        return switch (label) {
+            case "1 Year" -> 1;
+            case "3 Year" -> 3;
+            case "5 Year" -> 5;
+            case "10 Year" -> 10;
+            case "15 Year" -> 15;
+            case "20 Year" -> 20;
+            default -> 0;
+        };
+    }
+
+    private static double moneyMultiple(double cagrPercent, int years) {
+        return Math.pow(1 + cagrPercent / 100.0, years);
     }
 
     private static String normalizeCategory(String category) {

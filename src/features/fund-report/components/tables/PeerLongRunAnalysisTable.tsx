@@ -75,7 +75,7 @@ export function PeerLongRunAnalysisTable({
         subtitle="Trailing horizon returns could not be loaded for these peers."
       >
         <p className="text-sm text-muted-foreground">
-          Usually because NAV history is unavailable for one or more schemes.
+          Usually because rolling return data is unavailable from investt.in for one or more schemes.
         </p>
       </ReportInsightCard>
     )
@@ -106,7 +106,7 @@ export function PeerLongRunAnalysisTable({
           </>
         )
       }
-      footer="Horizons with insufficient NAV history show an em dash. Figures use trailing compounded returns from each fund's latest NAV."
+      footer="Horizons show the average rolling return from investt.in for each holding period. Money multiplied is derived from that average CAGR."
     >
       <ScrollTable minWidth={tableMinWidth} className={INSIDE_CARD_TABLE_CLASS}>
         <table className={FI_TABLE}>

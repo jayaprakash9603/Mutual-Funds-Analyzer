@@ -47,9 +47,13 @@ const BAR_BLUE = CHART_COLORS.blue
 function computeYDomain(rows: ChartRow[]): [number, number] {
   const maxReturn = Math.max(...rows.map((row) => row.returnPercent), 10)
   const minReturn = Math.min(...rows.map((row) => row.returnPercent), -10)
-  const yMax = Math.ceil((maxReturn + 8) / 10) * 10
-  const yMin = Math.floor((minReturn - 8) / 10) * 10
+  const yMax = Math.ceil((maxReturn + 12) / 10) * 10
+  const yMin = Math.floor((minReturn - 12) / 10) * 10
   return [Math.min(yMin, 0), Math.max(yMax, 10)]
+}
+
+function estimateRotatedLabelHalfSpan(text: string, fontSize = 10): number {
+  return (text.length * fontSize * 0.62) / 2
 }
 
 function ReturnBarLabel({
@@ -65,9 +69,14 @@ function ReturnBarLabel({
 
   const isNegative = row.returnPercent < 0
   const fill = row.inLongTermBand ? CHART_COLORS.fund : BAR_BLUE
+  const label = formatPercent(row.returnPercent, 1)
+  const halfSpan = estimateRotatedLabelHalfSpan(label)
+  const gap = 5
   const cx = Number(x) + Number(width) / 2
   const barExtent = Math.abs(Number(height))
-  const labelY = isNegative ? Number(y) + barExtent + 6 : Number(y) - 6
+  const labelY = isNegative
+    ? Number(y) + barExtent + gap + halfSpan
+    : Number(y) - gap - halfSpan
 
   return (
     <text
@@ -80,7 +89,7 @@ function ReturnBarLabel({
       fontWeight={700}
       transform={`rotate(-90, ${cx}, ${labelY})`}
     >
-      {formatPercent(row.returnPercent, 1)}
+      {label}
     </text>
   )
 }
@@ -212,7 +221,7 @@ export function SortedCalendarReturnsChart({
         >
           <BarChart
             data={rows}
-            margin={{ ...MARGIN_LEFT, top: 44, right: 12, bottom: 8 }}
+            margin={{ ...MARGIN_LEFT, top: 52, right: 12, bottom: 8 }}
             barCategoryGap="22%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />

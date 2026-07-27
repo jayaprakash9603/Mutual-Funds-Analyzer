@@ -64,7 +64,7 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
 
       <ReportInsightCard
         title="Category peers"
-        subtitle={`${data.periodLabel} rolling windows`}
+        subtitle={`${data.periodLabel} rolling windows (investt.in average)`}
         callout={
           data.highlights.length > 0 ? (
             <div className="flex flex-wrap gap-2">

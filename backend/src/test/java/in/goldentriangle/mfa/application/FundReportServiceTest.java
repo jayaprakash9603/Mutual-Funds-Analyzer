@@ -140,7 +140,9 @@ class FundReportServiceTest {
                 featureGuard,
                 featureFlags,
                 cachePort,
-                clock);
+                clock,
+                Runnable::run,
+                new SingleFlightCoordinator());
     }
 
     @Test
