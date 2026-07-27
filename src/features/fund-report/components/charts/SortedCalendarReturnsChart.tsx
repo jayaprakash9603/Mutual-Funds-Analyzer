@@ -23,7 +23,7 @@ import {
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { cn, formatPercent } from '@/lib/utils'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
@@ -178,7 +178,7 @@ export function SortedCalendarReturnsChart({
         bandHigh={sortedReturns.longTermBandHigh}
       />
 
-      <div className="mx-auto max-w-2xl rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-center shadow-inner">
+      <div className="rounded-lg bg-muted/30 px-3 py-2.5 text-center sm:px-4 sm:py-3">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {fundName.split(' - ')[0] ?? fundName}
         </p>
@@ -200,7 +200,7 @@ export function SortedCalendarReturnsChart({
         </p>
       )}
 
-      <div className={cn('relative overflow-hidden', CHART_PANEL_CLASS)}>
+      <div className={cn('relative overflow-hidden', CHART_INSET_CLASS)}>
         <div
           className="pointer-events-none absolute inset-x-[12%] top-[14%] bottom-[18%] rotate-45 rounded-lg bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/10"
           aria-hidden="true"

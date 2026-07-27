@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchDrawdownPeers, type DrawdownPeers } from '../../api'
 import type { FundReport } from '../../schemas'
 import { ScrollTable } from '@/components/ui/scroll-table'
+import { INSIDE_CARD_TABLE_CLASS } from '@/lib/charts/chartSurface'
 import {
   FI_TABLE,
   fiBodyCell,
@@ -88,7 +89,7 @@ export function DrawdownThresholdTable({
         Category peers show the median across funds in the same category (loaded on demand).
       </p>
 
-      <ScrollTable minWidth={480} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={480} className={INSIDE_CARD_TABLE_CLASS}>
         <table className={FI_TABLE}>
           <thead>
             <tr>

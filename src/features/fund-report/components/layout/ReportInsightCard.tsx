@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { CHART_HEADER_CLASS } from '@/lib/charts/chartSurface'
 import { cn } from '@/lib/utils'
 
 type ReportInsightCardProps = {
@@ -26,12 +25,12 @@ export function ReportInsightCard({
         className,
       )}
     >
-      <header className={CHART_HEADER_CLASS}>
+      <header className="border-b border-border/60 px-3 py-3 sm:px-5 sm:py-4">
         <h3 className="text-base font-semibold leading-snug text-foreground sm:text-lg">{title}</h3>
-        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p> : null}
       </header>
 
-      <div className="space-y-4 px-4 py-5 sm:px-6">
+      <div className="space-y-3 px-3 py-4 sm:space-y-4 sm:px-5 sm:py-5">
         {callout}
         {children}
         {footer ? (

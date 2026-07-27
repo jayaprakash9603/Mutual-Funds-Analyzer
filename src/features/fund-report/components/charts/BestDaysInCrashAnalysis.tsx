@@ -1,5 +1,6 @@
 import type { FundReportRisk } from '../../schemas'
 import { formatPercent } from '@/lib/utils'
+import { ReportInsightCard } from '../layout/ReportInsightCard'
 
 type BestDays = FundReportRisk['bestDays']
 
@@ -14,26 +15,19 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-primary">
-          Many of the best days occur in the middle of a market crash
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Top {bestDays.topBestDays.length || 30} single-day gains for {fundName}, grouped by known stress
-          windows ({bestDays.periodLabel})
-        </p>
-      </div>
-
+    <ReportInsightCard
+      title="Many of the best days occur in the middle of a market crash"
+      subtitle={`Top ${bestDays.topBestDays.length || 30} single-day gains for ${fundName}, grouped by known stress windows (${bestDays.periodLabel})`}
+    >
       <div
         className={
           bestDays.topDaysCumulative.length > 0
-            ? 'grid gap-4 lg:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(220px,280px)]'
-            : 'grid gap-4 xl:grid-cols-4'
+            ? 'grid gap-3 lg:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(220px,280px)]'
+            : 'grid gap-3 xl:grid-cols-4'
         }
       >
         {bestDays.crashPeriods.map((period) => (
-          <div key={period.periodLabel} className="rounded-xl border border-border bg-card p-3">
+          <div key={period.periodLabel} className="rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3">
             <div className="space-y-1 border-b border-border pb-3">
               <h4 className="text-sm font-semibold">{period.periodLabel}</h4>
               {period.marketFallLabel ? (
@@ -72,7 +66,7 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
         ))}
 
         {bestDays.topDaysCumulative.length > 0 ? (
-          <div className="self-start rounded-xl border border-border bg-card p-3 lg:col-span-2 xl:col-span-1">
+          <div className="self-start rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 lg:col-span-2 xl:col-span-1">
             <h4 className="mb-2 text-sm font-semibold">Cumulative impact of best days</h4>
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -95,6 +89,6 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
           </div>
         ) : null}
       </div>
-    </div>
+    </ReportInsightCard>
   )
 }

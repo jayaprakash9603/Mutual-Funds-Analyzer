@@ -1,4 +1,5 @@
 import { ScrollTable } from '@/components/ui/scroll-table'
+import { INSIDE_CARD_TABLE_CLASS } from '@/lib/charts/chartSurface'
 import type { PeerComparison } from '@/features/fund-report/schemas'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
@@ -107,7 +108,7 @@ export function PeerLongRunAnalysisTable({
       }
       footer="Horizons with insufficient NAV history show an em dash. Figures use trailing compounded returns from each fund's latest NAV."
     >
-      <ScrollTable minWidth={tableMinWidth} className="rounded-xl border border-border/60 bg-background">
+      <ScrollTable minWidth={tableMinWidth} className={INSIDE_CARD_TABLE_CLASS}>
         <table className={FI_TABLE}>
           <thead>
             <tr>

@@ -1,4 +1,5 @@
 import { ScrollTable } from '@/components/ui/scroll-table'
+import { INSIDE_CARD_TABLE_CLASS } from '@/lib/charts/chartSurface'
 import { cn, formatPercent } from '@/lib/utils'
 import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import type { FundReportPerformance } from '../../schemas'
@@ -46,7 +47,7 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
   ]
 
   const callout = profitBooking.headline ? (
-    <p className="rounded-xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100">
+    <p className="rounded-lg border border-sky-200/70 bg-sky-50/80 px-3 py-2.5 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100 sm:px-4 sm:py-3">
       {profitBooking.headline}
     </p>
   ) : null
@@ -67,7 +68,7 @@ export function ProfitBookingComparisonTable({ profitBooking }: ProfitBookingCom
       callout={callout}
       footer={profitBooking.methodologyNote ?? undefined}
     >
-      <ScrollTable minWidth={920} className="rounded-xl border border-border/70 bg-background">
+      <ScrollTable minWidth={920} className={cn(INSIDE_CARD_TABLE_CLASS, 'bg-background')}>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-muted/60">

@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { CartesianGrid, Label, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { ReportInsightCard } from '../layout/ReportInsightCard'
 import {
   ChartContainer,
   ChartTooltip,
@@ -82,23 +83,17 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-primary">
-          Equity markets regularly hit &lsquo;All Time Highs&rsquo;
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {fundName} — all-time highs since {chartRows[0]?.year} ({allTimeHighs.periodLabel})
-        </p>
-      </div>
-
+    <ReportInsightCard
+      title="Equity markets regularly hit ‘All Time Highs’"
+      subtitle={`${fundName} — all-time highs since ${chartRows[0]?.year} (${allTimeHighs.periodLabel})`}
+    >
       {allTimeHighs.summary.headline ? (
-        <p className="rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-4 py-3 text-sm leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100">
+        <p className="rounded-lg border border-emerald-200/70 bg-emerald-50/80 px-3 py-2.5 text-sm leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100 sm:px-4 sm:py-3">
           {allTimeHighs.summary.headline}
         </p>
       ) : null}
 
-      <div className={`relative w-full ${CHART_PANEL_CLASS}`}>
+      <div className={`relative w-full ${CHART_INSET_CLASS}`}>
         <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full sm:h-[380px]">
           <LineChart data={chartRows} margin={{ ...MARGIN_LEFT, top: 12, right: 24, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -177,6 +172,6 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
           </p>
         </div>
       </div>
-    </div>
+    </ReportInsightCard>
   )
 }

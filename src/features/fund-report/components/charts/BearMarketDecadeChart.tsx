@@ -6,7 +6,7 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -75,7 +75,7 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
   return (
     <div className="space-y-4">
       {analysis && (
-        <p className="rounded-xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100">
+        <p className="rounded-lg border border-sky-200/70 bg-sky-50/80 px-3 py-2.5 text-sm leading-relaxed text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-100 sm:px-4 sm:py-3">
           {fundName} spent {formatPercent(analysis.overall, 0)} of trading days more than 20% below
           its running peak. The toughest decade was {analysis.worst.label} at{' '}
           {formatPercent(analysis.worst.percentOfDays, 0)}; the calmest was {analysis.calmest.label}{' '}
@@ -83,7 +83,7 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
         </p>
       )}
 
-      <div className={CHART_PANEL_CLASS}>
+      <div className={CHART_INSET_CLASS}>
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[240px] w-full sm:h-[280px]"

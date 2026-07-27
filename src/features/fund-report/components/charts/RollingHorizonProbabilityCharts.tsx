@@ -12,7 +12,7 @@ import {
   yLabel,
 } from '@/lib/charts/chartAxes'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { formatPercent } from '@/lib/utils'
 import type { FundReportPerformance } from '../../schemas'
 import {
@@ -184,7 +184,7 @@ function HorizonProbabilityCard({
       subtitle={subtitle}
       footer={`Based on ${windowCount.toLocaleString()} rolling windows per horizon where NAV history allows.`}
     >
-      <div className={CHART_PANEL_CLASS}>
+      <div className={CHART_INSET_CLASS}>
         <ChartContainer
           config={{ value: { label: '% of windows', color: BAR_BLUE } }}
           className="aspect-auto h-[280px] w-full sm:h-[320px]"
@@ -313,5 +313,5 @@ export function RollingHorizonProbabilityCharts({
     return null
   }
 
-  return <div className="space-y-8">{cards}</div>
+  return <div className="space-y-4 sm:space-y-5">{cards}</div>
 }

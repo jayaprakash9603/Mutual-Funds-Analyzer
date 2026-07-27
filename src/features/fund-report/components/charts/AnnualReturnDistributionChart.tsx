@@ -218,7 +218,7 @@ export function AnnualReturnDistributionChart({
   const positiveSummary = `${formatPercent(distribution.positiveYearsPercent, 0)} of the years (${distribution.positiveYearCount}Y) with positive returns`
 
   const headlineCallout = distribution.headline ? (
-    <p className="rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-4 py-3 text-sm leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100">
+    <p className="rounded-lg border border-emerald-200/70 bg-emerald-50/80 px-3 py-2.5 text-sm leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100 sm:px-4 sm:py-3">
       {distribution.headline}
     </p>
   ) : null

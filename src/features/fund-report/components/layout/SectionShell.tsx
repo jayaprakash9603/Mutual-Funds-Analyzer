@@ -10,23 +10,39 @@ export function SectionShell({
   title,
   description,
   children,
+  variant = 'card',
 }: {
   id: string
   title: string
   description?: string
   children: ReactNode
+  variant?: 'card' | 'stack'
 }) {
   const scrollOffset = useReportScrollOffset()
   const scrollStyle: CSSProperties = { scrollMarginTop: scrollOffset }
 
+  if (variant === 'stack') {
+    return (
+      <section id={id} style={scrollStyle} className="space-y-4 sm:space-y-5">
+        <div className="px-0.5">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">{title}</h2>
+          {description ? (
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+        {children}
+      </section>
+    )
+  }
+
   return (
     <section id={id} style={scrollStyle}>
       <Card className="glass glass-hover">
-        <CardHeader>
+        <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
-        <CardContent>{children}</CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">{children}</CardContent>
       </Card>
     </section>
   )

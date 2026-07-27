@@ -49,6 +49,7 @@ import type {
   FundReportRisk,
 } from '../../schemas'
 import { AnnualStressAnalysis } from './AnnualStressAnalysis'
+import { ReportInsightCard } from './ReportInsightCard'
 import {
   BearMarketDecadeChart,
   hasDecadeHistory,
@@ -200,12 +201,13 @@ export function FundReportSections({
 
       <SectionShell
         id="return-patterns"
+        variant="stack"
         title="Return Patterns"
         description="How often calendar years land in each return bucket, how rarely they match long-term averages, and why profit booking tends to lag buy-and-hold."
       >
         <ReportGroupBoundary state={performance} skeleton={<ChartSkeleton />}>
           {(data) => (
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-5">
               <AnnualReturnDistributionChart
                 distribution={data.calendarYearInsights.distribution}
                 fundName={fundName}
@@ -536,45 +538,40 @@ export function FundReportSections({
 
       <SectionShell
         id="bear-market"
+        variant="stack"
         title="Bear Market & Recovery"
         description="How often the fund traded deep below its peak, compared with the benchmark and category peers, and how each crash-and-recovery cycle unfolded."
       >
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
-            <div className="space-y-10">
-              <section>
-                <h3 className="mb-3 text-base font-semibold">Decade-wise bear market exposure</h3>
+            <div className="space-y-4 sm:space-y-5">
+              <ReportInsightCard title="Decade-wise bear market exposure">
                 {hasDecadeHistory(dataFrom, dataTo) ? (
-                  <BearMarketDecadeChart
-                    decades={data.drawdown.bearMarketDecades}
-                    fundName={fundName}
-                  />
+                  <BearMarketDecadeChart decades={data.drawdown.bearMarketDecades} fundName={fundName} />
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Decade-wise bear market analysis needs at least 10 years of NAV history (
                     {dataFrom.slice(0, 10)} → {dataTo.slice(0, 10)}).
                   </p>
                 )}
-              </section>
+              </ReportInsightCard>
 
-              <section>
-                <h3 className="mb-3 text-base font-semibold">Drawdown threshold frequency</h3>
+              <ReportInsightCard title="Drawdown threshold frequency">
                 <DrawdownThresholdTable
                   rows={data.drawdown.thresholdRows}
                   scheme={scheme}
                   category={category}
                   benchmarkName={benchmarkName}
                 />
-              </section>
+              </ReportInsightCard>
 
-              <section>
-                <h3 className="mb-3 text-base font-semibold">Decline & recovery timeline</h3>
+              <ReportInsightCard title="Decline & recovery timeline">
                 <DeclineRecoveryChart
                   phases={data.drawdown.phases}
                   indexedNav={data.drawdown.indexedNav}
                   fundName={fundName}
                 />
-              </section>
+              </ReportInsightCard>
             </div>
           )}
         </ReportGroupBoundary>
@@ -582,12 +579,13 @@ export function FundReportSections({
 
       <SectionShell
         id="best-days"
+        variant="stack"
         title="Best Trading Days"
         description="How much return you give up by missing the fund’s strongest single-day moves, and when those days typically occur."
       >
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
-            <div className="space-y-10">
+            <div className="space-y-4 sm:space-y-5">
               <MissingBestDaysChart bestDays={data.bestDays} fundName={fundName} />
               <BestDaysInCrashAnalysis bestDays={data.bestDays} fundName={fundName} />
             </div>
@@ -597,12 +595,13 @@ export function FundReportSections({
 
       <SectionShell
         id="all-time-highs"
+        variant="stack"
         title="All-Time Highs"
         description="When the fund’s NAV reached fresh peaks — and how often that happens in a normal growth journey."
       >
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
-            <div className="space-y-10">
+            <div className="space-y-4 sm:space-y-5">
               <AllTimeHighsChart allTimeHighs={data.allTimeHighs} fundName={fundName} />
               <AllTimeHighsYearTable allTimeHighs={data.allTimeHighs} fundName={fundName} />
               <PostAthReturnsTable
@@ -745,7 +744,12 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
   }
 
   return (
-    <SectionShell id="peers" title="Peer Comparison" description="Top funds in the same category.">
+    <SectionShell
+      id="peers"
+      variant="stack"
+      title="Peer Comparison"
+      description="Top funds in the same category."
+    >
       <button
         type="button"
         onClick={load}

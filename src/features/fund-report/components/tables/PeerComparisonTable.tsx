@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { ScrollTable } from '@/components/ui/scroll-table'
+import { INSIDE_CARD_TABLE_CLASS } from '@/lib/charts/chartSurface'
 import {
   Table,
   TableBody,
@@ -58,7 +59,7 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-5">
       <PeerLongRunAnalysisTable data={data} compact={isSmall} />
 
       <ReportInsightCard
@@ -76,7 +77,7 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
           ) : null
         }
       >
-      <ScrollTable minWidth={960} className="rounded-xl border border-border/60 bg-background">
+      <ScrollTable minWidth={960} className={INSIDE_CARD_TABLE_CLASS}>
         <Table>
           <TableHeader>
             <TableRow className="border-0 hover:bg-transparent">

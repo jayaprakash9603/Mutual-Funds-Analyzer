@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Label, XAxis, YAxis } from 'recharts'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { ReportInsightCard } from '../layout/ReportInsightCard'
 import {
   ChartContainer,
   ChartTooltip,
@@ -71,17 +72,12 @@ export function MissingBestDaysChart({ bestDays, fundName }: MissingBestDaysChar
   const principalLakh = bestDays.initialInvestment / 1_00_000
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-primary">
-          Returns are non-linear — missing a few best days significantly reduces outcomes
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          ₹{principalLakh.toFixed(0)} lakh invested in {fundName} ({bestDays.periodLabel})
-        </p>
-      </div>
-
-      <div className={`relative w-full ${CHART_PANEL_CLASS}`}>
+    <ReportInsightCard
+      title="Returns are non-linear — missing a few best days significantly reduces outcomes"
+      subtitle={`₹${principalLakh.toFixed(0)} lakh invested in ${fundName} (${bestDays.periodLabel})`}
+      footer={bestDays.headlineSummary ?? undefined}
+    >
+      <div className={`relative w-full ${CHART_INSET_CLASS}`}>
         <ChartContainer
           config={{ finalValue: { label: 'Final value', color: CHART_COLORS.blue } }}
           className="aspect-auto h-[320px] w-full sm:h-[380px]"
@@ -164,12 +160,6 @@ export function MissingBestDaysChart({ bestDays, fundName }: MissingBestDaysChar
           </aside>
         ) : null}
       </div>
-
-      {bestDays.headlineSummary ? (
-        <p className="text-center text-sm font-semibold leading-relaxed sm:text-base">
-          {bestDays.headlineSummary}
-        </p>
-      ) : null}
-    </div>
+    </ReportInsightCard>
   )
 }
