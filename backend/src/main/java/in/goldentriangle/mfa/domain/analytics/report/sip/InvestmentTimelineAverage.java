@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.domain.analytics.report.sip;
 
 import in.goldentriangle.mfa.domain.model.report.investment.SipTimelinePoint;
+import in.goldentriangle.mfa.domain.model.report.investment.StpTimelinePoint;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpTimelinePoint;
 
 import java.time.LocalDate;
@@ -42,6 +43,18 @@ public final class InvestmentTimelineAverage {
         return enriched;
     }
 
+    public static List<StpTimelinePoint> enrichStp(List<StpTimelinePoint> timeline) {
+        if (timeline == null || timeline.isEmpty()) {
+            return List.of();
+        }
+        Map<YearMonth, RunningAverage> monthAverages = new HashMap<>();
+        List<StpTimelinePoint> enriched = new ArrayList<>(timeline.size());
+        for (StpTimelinePoint point : timeline) {
+            enriched.add(enrichStpPoint(point, monthAverages));
+        }
+        return enriched;
+    }
+
     private static SipTimelinePoint enrichSipPoint(
             SipTimelinePoint point,
             Map<YearMonth, RunningAverage> monthAverages) {
@@ -54,6 +67,20 @@ public final class InvestmentTimelineAverage {
             Map<YearMonth, RunningAverage> monthAverages) {
         double averageCorpus = resolveAverage(point.date(), point.corpus(), monthAverages);
         return new SwpTimelinePoint(point.date(), point.corpus(), point.withdrawn(), point.nav(), averageCorpus);
+    }
+
+    private static StpTimelinePoint enrichStpPoint(
+            StpTimelinePoint point,
+            Map<YearMonth, RunningAverage> monthAverages) {
+        double averageTotal = resolveAverage(point.date(), point.totalValue(), monthAverages);
+        return new StpTimelinePoint(
+                point.date(),
+                point.sourceCorpus(),
+                point.targetCorpus(),
+                point.transferred(),
+                point.totalValue(),
+                point.targetNav(),
+                averageTotal);
     }
 
     private static double resolveAverage(

@@ -255,6 +255,32 @@ async function handleSwpSimulate(request: DemoRequest): Promise<unknown> {
   }
 }
 
+async function handleStpSimulate(request: DemoRequest): Promise<unknown> {
+  const lumpSum = Number.parseInt(request.params.get('lump_sum') ?? '1000000', 10)
+  const transferMonths = Number.parseInt(request.params.get('transfer_months') ?? '6', 10)
+  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const monthlyTransfer = Math.max(1, Math.round(lumpSum / transferMonths))
+  return {
+    sourceScheme: request.params.get('source_scheme') ?? '',
+    targetScheme: request.params.get('scheme') ?? '',
+    scheduleDay,
+    transferMonths,
+    scenario: {
+      lumpSum,
+      monthlyTransfer,
+      transferMonths,
+      totalTransferred: 0,
+      transferCount: 0,
+      sourceRemaining: lumpSum,
+      targetValue: 0,
+      totalValue: lumpSum,
+      totalGain: 0,
+      xirr: 0,
+    },
+    timeline: [],
+  }
+}
+
 /** A table instead of branching, so adding an endpoint stays a one-line change. */
 const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.schemes]: handleSchemes,
@@ -271,6 +297,7 @@ const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.fundReportMatrix]: handleFundReportMatrix,
   [API_ROUTES.fundReportSipSimulate]: handleSipSimulate,
   [API_ROUTES.fundReportSwpSimulate]: handleSwpSimulate,
+  [API_ROUTES.fundReportStpSimulate]: handleStpSimulate,
   [API_ROUTES.fundReportPeers]: handlePeers,
   [API_ROUTES.fundReportDrawdownPeers]: handleDrawdownPeers,
 }

@@ -10,6 +10,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StpSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.ReportSectionEnvelopeDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
@@ -19,6 +20,7 @@ import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
 import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StpCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpMode;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
@@ -129,6 +131,36 @@ public class FundReportController {
         return fundReportMapper.toDto(
                 getFundReportUseCase.simulateSwp(scheme, startDate, initialCorpus, monthlyWithdrawal, day),
                 day);
+    }
+
+    @GetMapping("/fund-report/stp/simulate")
+    StpSimulationDto simulateStp(
+            @RequestParam String scheme,
+            @RequestParam(name = "source_scheme") String sourceScheme,
+            @RequestParam(name = "lump_sum", defaultValue = "1000000") int lumpSum,
+            @RequestParam(name = "monthly_transfer", defaultValue = "0") int monthlyTransfer,
+            @RequestParam(name = "transfer_months", defaultValue = "6") int transferMonths,
+            @RequestParam(name = "schedule_day", defaultValue = "1") int scheduleDay,
+            @RequestParam(name = "start_date", required = false) String startDate) {
+        requireScheme(scheme);
+        requireScheme(sourceScheme);
+        int day = StpCalculator.DEFAULT_SCHEDULE_DAY;
+        if (scheduleDay >= 1) {
+            day = SipCalculator.clampScheduleDay(scheduleDay);
+        }
+        return fundReportMapper.toDto(
+                getFundReportUseCase.simulateStp(
+                        scheme,
+                        sourceScheme,
+                        startDate,
+                        lumpSum,
+                        monthlyTransfer,
+                        transferMonths,
+                        day),
+                sourceScheme,
+                scheme,
+                day,
+                transferMonths);
     }
 
     @GetMapping("/fund-report/overview")

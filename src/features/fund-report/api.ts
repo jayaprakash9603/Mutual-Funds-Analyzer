@@ -24,6 +24,7 @@ import {
   sipSimulationSchema,
   stepUpSipSimulationSchema,
   swpSimulationSchema,
+  stpSimulationSchema,
   type DrawdownPeers,
   type FundReport,
   type FundReportAssessment,
@@ -42,6 +43,7 @@ import {
   type SipSimulation,
   type StepUpMode,
   type StepUpSipSimulation,
+  type StpSimulation,
   type SwpSimulation,
 } from './schemas'
 
@@ -241,6 +243,36 @@ export async function fetchSwpSimulation(
     label: 'SWP simulation',
   })
   return swpSimulationSchema.parse(data)
+}
+
+export async function fetchStpSimulation(
+  targetScheme: string,
+  options: {
+    sourceScheme: string
+    lumpSum: number
+    monthlyTransfer?: number
+    transferMonths: number
+    scheduleDay: number
+    startDate?: string
+    signal?: AbortSignal
+  },
+): Promise<StpSimulation> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportStpSimulate, {
+    params: withStartDate(
+      {
+        scheme: targetScheme,
+        source_scheme: options.sourceScheme,
+        lump_sum: String(options.lumpSum),
+        monthly_transfer: String(options.monthlyTransfer ?? 0),
+        transfer_months: String(options.transferMonths),
+        schedule_day: String(options.scheduleDay),
+      },
+      options.startDate,
+    ),
+    signal: options.signal,
+    label: 'STP simulation',
+  })
+  return stpSimulationSchema.parse(data)
 }
 
 export async function fetchStepUpSipSimulation(

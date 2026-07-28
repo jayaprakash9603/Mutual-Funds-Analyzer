@@ -34,6 +34,8 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StpSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StpTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
@@ -73,6 +75,7 @@ import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpReport;
+import in.goldentriangle.mfa.domain.model.report.investment.StpSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
@@ -479,6 +482,41 @@ public class FundReportMapper {
                 simulation.timeline().stream()
                         .map(p -> new SwpTimelinePointDto(
                                 p.date(), p.corpus(), p.withdrawn(), p.nav(), p.averageCorpus()))
+                        .toList());
+    }
+
+    public StpSimulationDto toDto(
+            StpSimulation simulation,
+            String sourceScheme,
+            String targetScheme,
+            int scheduleDay,
+            int transferMonths) {
+        StpSimulation.StpScenario s = simulation.scenario();
+        return new StpSimulationDto(
+                sourceScheme,
+                targetScheme,
+                scheduleDay,
+                transferMonths,
+                new StpSimulationDto.StpScenarioDto(
+                        s.lumpSum(),
+                        s.monthlyTransfer(),
+                        s.transferMonths(),
+                        s.totalTransferred(),
+                        s.transferCount(),
+                        s.sourceRemaining(),
+                        s.targetValue(),
+                        s.totalValue(),
+                        s.totalGain(),
+                        s.xirr()),
+                simulation.timeline().stream()
+                        .map(p -> new StpTimelinePointDto(
+                                p.date(),
+                                p.sourceCorpus(),
+                                p.targetCorpus(),
+                                p.transferred(),
+                                p.totalValue(),
+                                p.targetNav(),
+                                p.averageTotal()))
                         .toList());
     }
 

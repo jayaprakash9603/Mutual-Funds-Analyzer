@@ -8,6 +8,7 @@ import { InvestmentMatrixPanel } from './InvestmentMatrixPanel'
 import { SipCalculatorPanel } from './sip/SipCalculatorPanel'
 import { StepUpSipCalculatorPanel } from './step-up-sip/StepUpSipCalculatorPanel'
 import { SwpCalculatorPanel } from './swp/SwpCalculatorPanel'
+import { StpCalculatorPanel } from './stp/StpCalculatorPanel'
 
 type InvestmentSectionProps = {
   scheme: string
@@ -108,12 +109,15 @@ export function StpSection({
     <SectionShell
       id="stp"
       title="STP Analysis"
-      description="Systematic Transfer Plan — deploy a lump sum in tranches over time."
+      description="Systematic Transfer Plan — park a lump sum in one fund, then transfer fixed tranches into this fund over time."
     >
       <p className="mb-4 text-sm text-muted-foreground">
-        Systematic Transfer Plan (STP) deploys a lump sum in tranches over time. Full STP scenario
-        analysis is coming in a future update.
+        STP models a two-fund journey: your lump sum stays in a source fund (liquid/debt) while equal
+        monthly transfers move into the target fund analysed in this report. Chart lines show parked
+        balance, deployed balance, cumulative transfers, and total portfolio value.
       </p>
+
+      <StpCalculatorPanel targetScheme={scheme} startDate={startDate} isSharedView={isSharedView} />
 
       <InvestmentMatrixPanel
         scheme={scheme}

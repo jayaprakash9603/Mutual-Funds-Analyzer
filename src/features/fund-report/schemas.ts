@@ -557,6 +557,41 @@ export const swpSimulationSchema = z.object({
 })
 export type SwpSimulation = z.infer<typeof swpSimulationSchema>
 
+export const stpScenarioSchema = z.object({
+  lumpSum: z.number(),
+  monthlyTransfer: z.number(),
+  transferMonths: z.number(),
+  totalTransferred: z.number(),
+  transferCount: z.number(),
+  sourceRemaining: z.number(),
+  targetValue: z.number(),
+  totalValue: z.number(),
+  totalGain: z.number(),
+  xirr: z.number(),
+})
+export type StpScenario = z.infer<typeof stpScenarioSchema>
+
+export const stpTimelinePointSchema = z.object({
+  date: z.string(),
+  sourceCorpus: z.number(),
+  targetCorpus: z.number(),
+  transferred: z.number(),
+  totalValue: z.number(),
+  targetNav: z.number(),
+  averageTotal: z.number().optional().default(0),
+})
+export type StpTimelinePoint = z.infer<typeof stpTimelinePointSchema>
+
+export const stpSimulationSchema = z.object({
+  sourceScheme: z.string(),
+  targetScheme: z.string(),
+  scheduleDay: z.number(),
+  transferMonths: z.number(),
+  scenario: stpScenarioSchema,
+  timeline: z.array(stpTimelinePointSchema),
+})
+export type StpSimulation = z.infer<typeof stpSimulationSchema>
+
 export const fundReportAssessmentSchema = fundReportSchema.pick({
   goldenTriangle: true,
   qualityScore: true,
