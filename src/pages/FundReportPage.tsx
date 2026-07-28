@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useIsReportMobileLayout } from '@/hooks/useMediaQuery'
-import { ReportScrollProvider, REPORT_PAGE_TOP_PX } from '@/features/fund-report/context/ReportScrollContext'
+import { ReportScrollProvider, REPORT_SECTION_SCROLL_OFFSET } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { ReportStickyHeader, ReportStickyHeaderSpacer } from '@/features/fund-report/components/layout/ReportStickyHeader'
 import { ReportPageShell } from '@/features/fund-report/components/layout/ReportPageShell'
@@ -41,6 +41,7 @@ export function FundReportPage() {
   const sectionIds = useMemo(() => REPORT_SECTIONS.map((section) => section.id), [])
   const { activeSection: scrollActiveSection, scrollToSection } = useSectionNav(
     isMobileReportLayout ? sectionIds : [],
+    REPORT_SECTION_SCROLL_OFFSET,
   )
 
   const [desktopActiveSection, setDesktopActiveSection] = useState(DEFAULT_REPORT_SECTION)
@@ -315,7 +316,7 @@ export function FundReportPage() {
       )}
 
       <PageContainer width="wide" className="space-y-4 pb-6 pt-2">
-        <ReportScrollProvider offset={REPORT_PAGE_TOP_PX + 40}>
+        <ReportScrollProvider offset={REPORT_SECTION_SCROLL_OFFSET}>
         {!snapshotLoading && <ReportStickyHeaderSpacer />}
         {snapshotLoading && (
           <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">

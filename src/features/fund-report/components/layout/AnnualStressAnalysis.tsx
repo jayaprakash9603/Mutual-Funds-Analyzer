@@ -15,6 +15,7 @@ import {
   ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { CHART_COLORS, signedReturnColor } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -22,7 +23,6 @@ import {
   GRID_STROKE,
   MARGIN_LEFT,
   TICK_LINE,
-  TICK_MD,
   xLabel,
   yLabel,
 } from '@/lib/charts/chartAxes'
@@ -57,6 +57,16 @@ export function AnnualStressAnalysis({
   dataTo,
   maxYears = 20,
 }: AnnualStressAnalysisProps) {
+  const axis = useResponsiveAxis()
+  const chartMargin = useMemo(
+    () => ({ ...MARGIN_LEFT, top: 12, bottom: 0, left: axis.yWidth }),
+    [axis.yWidth],
+  )
+  const returnChartMargin = useMemo(
+    () => ({ ...MARGIN_LEFT, top: 8, bottom: 4, left: axis.yWidth }),
+    [axis.yWidth],
+  )
+
   const rows = useMemo(() => {
     const sliced = calendarYears.slice(-maxYears)
     const lastYear = dataTo ? new Date(dataTo).getUTCFullYear() : null
@@ -94,21 +104,21 @@ export function AnnualStressAnalysis({
         />
       </div>
 
-      <div className="grid gap-0 overflow-hidden rounded-xl border border-border/70 bg-[var(--chart-surface)] shadow-inner lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="border-b border-slate-700/60 p-3 sm:p-4 lg:border-b-0 lg:border-r">
+      <div className="grid min-w-0 gap-0 overflow-hidden rounded-xl border border-border/70 bg-[var(--chart-surface)] shadow-inner lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="min-w-0 border-b border-border/60 p-2 sm:p-4 lg:border-b-0 lg:border-r">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Intra-year maximum drawdown
           </p>
-          <ChartContainer config={drawdownChartConfig} className="aspect-auto h-[200px] w-full sm:h-[220px]">
-            <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 12, bottom: 0, left: 44 }}>
+          <ChartContainer config={drawdownChartConfig} className="aspect-auto h-[200px] w-full min-w-0 sm:h-[220px]">
+            <BarChart data={rows} margin={chartMargin}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
               <XAxis dataKey="year" hide />
               <YAxis
                 tickLine={TICK_LINE}
                 axisLine={AXIS_LINE}
-                tick={TICK_MD}
+                tick={axis.tick}
                 tickFormatter={formatAxisPercentTick}
-                width={44}
+                width={axis.yWidth}
                 domain={['dataMin', 0]}
                 type="number"
               >
@@ -151,25 +161,27 @@ export function AnnualStressAnalysis({
           <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Calendar year return
           </p>
-          <ChartContainer config={returnChartConfig} className="aspect-auto h-[200px] w-full sm:h-[220px]">
-            <BarChart data={rows} margin={{ ...MARGIN_LEFT, top: 8, bottom: 8, left: 44 }}>
+          <ChartContainer config={returnChartConfig} className="aspect-auto h-[200px] w-full min-w-0 sm:h-[220px]">
+            <BarChart data={rows} margin={returnChartMargin}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
               <XAxis
                 dataKey="year"
                 tickLine={TICK_LINE}
                 axisLine={AXIS_LINE}
-                tick={TICK_MD}
-                height={36}
-                interval={rows.length > 14 ? 1 : 0}
+                tick={axis.tick}
+                height={axis.xHeight}
+                interval={rows.length > 10 ? 'preserveStartEnd' : 0}
+                angle={axis.xAngle}
+                textAnchor={axis.xAnchor}
               >
                 <Label {...xLabel('Year', -2)} />
               </XAxis>
               <YAxis
                 tickLine={TICK_LINE}
                 axisLine={AXIS_LINE}
-                tick={TICK_MD}
+                tick={axis.tick}
                 tickFormatter={formatAxisPercentTick}
-                width={44}
+                width={axis.yWidth}
                 type="number"
               >
                 <Label {...yLabel('Return (%)')} />
@@ -192,7 +204,7 @@ export function AnnualStressAnalysis({
           </ChartContainer>
         </div>
 
-        <aside className="flex flex-col justify-center gap-3 border-t border-border/70 bg-muted/30 p-5 text-sm lg:border-l lg:border-t-0 dark:border-slate-700/60 dark:bg-slate-900/40">
+        <aside className="flex flex-col justify-center gap-3 border-t border-border/70 bg-muted/30 p-4 text-sm sm:p-5 lg:border-l lg:border-t-0">
           <InsightCallout
             title="Temporary declines are common"
             body={`${stats.tenPlusDrawdownRate.toFixed(0)}% of years saw at least a 10% peak-to-trough fall within the year.`}
