@@ -1,10 +1,14 @@
 package in.goldentriangle.mfa.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.goldentriangle.mfa.adapter.out.persistence.mapper.FundReportSectionSnapshotMapper;
 import in.goldentriangle.mfa.application.platform.FeatureGuard;
+import in.goldentriangle.mfa.application.report.FundReportSectionExtractor;
 import in.goldentriangle.mfa.application.report.FundReportSectionService;
 import in.goldentriangle.mfa.application.report.ReportDataCoordinator;
 import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
+import in.goldentriangle.mfa.domain.model.NavFreshness;
+import in.goldentriangle.mfa.domain.model.ReportFreshness;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.FundReportSectionSnapshot;
 import in.goldentriangle.mfa.domain.model.ReportSectionGroup;
@@ -53,6 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class FundReportSectionServiceTest {
@@ -62,12 +67,14 @@ class FundReportSectionServiceTest {
 
     private FundReportSectionService service;
     private InMemorySectionSnapshotStore snapshotStore;
+    private ReportDataCoordinator reportDataCoordinator;
+    private NavHistoryPort navHistoryPort;
 
     @BeforeEach
     void setUp() {
         snapshotStore = new InMemorySectionSnapshotStore();
-        ReportDataCoordinator reportDataCoordinator = mock(ReportDataCoordinator.class);
-        NavHistoryPort navHistoryPort = mock(NavHistoryPort.class);
+        reportDataCoordinator = mock(ReportDataCoordinator.class);
+        navHistoryPort = mock(NavHistoryPort.class);
         FeatureGuard featureGuard = mock(FeatureGuard.class);
 
         when(reportDataCoordinator.resolveStartDate(any())).thenReturn("inception");
@@ -75,8 +82,13 @@ class FundReportSectionServiceTest {
         when(reportDataCoordinator.prepare(eq("Test Fund"), eq("inception")))
                 .thenReturn(new ReportDataCoordinator.PreparedReport(
                         report, WATERMARK, COMPUTED, false));
-        when(navHistoryPort.latestNavWatermark("Test Fund")).thenReturn(Optional.of(WATERMARK));
+        when(reportDataCoordinator.prepareRefreshed(eq("Test Fund"), eq("inception")))
+                .thenReturn(new ReportDataCoordinator.PreparedReport(
+                        report, Instant.parse("2026-07-27T00:00:00Z"), COMPUTED, false));
+        when(navHistoryPort.navFreshness("Test Fund"))
+                .thenReturn(new NavFreshness(Optional.of(WATERMARK), false));
         doNothing().when(featureGuard).require(any());
+        doNothing().when(reportDataCoordinator).evictReportCaches(any(), any());
 
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         service = new FundReportSectionService(
@@ -114,6 +126,53 @@ class FundReportSectionServiceTest {
         }
 
         assertEquals(5, snapshotStore.size());
+    }
+
+    @Test
+    void servesStaleSnapshotWhenUpstreamCheckIsDue() {
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        FundReportOverviewSection overview = (FundReportOverviewSection) FundReportSectionExtractor.extract(
+                ReportSectionGroup.OVERVIEW,
+                sampleReport());
+        snapshotStore.save(new FundReportSectionSnapshot(
+                "Test Fund",
+                "inception",
+                ReportSectionGroup.OVERVIEW,
+                FundReportSectionSnapshotMapper.writePayload(overview, objectMapper),
+                WATERMARK,
+                COMPUTED,
+                ReportDataCoordinator.REPORT_SCHEMA_VERSION,
+                0L));
+        when(navHistoryPort.navFreshness("Test Fund"))
+                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true));
+
+        ReportSectionEnvelope<FundReportOverviewSection> envelope =
+                service.getOverview("Test Fund", null);
+
+        assertEquals(ReportFreshness.STALE, envelope.freshness());
+        verify(reportDataCoordinator).prepareRefreshed("Test Fund", "inception");
+    }
+
+    @Test
+    void servesFreshSnapshotWhenWatermarkMatchesAndNavIsLive() {
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        FundReportOverviewSection overview = (FundReportOverviewSection) FundReportSectionExtractor.extract(
+                ReportSectionGroup.OVERVIEW,
+                sampleReport());
+        snapshotStore.save(new FundReportSectionSnapshot(
+                "Test Fund",
+                "inception",
+                ReportSectionGroup.OVERVIEW,
+                FundReportSectionSnapshotMapper.writePayload(overview, objectMapper),
+                WATERMARK,
+                COMPUTED,
+                ReportDataCoordinator.REPORT_SCHEMA_VERSION,
+                0L));
+
+        ReportSectionEnvelope<FundReportOverviewSection> envelope =
+                service.getOverview("Test Fund", null);
+
+        assertEquals(ReportFreshness.FRESH, envelope.freshness());
     }
 
     private static FundReport sampleReport() {

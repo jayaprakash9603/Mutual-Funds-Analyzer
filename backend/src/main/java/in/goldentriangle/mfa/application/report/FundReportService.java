@@ -5,6 +5,7 @@ import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixRecoveryAnalyzer;
 import in.goldentriangle.mfa.domain.model.MatrixSnapshot;
+import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
@@ -97,29 +98,32 @@ public class FundReportService implements GetFundReportUseCase {
 
     private CachedMatrix buildMatrix(String scheme, String startDate, MatrixMode mode) {
         boolean snapshotsEnabled = featureFlags.getAnalysis().isIncrementalMatrixSnapshots();
-        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+        NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
 
         Optional<MatrixSnapshot> stored = snapshotsEnabled
                 ? matrixSnapshotPort.find(scheme, mode, startDate)
                 : Optional.empty();
 
         if (stored.isPresent()) {
-            if (watermarkMatches(stored.get().watermarkNavDate(), liveWatermark)) {
+            if (watermarkMatches(stored.get().watermarkNavDate(), navFreshness)) {
                 return fromSnapshot(stored.get(), true);
             }
             scheduleRefresh(scheme, startDate, mode);
             return fromSnapshot(stored.get(), true);
         }
 
-        return materializeMatrix(scheme, startDate, mode, Optional.empty());
+        return materializeMatrix(scheme, startDate, mode, Optional.empty(), false);
     }
 
     private CachedMatrix materializeMatrix(
             String scheme,
             String startDate,
             MatrixMode mode,
-            Optional<MatrixSnapshot> stored) {
-        NavHistory history = navHistoryPort.fetch(scheme, startDate);
+            Optional<MatrixSnapshot> stored,
+            boolean forceFreshNav) {
+        NavHistory history = forceFreshNav
+                ? navHistoryPort.fetchFresh(scheme, startDate)
+                : navHistoryPort.fetch(scheme, startDate);
         Instant lastNavDate = history.lastNavDate();
         boolean snapshotsEnabled = featureFlags.getAnalysis().isIncrementalMatrixSnapshots();
 
@@ -154,8 +158,9 @@ public class FundReportService implements GetFundReportUseCase {
         computeExecutor.execute(() -> {
             try {
                 singleFlightCoordinator.run(key, () -> {
-                    materializeMatrix(scheme, startDate, mode, Optional.empty());
+                    materializeMatrix(scheme, startDate, mode, Optional.empty(), true);
                     evictMatrixCache(scheme, startDate, mode);
+                    reportDataCoordinator.evictReportCaches(scheme, startDate);
                     return null;
                 });
             } finally {
@@ -187,11 +192,8 @@ public class FundReportService implements GetFundReportUseCase {
         return new CachedMatrix(report, recovery, lastNavDate, computedAt, fromSnapshot);
     }
 
-    private static boolean watermarkMatches(Instant storedWatermark, Optional<Instant> liveWatermark) {
-        if (storedWatermark == null) {
-            return false;
-        }
-        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    private static boolean watermarkMatches(Instant storedWatermark, NavFreshness navFreshness) {
+        return navFreshness.matchesSnapshot(storedWatermark);
     }
 
     private static String refreshKey(String scheme, String startDate, MatrixMode mode) {

@@ -3,9 +3,11 @@ package in.goldentriangle.mfa.application.report;
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.config.properties.ReportProperties;
 import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
+import in.goldentriangle.mfa.config.metrics.ReportComputeMetrics;
 import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.model.FundReportSnapshot;
+import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.RollingReturnsData;
 import in.goldentriangle.mfa.domain.model.report.FundMetadata;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
@@ -45,6 +47,7 @@ public class ReportDataCoordinator {
     private final Clock clock;
     private final Executor upstreamExecutor;
     private final SingleFlightCoordinator singleFlightCoordinator;
+    private final ReportComputeMetrics reportComputeMetrics;
 
     public ReportDataCoordinator(
             NavHistoryPort navHistoryPort,
@@ -57,7 +60,8 @@ public class ReportDataCoordinator {
             CachePort cachePort,
             Clock clock,
             @Qualifier("upstreamExecutor") Executor upstreamExecutor,
-            SingleFlightCoordinator singleFlightCoordinator) {
+            SingleFlightCoordinator singleFlightCoordinator,
+            ReportComputeMetrics reportComputeMetrics) {
         this.navHistoryPort = navHistoryPort;
         this.rollingReturnsAssembler = rollingReturnsAssembler;
         this.fundMetadataPort = fundMetadataPort;
@@ -69,6 +73,7 @@ public class ReportDataCoordinator {
         this.clock = clock;
         this.upstreamExecutor = upstreamExecutor;
         this.singleFlightCoordinator = singleFlightCoordinator;
+        this.reportComputeMetrics = reportComputeMetrics;
     }
 
     public PreparedReport prepare(String scheme, String startDate) {
@@ -76,12 +81,25 @@ public class ReportDataCoordinator {
         String flightKey = "report-prepare:" + scheme + ":" + resolvedStart;
         return singleFlightCoordinator.run(flightKey, () -> {
             String cacheKey = CONTEXT_CACHE_PREFIX + scheme + ":" + resolvedStart;
-            return cachePort.getOrLoad(cacheKey, PreparedReport.class, () -> buildPrepared(scheme, resolvedStart));
+            return cachePort.getOrLoad(cacheKey, PreparedReport.class, () -> buildPrepared(scheme, resolvedStart, false));
         });
     }
 
-    public Optional<Instant> resolveLiveWatermark(String scheme) {
-        return navHistoryPort.latestNavWatermark(scheme);
+    public PreparedReport prepareRefreshed(String scheme, String startDate) {
+        String resolvedStart = resolveStartDate(startDate);
+        evictContextCache(scheme, resolvedStart);
+        String flightKey = "report-prepare-refresh:" + scheme + ":" + resolvedStart;
+        return singleFlightCoordinator.run(flightKey, () -> buildPrepared(scheme, resolvedStart, true));
+    }
+
+    public NavFreshness resolveNavFreshness(String scheme) {
+        return navHistoryPort.navFreshness(scheme);
+    }
+
+    public void evictReportCaches(String scheme, String startDate) {
+        String resolvedStart = resolveStartDate(startDate);
+        cachePort.evict(REPORT_CACHE_PREFIX + scheme + ":" + resolvedStart);
+        evictContextCache(scheme, resolvedStart);
     }
 
     public String resolveStartDate(String startDate) {
@@ -91,16 +109,21 @@ public class ReportDataCoordinator {
         return startDate;
     }
 
-    private PreparedReport buildPrepared(String scheme, String startDate) {
+    private void evictContextCache(String scheme, String resolvedStart) {
+        cachePort.evict(CONTEXT_CACHE_PREFIX + scheme + ":" + resolvedStart);
+    }
+
+    private PreparedReport buildPrepared(String scheme, String startDate, boolean forceRefresh) {
         boolean snapshotsEnabled = featureFlags.getAnalysis().isPersistFundReport();
-        Optional<FundReportSnapshot> stored = snapshotsEnabled
+        Optional<FundReportSnapshot> stored = snapshotsEnabled && !forceRefresh
                 ? reportSnapshotPort.find(scheme, startDate)
                 : Optional.empty();
-        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+        NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
 
-        if (stored.isPresent()
+        if (!forceRefresh
+                && stored.isPresent()
                 && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
-                && watermarkMatches(stored.get().watermarkNavDate(), liveWatermark)) {
+                && watermarkMatches(stored.get().watermarkNavDate(), navFreshness)) {
             return new PreparedReport(
                     stored.get().report(),
                     stored.get().watermarkNavDate(),
@@ -110,10 +133,13 @@ public class ReportDataCoordinator {
 
         CompletableFuture<Optional<FundMetadata>> metadataFuture =
                 CompletableFuture.supplyAsync(() -> fundMetadataPort.fetch(scheme), upstreamExecutor);
-        NavHistory history = navHistoryPort.fetch(scheme, startDate);
+        NavHistory history = forceRefresh
+                ? navHistoryPort.fetchFresh(scheme, startDate)
+                : navHistoryPort.fetch(scheme, startDate);
         Instant lastNavDate = history.lastNavDate();
 
-        if (stored.isPresent()
+        if (!forceRefresh
+                && stored.isPresent()
                 && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
                 && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
             return new PreparedReport(
@@ -123,16 +149,20 @@ public class ReportDataCoordinator {
                     true);
         }
 
-        RollingReturnsData rollingData = rollingReturnsAssembler.assembleFromHistory(history, scheme, startDate);
+        RollingReturnsData rollingData = reportComputeMetrics.time(
+                "rolling.assemble",
+                () -> rollingReturnsAssembler.assembleFromHistory(history, scheme, startDate));
         if (rollingData.fund().isEmpty()) {
             throw new NoDataFoundException("No rolling return data found for " + scheme);
         }
         Instant computedAt = Instant.now(clock);
-        FundReport report = fundReportEngine.build(
-                history,
-                rollingData,
-                metadataFuture.join(),
-                computedAt);
+        FundReport report = reportComputeMetrics.time(
+                "engine.build",
+                () -> fundReportEngine.build(
+                        history,
+                        rollingData,
+                        metadataFuture.join(),
+                        computedAt));
 
         if (snapshotsEnabled) {
             reportSnapshotPort.save(new FundReportSnapshot(
@@ -147,11 +177,8 @@ public class ReportDataCoordinator {
         return new PreparedReport(report, lastNavDate, computedAt, false);
     }
 
-    private static boolean watermarkMatches(Instant storedWatermark, Optional<Instant> liveWatermark) {
-        if (storedWatermark == null) {
-            return false;
-        }
-        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    static boolean watermarkMatches(Instant storedWatermark, NavFreshness navFreshness) {
+        return navFreshness.matchesSnapshot(storedWatermark);
     }
 
     public record PreparedReport(

@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.config.properties.MfApiProperties;
 import in.goldentriangle.mfa.config.concurrency.KeyedLock;
 import in.goldentriangle.mfa.domain.analytics.NavDateFormatter;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
+import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.NavSeries;
 import in.goldentriangle.mfa.domain.model.NavSeriesMeta;
@@ -73,12 +74,28 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     }
 
     @Override
-    public Optional<Instant> latestNavWatermark(String scheme) {
+    public NavHistory fetchFresh(String scheme, String startDate) {
+        int code = schemeResolver.resolveCode(scheme);
+        String apiStart = MfApiNavMapper.toApiStartDate(startDate);
+        String cacheKey = CACHE_PREFIX + code + ":" + apiStart;
+        cachePort.evict(cacheKey);
+        return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate));
+    }
+
+    @Override
+    public NavFreshness navFreshness(String scheme) {
         try {
             int code = schemeResolver.resolveCode(scheme);
-            return navStore.findMeta(code).map(NavSeriesMeta::watermarkNavDate);
+            Optional<NavSeriesMeta> metaOpt = navStore.findMeta(code);
+            if (metaOpt.isEmpty()) {
+                return new NavFreshness(Optional.empty(), true);
+            }
+            NavSeriesMeta meta = metaOpt.get();
+            return new NavFreshness(
+                    Optional.ofNullable(meta.watermarkNavDate()),
+                    isStale(meta, clock.instant()));
         } catch (RuntimeException ex) {
-            return Optional.empty();
+            return new NavFreshness(Optional.empty(), true);
         }
     }
 

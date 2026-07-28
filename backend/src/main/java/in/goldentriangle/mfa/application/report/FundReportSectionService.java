@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.adapter.out.persistence.mapper.FundReportSectionSna
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.domain.model.FundReportSectionSnapshot;
+import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.ReportFreshness;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.ReportSectionGroup;
@@ -20,7 +21,6 @@ import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -88,7 +88,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             Class<T> payloadType) {
         featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
         String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
-        Optional<Instant> liveWatermark = navHistoryPort.latestNavWatermark(scheme);
+        NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
 
         Optional<FundReportSectionSnapshot> stored =
                 sectionSnapshotPort.find(scheme, resolvedStart, group);
@@ -96,11 +96,11 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         if (stored.isPresent() && isUsableSectionSnapshot(stored.get(), group, payloadType)) {
             T payload = FundReportSectionSnapshotMapper.readPayload(
                     stored.get().payloadJson(), payloadType, objectMapper);
-            if (isFresh(stored.get().watermarkNavDate(), liveWatermark)) {
+            if (isFresh(stored.get().watermarkNavDate(), navFreshness)) {
                 return envelope(payload, ReportFreshness.FRESH, stored.get());
             }
-            scheduleRefresh(group, scheme, resolvedStart, stored.get().version());
-            ReportFreshness freshness = refreshingKeys.contains(refreshKey(group, scheme, resolvedStart))
+            scheduleRefresh(scheme, resolvedStart);
+            ReportFreshness freshness = refreshingKeys.contains(refreshKey(scheme, resolvedStart))
                     ? ReportFreshness.REFRESHING
                     : ReportFreshness.STALE;
             return envelope(payload, freshness, stored.get());
@@ -135,11 +135,10 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         return payload != null;
     }
 
-    private static boolean isFresh(Instant storedWatermark, Optional<Instant> liveWatermark) {
-        if (storedWatermark == null) {
-            return false;
-        }
-        return liveWatermark.isEmpty() || Objects.equals(storedWatermark, liveWatermark.get());
+    private static boolean isFresh(
+            java.time.Instant storedWatermark,
+            NavFreshness navFreshness) {
+        return navFreshness.matchesSnapshot(storedWatermark);
     }
 
     private <T> T materializeSection(
@@ -182,7 +181,6 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         }
     }
 
-
     private static Class<?> sectionPayloadType(ReportSectionGroup group) {
         return switch (group) {
             case OVERVIEW -> FundReportOverviewSection.class;
@@ -193,12 +191,8 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         };
     }
 
-    private void scheduleRefresh(
-            ReportSectionGroup group,
-            String scheme,
-            String startDate,
-            long version) {
-        String key = refreshKey(group, scheme, startDate);
+    private void scheduleRefresh(String scheme, String startDate) {
+        String key = refreshKey(scheme, startDate);
         if (!refreshingKeys.add(key)) {
             return;
         }
@@ -206,8 +200,9 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             try {
                 singleFlightCoordinator.run(key, () -> {
                     ReportDataCoordinator.PreparedReport prepared =
-                            reportDataCoordinator.prepare(scheme, startDate);
+                            reportDataCoordinator.prepareRefreshed(scheme, startDate);
                     materializeAllSections(scheme, startDate, prepared);
+                    reportDataCoordinator.evictReportCaches(scheme, startDate);
                     return null;
                 });
             } finally {
@@ -234,8 +229,8 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
                 version));
     }
 
-    private static String refreshKey(ReportSectionGroup group, String scheme, String startDate) {
-        return "section-refresh:" + scheme + ":" + startDate + ":" + group.name();
+    private static String refreshKey(String scheme, String startDate) {
+        return "section-refresh:" + scheme + ":" + startDate;
     }
 
     private static <T> ReportSectionEnvelope<T> envelope(

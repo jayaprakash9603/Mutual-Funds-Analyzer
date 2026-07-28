@@ -134,7 +134,8 @@ class FundReportServiceTest {
                 cachePort,
                 clock,
                 Runnable::run,
-                new SingleFlightCoordinator());
+                new SingleFlightCoordinator(),
+                new ReportComputeMetrics(new SimpleMeterRegistry()));
 
         service = new FundReportService(
                 navHistoryPort,
