@@ -18,7 +18,6 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'best-days': ['risk'],
   'all-time-highs': ['risk'],
   lumpsum: ['investment'],
-  expense: ['investment'],
   sip: ['investment'],
   stp: ['investment'],
   swp: ['investment'],
