@@ -47,6 +47,7 @@ import type {
   FundReportOverview,
   FundReportPerformance,
   FundReportRisk,
+  PeerComparison,
 } from '../../schemas'
 import { AnnualStressAnalysis } from './AnnualStressAnalysis'
 import { ReportInsightCard } from './ReportInsightCard'
@@ -115,6 +116,11 @@ type FundReportSectionsProps = {
   risk: ReportSectionState<FundReportRisk>
   investment: ReportSectionState<FundReportInvestment>
   assessment: ReportSectionState<FundReportAssessment>
+  peersSnapshot?: PeerComparison | null
+  isSharedView?: boolean
+  onPeersLoaded?: (peers: PeerComparison | null) => void
+  exportRootId?: string
+  exportTitle?: string
 }
 
 export function FundReportSections({
@@ -124,6 +130,11 @@ export function FundReportSections({
   risk,
   investment,
   assessment,
+  peersSnapshot = null,
+  isSharedView = false,
+  onPeersLoaded,
+  exportRootId = 'fund-report-export-root',
+  exportTitle,
 }: FundReportSectionsProps) {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
   const schemeSelected = !!scheme
@@ -149,7 +160,13 @@ export function FundReportSections({
   )
 
   return (
-    <div className="space-y-6">
+    <div id={exportRootId} className="space-y-6">
+      {exportTitle ? (
+        <div className="rounded-xl border border-border/70 bg-card px-4 py-3">
+          <h2 className="text-lg font-semibold text-foreground">{exportTitle}</h2>
+          <p className="text-xs text-muted-foreground">Fund report snapshot</p>
+        </div>
+      ) : null}
       <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
         <ReportGroupBoundary state={overview} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
@@ -696,7 +713,13 @@ export function FundReportSections({
         </ReportGroupBoundary>
       </SectionShell>
 
-      <PeerSection scheme={scheme} category={category} />
+      <PeerSection
+        scheme={scheme}
+        category={category}
+        peersSnapshot={peersSnapshot}
+        isSharedView={isSharedView}
+        onPeersLoaded={onPeersLoaded}
+      />
 
       <SectionShell
         id="quality"
@@ -782,16 +805,37 @@ export function FundReportSections({
   )
 }
 
-function PeerSection({ scheme, category }: { scheme: string; category: string }) {
-  const [peers, setPeers] = useState<Awaited<ReturnType<typeof fetchPeerComparison>> | null>(null)
-  const [loading, setLoading] = useState(true)
+function PeerSection({
+  scheme,
+  category,
+  peersSnapshot = null,
+  isSharedView = false,
+  onPeersLoaded,
+}: {
+  scheme: string
+  category: string
+  peersSnapshot?: PeerComparison | null
+  isSharedView?: boolean
+  onPeersLoaded?: (peers: PeerComparison | null) => void
+}) {
+  const [peers, setPeers] = useState<PeerComparison | null>(isSharedView ? peersSnapshot : null)
+  const [loading, setLoading] = useState(!isSharedView)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (isSharedView) {
+      setPeers(peersSnapshot)
+      setLoading(false)
+      setError(null)
+      onPeersLoaded?.(peersSnapshot)
+      return
+    }
+
     if (!scheme) {
       setPeers(null)
       setLoading(false)
       setError(null)
+      onPeersLoaded?.(null)
       return
     }
 
@@ -801,15 +845,19 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
     setLoading(true)
 
     fetchPeerComparison(scheme, category || 'All', controller.signal)
-      .then(setPeers)
+      .then((data) => {
+        setPeers(data)
+        onPeersLoaded?.(data)
+      })
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return
         setError(err instanceof Error ? err.message : 'Failed to load peer comparison')
+        onPeersLoaded?.(null)
       })
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-  }, [scheme, category])
+  }, [scheme, category, isSharedView, peersSnapshot])
 
   return (
     <SectionShell
