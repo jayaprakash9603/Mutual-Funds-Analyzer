@@ -5,6 +5,7 @@ import in.goldentriangle.mfa.adapter.out.persistence.mapper.NavStoreMapper;
 import in.goldentriangle.mfa.config.properties.MfApiProperties;
 import in.goldentriangle.mfa.config.concurrency.KeyedLock;
 import in.goldentriangle.mfa.domain.analytics.NavDateFormatter;
+import in.goldentriangle.mfa.domain.analytics.NavPublicationCalendar;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
 import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.NavPoint;
@@ -70,7 +71,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         int code = schemeResolver.resolveCode(scheme);
         String apiStart = MfApiNavMapper.toApiStartDate(startDate);
         String cacheKey = CACHE_PREFIX + code + ":" + apiStart;
-        return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate));
+        return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate, false));
     }
 
     @Override
@@ -79,7 +80,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         String apiStart = MfApiNavMapper.toApiStartDate(startDate);
         String cacheKey = CACHE_PREFIX + code + ":" + apiStart;
         cachePort.evict(cacheKey);
-        return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate));
+        return cachePort.getOrLoad(cacheKey, NavHistory.class, () -> load(scheme, code, startDate, true));
     }
 
     @Override
@@ -93,14 +94,14 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
             NavSeriesMeta meta = metaOpt.get();
             return new NavFreshness(
                     Optional.ofNullable(meta.watermarkNavDate()),
-                    isStale(meta, clock.instant()));
+                    shouldRefreshUpstream(meta, clock.instant()));
         } catch (RuntimeException ex) {
             return new NavFreshness(Optional.empty(), true);
         }
     }
 
-    private NavHistory load(String scheme, int code, String startDateUsed) {
-        LoadedSeries loaded = ensureSeries(scheme, code, startDateUsed);
+    private NavHistory load(String scheme, int code, String startDateUsed, boolean forceUpstream) {
+        LoadedSeries loaded = ensureSeries(scheme, code, startDateUsed, forceUpstream);
         Instant cutoff = NavStoreMapper.parseStartDate(startDateUsed);
         List<NavPoint> fundNav = navStore.loadPoints(code, NavSeries.FUND, cutoff);
         List<NavPoint> benchmarkNav = navStore.loadPoints(code, NavSeries.BENCHMARK, cutoff);
@@ -126,11 +127,11 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
                 startDateUsed);
     }
 
-    private LoadedSeries ensureSeries(String scheme, int code, String startDateUsed) {
-        return navRefreshLock.call(Integer.toString(code), () -> doEnsureSeries(scheme, code, startDateUsed));
+    private LoadedSeries ensureSeries(String scheme, int code, String startDateUsed, boolean forceUpstream) {
+        return navRefreshLock.call(Integer.toString(code), () -> doEnsureSeries(scheme, code, startDateUsed, forceUpstream));
     }
 
-    private LoadedSeries doEnsureSeries(String scheme, int code, String startDateUsed) {
+    private LoadedSeries doEnsureSeries(String scheme, int code, String startDateUsed, boolean forceUpstream) {
         Instant now = clock.instant();
         Optional<NavSeriesMeta> metaOpt = navStore.findMeta(code);
 
@@ -139,7 +140,7 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         }
 
         NavSeriesMeta meta = metaOpt.get();
-        if (isStale(meta, now)) {
+        if (forceUpstream || shouldRefreshUpstream(meta, now)) {
             return deltaRefresh(scheme, code, startDateUsed, meta, now);
         }
 
@@ -198,6 +199,10 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
                 .map(FundFetchResult::points)
                 .orElse(List.of());
         BenchmarkNavResolver.BenchmarkSnapshot benchmark = benchmarkFuture.join();
+
+        if (deltaFund.isEmpty() && NavPublicationCalendar.isWatermarkBehind(meta.watermarkNavDate(), clock)) {
+            return fullRefresh(scheme, code, startDateUsed, now, meta.version());
+        }
 
         if (!deltaFund.isEmpty()) {
             navStore.append(code, NavSeries.FUND, deltaFund);
@@ -267,6 +272,10 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     private FundFetchResult fetchFundNav(int code, String apiStart) {
         return tryFetchFundNav(code, apiStart)
                 .orElseThrow(() -> new NoDataFoundException("No NAV history from mfapi for scheme code " + code));
+    }
+
+    private boolean shouldRefreshUpstream(NavSeriesMeta meta, Instant now) {
+        return isStale(meta, now) || NavPublicationCalendar.isWatermarkBehind(meta.watermarkNavDate(), clock);
     }
 
     private boolean isStale(NavSeriesMeta meta, Instant now) {

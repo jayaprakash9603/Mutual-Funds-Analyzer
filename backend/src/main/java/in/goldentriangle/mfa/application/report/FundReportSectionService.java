@@ -99,6 +99,9 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             if (isFresh(stored.get().watermarkNavDate(), navFreshness)) {
                 return envelope(payload, ReportFreshness.FRESH, stored.get());
             }
+            if (navFreshness.upstreamCheckDue()) {
+                return reloadSectionAfterRefresh(group, scheme, resolvedStart, payloadType);
+            }
             scheduleRefresh(scheme, resolvedStart);
             ReportFreshness freshness = refreshingKeys.contains(refreshKey(scheme, resolvedStart))
                     ? ReportFreshness.REFRESHING
@@ -189,6 +192,31 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             case INVESTMENT -> FundReportInvestmentSection.class;
             case ASSESSMENT -> FundReportAssessmentSection.class;
         };
+    }
+
+    private <T> ReportSectionEnvelope<T> reloadSectionAfterRefresh(
+            ReportSectionGroup group,
+            String scheme,
+            String startDate,
+            Class<T> payloadType) {
+        String key = refreshKey(scheme, startDate);
+        singleFlightCoordinator.run(key, () -> {
+            ReportDataCoordinator.PreparedReport prepared =
+                    reportDataCoordinator.prepareRefreshed(scheme, startDate);
+            materializeAllSections(scheme, startDate, prepared);
+            reportDataCoordinator.evictReportCaches(scheme, startDate);
+            return null;
+        });
+
+        FundReportSectionSnapshot saved = sectionSnapshotPort.find(scheme, startDate, group)
+                .orElseThrow(() -> new IllegalStateException("Section snapshot missing after refresh"));
+        T payload = FundReportSectionSnapshotMapper.readPayload(
+                saved.payloadJson(), payloadType, objectMapper);
+        NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
+        ReportFreshness freshness = isFresh(saved.watermarkNavDate(), navFreshness)
+                ? ReportFreshness.FRESH
+                : ReportFreshness.STALE;
+        return envelope(payload, freshness, saved);
     }
 
     private void scheduleRefresh(String scheme, String startDate) {

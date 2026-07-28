@@ -129,7 +129,7 @@ class FundReportSectionServiceTest {
     }
 
     @Test
-    void servesStaleSnapshotWhenUpstreamCheckIsDue() {
+    void refreshesSnapshotSynchronouslyWhenUpstreamCheckIsDue() {
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         FundReportOverviewSection overview = (FundReportOverviewSection) FundReportSectionExtractor.extract(
                 ReportSectionGroup.OVERVIEW,
@@ -143,13 +143,16 @@ class FundReportSectionServiceTest {
                 COMPUTED,
                 ReportDataCoordinator.REPORT_SCHEMA_VERSION,
                 0L));
+        Instant refreshedWatermark = Instant.parse("2026-07-27T00:00:00Z");
         when(navHistoryPort.navFreshness("Test Fund"))
-                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true));
+                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true))
+                .thenReturn(new NavFreshness(Optional.of(refreshedWatermark), false));
 
         ReportSectionEnvelope<FundReportOverviewSection> envelope =
                 service.getOverview("Test Fund", null);
 
-        assertEquals(ReportFreshness.STALE, envelope.freshness());
+        assertEquals(ReportFreshness.FRESH, envelope.freshness());
+        assertEquals(refreshedWatermark, envelope.watermarkNavDate());
         verify(reportDataCoordinator).prepareRefreshed("Test Fund", "inception");
     }
 
