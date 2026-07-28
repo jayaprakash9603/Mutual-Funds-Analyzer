@@ -176,7 +176,7 @@ class FundReportControllerTest {
                 emptyBestDays,
                 emptyAllTimeHighs,
                 new SipReportDto(1, 10_000, List.of(), List.of()),
-                new LumpsumReportDto(List.of()),
+                new LumpsumReportDto(100_000, List.of(), List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),
                 new ExpenseReportDto(null, null, null, null, ""),
                 new QualityScoreDto(50, List.of()),

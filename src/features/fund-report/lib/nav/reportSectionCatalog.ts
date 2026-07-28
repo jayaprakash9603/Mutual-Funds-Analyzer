@@ -76,6 +76,7 @@ export const SECTION_GROUPS: SectionGroup[] = [
     label: 'Investment',
     sections: [
       { id: 'lumpsum', label: 'Lump Sum', icon: CircleDollarSign },
+      { id: 'expense', label: 'Expense', icon: CircleDollarSign },
       { id: 'sip', label: 'SIP', icon: Repeat },
       { id: 'stp', label: 'STP', icon: ArrowRightLeft },
       { id: 'swp', label: 'SWP', icon: Wallet },

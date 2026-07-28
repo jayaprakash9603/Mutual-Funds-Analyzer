@@ -118,7 +118,7 @@ public final class MatrixRecoveryAnalyzer {
     }
 
     private static double comparableReturn(MatrixMode mode, int holdingYears, double value) {
-        if (mode == MatrixMode.MULTIPLE) {
+        if (mode.isMultiple()) {
             if (value <= 0 || holdingYears <= 0) {
                 return 0;
             }

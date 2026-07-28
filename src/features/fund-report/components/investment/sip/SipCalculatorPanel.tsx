@@ -9,7 +9,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
 import { fetchSipSimulation } from '../../../api'
-import { findScenarioForAmount, scaleTimeline } from '../../../lib/sipTimeline'
+import { enrichMonthlyAverageCorpus, findScenarioForAmount, scaleTimeline } from '../../../lib/sipTimeline'
 import type { FundReportInvestment, SipScenario, SipTimelinePoint } from '../../../schemas'
 import { SipCorpusChart } from './SipCorpusChart'
 import { SipScenarioTable } from './SipScenarioTable'
@@ -60,7 +60,9 @@ export function SipCalculatorPanel({
   const [amount, setAmount] = useState(defaultAmount)
   const [scheduleDay, setScheduleDay] = useState(defaultDay)
   const initialLocal = applyLocalProjection(sip, defaultAmount, defaultDay, defaultAmount, defaultDay)
-  const [timeline, setTimeline] = useState<SipTimelinePoint[]>(initialLocal?.timeline ?? sip.timeline ?? [])
+  const [timeline, setTimeline] = useState<SipTimelinePoint[]>(
+    enrichMonthlyAverageCorpus(initialLocal?.timeline ?? sip.timeline ?? []) as SipTimelinePoint[],
+  )
   const [activeScenario, setActiveScenario] = useState<SipScenario | null>(
     initialLocal?.scenario ?? findScenarioForAmount(sip.scenarios, defaultAmount),
   )
@@ -89,7 +91,7 @@ export function SipCalculatorPanel({
         const row = findScenarioForAmount(sip.scenarios, amount)
         if (row) setActiveScenario(row)
         if (amount === defaultAmount && scheduleDay === defaultDay) {
-          setTimeline(sip.timeline ?? [])
+          setTimeline(enrichMonthlyAverageCorpus(sip.timeline ?? []) as SipTimelinePoint[])
         }
       }
       return

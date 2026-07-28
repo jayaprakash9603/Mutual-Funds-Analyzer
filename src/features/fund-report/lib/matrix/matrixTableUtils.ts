@@ -3,8 +3,12 @@ import type { MatrixReport } from '../../schemas'
 
 export type MatrixDataRow = MatrixReport['dataRows'][number]
 
+export function isMultipleMatrixMode(mode: string): boolean {
+  return mode === 'MULTIPLE' || mode.endsWith('_MULTIPLE')
+}
+
 export function formatMatrixValue(mode: string, value: number) {
-  if (mode === 'MULTIPLE') return `${value.toFixed(1)}x`
+  if (isMultipleMatrixMode(mode)) return `${value.toFixed(1)}x`
   return `${value.toFixed(0)}%`
 }
 
@@ -60,14 +64,14 @@ export function buildSubsetSummaryRows(
 
       if (label === 'Average') {
         const avg = values.reduce((sum, value) => sum + value, 0) / values.length
-        return mode === 'MULTIPLE' ? avg : Math.round(avg)
+        return isMultipleMatrixMode(mode) ? avg : Math.round(avg)
       }
       if (label === 'Max') {
         const max = Math.max(...values)
-        return mode === 'MULTIPLE' ? max : Math.round(max)
+        return isMultipleMatrixMode(mode) ? max : Math.round(max)
       }
       const min = Math.min(...values)
-      return mode === 'MULTIPLE' ? min : Math.round(min)
+      return isMultipleMatrixMode(mode) ? min : Math.round(min)
     }),
   }))
 }

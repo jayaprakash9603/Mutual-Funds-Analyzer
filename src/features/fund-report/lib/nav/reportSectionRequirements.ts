@@ -18,6 +18,7 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'best-days': ['risk'],
   'all-time-highs': ['risk'],
   lumpsum: ['investment'],
+  expense: ['investment'],
   sip: ['investment'],
   stp: ['investment'],
   swp: ['investment'],
@@ -55,11 +56,11 @@ export function groupsRequiredForSections(sectionIds: Iterable<string>): Set<Rep
 }
 
 export function sectionNeedsMatrix(sectionId: string): boolean {
-  return sectionId === 'lumpsum' || sectionId === 'sip' || sectionId === 'stp'
+  return ['lumpsum', 'sip', 'step-up-sip', 'stp', 'swp'].includes(sectionId)
 }
 
 export function sectionNeedsMultipleMatrix(sectionId: string): boolean {
-  return sectionId === 'probability' || sectionId === 'lumpsum'
+  return sectionId === 'probability'
 }
 
 export function sectionNeedsPeersFetch(sectionId: string): boolean {

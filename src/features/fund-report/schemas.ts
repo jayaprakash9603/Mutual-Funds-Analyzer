@@ -48,6 +48,14 @@ const periodReturnSchema = z.object({
   moneyMultiplied: z.number(),
 })
 
+export const sipTimelinePointSchema = z.object({
+  date: z.string(),
+  invested: z.number(),
+  corpus: z.number(),
+  nav: z.number(),
+  averageCorpus: z.number().optional().default(0),
+})
+
 export const fundReportSchema = z.object({
   scheme: z.string(),
   profile: z.object({
@@ -325,6 +333,7 @@ export const fundReportSchema = z.object({
       invested: z.number(),
       corpus: z.number(),
       nav: z.number(),
+      averageCorpus: z.number().optional(),
     })).optional(),
     scenarios: z.array(z.object({
       monthlyAmount: z.number(),
@@ -338,7 +347,38 @@ export const fundReportSchema = z.object({
       postTaxXirr: z.number().optional(),
     })),
   }),
+  stepUpSip: z.object({
+    scheduleDay: z.number().optional(),
+    chartInitialAmount: z.number().optional(),
+    stepUpMode: z.enum(['PERCENT', 'FIXED']).optional(),
+    stepUpPercent: z.number().optional(),
+    stepUpAmount: z.number().optional(),
+    timeline: z.array(z.object({
+      date: z.string(),
+      invested: z.number(),
+      corpus: z.number(),
+      nav: z.number(),
+      averageCorpus: z.number().optional(),
+    })).optional(),
+    scenarios: z.array(z.object({
+      initialMonthlyAmount: z.number(),
+      currentMonthlyAmount: z.number(),
+      stepUpMode: z.enum(['PERCENT', 'FIXED']),
+      stepUpValue: z.number(),
+      currentValue: z.number(),
+      totalGain: z.number(),
+      xirr: z.number(),
+      moneyInvested: z.number(),
+      projectedValue10Y: z.number(),
+      stcg: z.number().optional(),
+      ltcg: z.number().optional(),
+      postTaxXirr: z.number().optional(),
+      instalmentCount: z.number(),
+    })).default([]),
+  }).optional(),
   lumpsum: z.object({
+    chartAmount: z.number().optional().default(100_000),
+    timeline: z.array(sipTimelinePointSchema).optional().default([]),
     scenarios: z.array(z.object({
       principal: z.number(),
       currentValue: z.number(),
@@ -414,6 +454,7 @@ export type FundReportRisk = z.infer<typeof fundReportRiskSchema>
 
 export const fundReportInvestmentSchema = fundReportSchema.pick({
   sip: true,
+  stepUpSip: true,
   lumpsum: true,
   tax: true,
   expense: true,
@@ -433,12 +474,6 @@ export const sipScenarioSchema = z.object({
 })
 export type SipScenario = z.infer<typeof sipScenarioSchema>
 
-export const sipTimelinePointSchema = z.object({
-  date: z.string(),
-  invested: z.number(),
-  corpus: z.number(),
-  nav: z.number(),
-})
 export type SipTimelinePoint = z.infer<typeof sipTimelinePointSchema>
 
 export const sipSimulationSchema = z.object({
@@ -447,6 +482,36 @@ export const sipSimulationSchema = z.object({
   timeline: z.array(sipTimelinePointSchema),
 })
 export type SipSimulation = z.infer<typeof sipSimulationSchema>
+
+export const stepUpModeSchema = z.enum(['PERCENT', 'FIXED'])
+export type StepUpMode = z.infer<typeof stepUpModeSchema>
+
+export const stepUpSipScenarioSchema = z.object({
+  initialMonthlyAmount: z.number(),
+  currentMonthlyAmount: z.number(),
+  stepUpMode: stepUpModeSchema,
+  stepUpValue: z.number(),
+  currentValue: z.number(),
+  totalGain: z.number(),
+  xirr: z.number(),
+  moneyInvested: z.number(),
+  projectedValue10Y: z.number(),
+  stcg: z.number().optional(),
+  ltcg: z.number().optional(),
+  postTaxXirr: z.number().optional(),
+  instalmentCount: z.number(),
+})
+export type StepUpSipScenario = z.infer<typeof stepUpSipScenarioSchema>
+
+export const stepUpSipSimulationSchema = z.object({
+  scheduleDay: z.number(),
+  stepUpMode: stepUpModeSchema,
+  stepUpPercent: z.number(),
+  stepUpAmount: z.number(),
+  scenario: stepUpSipScenarioSchema,
+  timeline: z.array(sipTimelinePointSchema),
+})
+export type StepUpSipSimulation = z.infer<typeof stepUpSipSimulationSchema>
 
 export const swpScenarioSchema = z.object({
   initialCorpus: z.number(),
@@ -466,6 +531,7 @@ export const swpTimelinePointSchema = z.object({
   corpus: z.number(),
   withdrawn: z.number(),
   nav: z.number(),
+  averageCorpus: z.number().optional().default(0),
 })
 export type SwpTimelinePoint = z.infer<typeof swpTimelinePointSchema>
 

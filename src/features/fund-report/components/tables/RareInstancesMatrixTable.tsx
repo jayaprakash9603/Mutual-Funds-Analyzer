@@ -1,5 +1,5 @@
 import type { MatrixReport } from '../../schemas'
-import { filterMatrixRows } from '../../lib/matrix/matrixTableUtils'
+import { filterMatrixRows, isMultipleMatrixMode } from '../../lib/matrix/matrixTableUtils'
 import { FundsIndiaMatrixTable } from '../tables/FundsIndiaMatrixTable'
 
 type Recovery = NonNullable<MatrixReport['recovery']>
@@ -11,7 +11,7 @@ export function RareInstancesMatrixTable({
   matrix: MatrixReport
   recovery: Recovery
 }) {
-  if (matrix.mode !== 'LUMPSUM' || recovery.instancesBelowBaseline === 0) {
+  if (isMultipleMatrixMode(matrix.mode) || recovery.instancesBelowBaseline === 0) {
     return null
   }
 

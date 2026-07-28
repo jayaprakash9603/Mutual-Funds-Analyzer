@@ -529,10 +529,16 @@ public class FundReportMapper {
     }
 
     private LumpsumReportDto toDto(LumpsumReport report) {
-        return new LumpsumReportDto(report.scenarios().stream()
-                .map(s -> new LumpsumReportDto.LumpsumScenarioDto(
-                        s.principal(), s.currentValue(), s.gain(), s.cagr(), s.moneyMultiplied()))
-                .toList());
+        return new LumpsumReportDto(
+                report.chartAmount(),
+                report.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
+                        .toList(),
+                report.scenarios().stream()
+                        .map(s -> new LumpsumReportDto.LumpsumScenarioDto(
+                                s.principal(), s.currentValue(), s.gain(), s.cagr(), s.moneyMultiplied()))
+                        .toList());
     }
 
     private TaxReportDto toDto(TaxReport report) {

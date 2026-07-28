@@ -35,7 +35,7 @@ public class ReportDataCoordinator {
     public static final String REPORT_CACHE_PREFIX = "fund-report:v12:";
     /** Bumped when the persisted report shape changes; older snapshots are recomputed. */
     /** Bumped when SIP/SWP timelines include month-to-date average corpus. */
-    public static final int REPORT_SCHEMA_VERSION = 10;
+    public static final int REPORT_SCHEMA_VERSION = 11;
 
     private static final String CONTEXT_CACHE_PREFIX = "report-context:v1:";
 

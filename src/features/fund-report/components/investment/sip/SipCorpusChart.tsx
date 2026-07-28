@@ -23,11 +23,13 @@ import {
 } from '@/lib/charts/chartAxes'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { downsample } from '@/lib/utils'
+import { enrichMonthlyAverageCorpus } from '../../../lib/sipTimeline'
 import type { SipTimelinePoint } from '../../../schemas'
 
 const chartConfig = {
   corpus: { label: 'Corpus value', color: CHART_COLORS.fund },
   invested: { label: 'Total invested', color: CHART_COLORS.benchmark },
+  averageCorpus: { label: 'Monthly avg corpus', color: CHART_COLORS.violet },
 } satisfies ChartConfig
 
 function formatLakhs(value: number): string {
@@ -56,6 +58,9 @@ function SipTooltip({
       <p>
         Corpus: <span className="font-mono font-semibold">{formatLakhs(point.corpus)}</span>
       </p>
+      <p>
+        Avg: <span className="font-mono font-semibold">{formatLakhs(point.averageCorpus ?? 0)}</span>
+      </p>
       <p className={gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600'}>
         Gain: <span className="font-mono font-semibold">{formatLakhs(gain)}</span>
       </p>
@@ -68,15 +73,25 @@ type SipCorpusChartProps = {
   timeline: SipTimelinePoint[]
   monthlyAmount: number
   scheduleDay: number
+  chartTitle?: string
+  chartSubtitle?: string
 }
 
-export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorpusChartProps) {
+export function SipCorpusChart({
+  timeline,
+  monthlyAmount,
+  scheduleDay,
+  chartTitle = 'SIP corpus growth',
+  chartSubtitle,
+}: SipCorpusChartProps) {
   const axis = useResponsiveAxis()
   const chartData = useMemo(() => {
-    const mapped = timeline.map((point) => ({
-      ...point,
-      label: point.date,
-    }))
+    const mapped = enrichMonthlyAverageCorpus(
+      timeline.map((point) => ({
+        ...point,
+        label: point.date,
+      })),
+    )
     return downsample(mapped, MAX_CHART_POINTS)
   }, [timeline])
 
@@ -91,9 +106,10 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
   return (
     <div className={CHART_PANEL_CLASS}>
       <div className="mb-3 px-1">
-        <h4 className="text-sm font-semibold text-foreground">SIP corpus growth</h4>
+        <h4 className="text-sm font-semibold text-foreground">{chartTitle}</h4>
         <p className="text-xs text-muted-foreground">
-          ₹{monthlyAmount.toLocaleString('en-IN')}/month on day {scheduleDay} of each month
+          {chartSubtitle ??
+            `₹${monthlyAmount.toLocaleString('en-IN')}/month on day ${scheduleDay} of each month`}
         </p>
       </div>
       <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full sm:h-[360px]">
@@ -142,6 +158,16 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
             stroke={CHART_COLORS.benchmark}
             strokeWidth={2}
             strokeDasharray="6 4"
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="averageCorpus"
+            name="Monthly avg corpus"
+            stroke={CHART_COLORS.violet}
+            strokeWidth={2}
+            strokeDasharray="4 3"
             dot={false}
             isAnimationActive={false}
           />

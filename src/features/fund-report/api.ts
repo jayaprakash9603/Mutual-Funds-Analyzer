@@ -21,6 +21,7 @@ import {
   matrixReportSchema,
   peerComparisonSchema,
   sipSimulationSchema,
+  stepUpSipSimulationSchema,
   swpSimulationSchema,
   type DrawdownPeers,
   type FundReport,
@@ -37,6 +38,8 @@ import {
   type MatrixReport,
   type PeerComparison,
   type SipSimulation,
+  type StepUpMode,
+  type StepUpSipSimulation,
   type SwpSimulation,
 } from './schemas'
 
@@ -143,9 +146,11 @@ export async function fetchFundReportAssessment(
   return fundReportAssessmentEnvelopeSchema.parse(data)
 }
 
+import type { MatrixMode } from './lib/matrix/matrixCache'
+
 export async function fetchFundReportMatrix(
   scheme: string,
-  mode: 'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M',
+  mode: MatrixMode,
   startDate?: string,
   signal?: AbortSignal,
 ): Promise<MatrixReport> {
@@ -222,6 +227,36 @@ export async function fetchSwpSimulation(
     label: 'SWP simulation',
   })
   return swpSimulationSchema.parse(data)
+}
+
+export async function fetchStepUpSipSimulation(
+  scheme: string,
+  options: {
+    initialAmount: number
+    scheduleDay: number
+    stepUpMode: StepUpMode
+    stepUpPercent: number
+    stepUpAmount: number
+    startDate?: string
+    signal?: AbortSignal
+  },
+): Promise<StepUpSipSimulation> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportStepUpSipSimulate, {
+    params: withStartDate(
+      {
+        scheme,
+        initial_amount: String(options.initialAmount),
+        schedule_day: String(options.scheduleDay),
+        step_up_mode: options.stepUpMode,
+        step_up_percent: String(options.stepUpPercent),
+        step_up_amount: String(options.stepUpAmount),
+      },
+      options.startDate,
+    ),
+    signal: options.signal,
+    label: 'Step Up SIP simulation',
+  })
+  return stepUpSipSimulationSchema.parse(data)
 }
 
 export {

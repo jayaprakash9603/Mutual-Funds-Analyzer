@@ -1,13 +1,12 @@
-import { useFundReportMatrix } from '../../hooks/useFundReportMatrix'
 import type { ReportSectionState } from '../../hooks/useReportSection'
 import type { FundReportInvestment } from '../../schemas'
-import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
-import { RareInstancesMatrixTable } from '../tables/RareInstancesMatrixTable'
 import { ReportGroupBoundary, TableSkeleton } from '../layout/ReportGroupBoundary'
 import { SectionHeadline } from '../layout/StatHeadline'
 import { SectionShell } from '../layout/SectionShell'
 import { buildSipHeadline } from '../../lib/headlines/sectionHeadlines'
+import { InvestmentMatrixPanel } from './InvestmentMatrixPanel'
 import { SipCalculatorPanel } from './sip/SipCalculatorPanel'
+import { StepUpSipCalculatorPanel } from './step-up-sip/StepUpSipCalculatorPanel'
 import { SwpCalculatorPanel } from './swp/SwpCalculatorPanel'
 
 type InvestmentSectionProps = {
@@ -18,10 +17,6 @@ type InvestmentSectionProps = {
 }
 
 export function SipSection({ scheme, investment, startDate, isSharedView = false }: InvestmentSectionProps) {
-  const matrixEnabled = !!scheme && !isSharedView
-  const { data: sipMatrix, loading: sipMatrixLoading, error: sipMatrixError, retry: retrySipMatrix } =
-    useFundReportMatrix(scheme || null, 'SIP', matrixEnabled, startDate)
-
   return (
     <SectionShell
       id="sip"
@@ -47,43 +42,68 @@ export function SipSection({ scheme, investment, startDate, isSharedView = false
         )}
       </ReportGroupBoundary>
 
-      <div className="mt-6">
-        <h4 className="mb-3 text-sm font-semibold text-foreground">SIP return matrix</h4>
-        {isSharedView ? (
-          <p className="text-sm text-muted-foreground">SIP matrix is not included in shared snapshots.</p>
-        ) : sipMatrixLoading ? (
-          <HeatMatrixSkeleton />
-        ) : sipMatrixError ? (
-          <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            <p>{sipMatrixError}</p>
-            <button
-              type="button"
-              onClick={retrySipMatrix}
-              className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-medium"
-            >
-              Retry
-            </button>
-          </div>
-        ) : sipMatrix && sipMatrix.dataRows.length > 0 ? (
-          <div>
-            <HeatMatrix data={sipMatrix} />
-            {sipMatrix.recovery ? (
-              <RareInstancesMatrixTable matrix={sipMatrix} recovery={sipMatrix.recovery} />
-            ) : null}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Matrix data is not available yet.</p>
-        )}
-      </div>
+      <InvestmentMatrixPanel
+        scheme={scheme}
+        startDate={startDate}
+        isSharedView={isSharedView}
+        title="SIP return matrix"
+        tabs={[
+          { value: 'SIP', label: 'XIRR Matrix' },
+          { value: 'SIP_MULTIPLE', label: 'Multiplier Matrix' },
+        ]}
+      />
     </SectionShell>
   )
 }
 
-export function StpSection({ scheme, isSharedView = false }: Pick<InvestmentSectionProps, 'scheme' | 'isSharedView'>) {
-  const matrixEnabled = !!scheme && !isSharedView
-  const { data: stpMatrix, loading: stpMatrixLoading, error: stpMatrixError, retry: retryStpMatrix } =
-    useFundReportMatrix(scheme || null, 'STP_6M', matrixEnabled)
+export function StepUpSipSection({
+  scheme,
+  investment,
+  startDate,
+  isSharedView = false,
+}: InvestmentSectionProps) {
+  return (
+    <SectionShell
+      id="step-up-sip"
+      title="Step Up SIP Analysis"
+      description="Increase your monthly SIP every year on each SIP anniversary — percentage or fixed amount."
+    >
+      <ReportGroupBoundary state={investment} skeleton={<TableSkeleton rows={4} />}>
+        {(data) => (
+          <>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Step Up SIP starts at your chosen monthly amount and increases every 12 instalments.
+              Outcomes use daily NAV history with the same tax rules as regular SIP redemptions.
+            </p>
+            <StepUpSipCalculatorPanel
+              scheme={scheme}
+              stepUpSip={data.stepUpSip}
+              startDate={startDate}
+              isSharedView={isSharedView}
+            />
+          </>
+        )}
+      </ReportGroupBoundary>
 
+      <InvestmentMatrixPanel
+        scheme={scheme}
+        startDate={startDate}
+        isSharedView={isSharedView}
+        title="Step Up SIP return matrix"
+        tabs={[
+          { value: 'STEP_UP_SIP', label: 'XIRR Matrix' },
+          { value: 'STEP_UP_SIP_MULTIPLE', label: 'Multiplier Matrix' },
+        ]}
+      />
+    </SectionShell>
+  )
+}
+
+export function StpSection({
+  scheme,
+  startDate,
+  isSharedView = false,
+}: Pick<InvestmentSectionProps, 'scheme' | 'startDate' | 'isSharedView'>) {
   return (
     <SectionShell
       id="stp"
@@ -94,37 +114,26 @@ export function StpSection({ scheme, isSharedView = false }: Pick<InvestmentSect
         Systematic Transfer Plan (STP) deploys a lump sum in tranches over time. Full STP scenario
         analysis is coming in a future update.
       </p>
-      <div>
-        <h4 className="mb-3 text-sm font-semibold text-foreground">6-month STP matrix</h4>
-        {isSharedView ? (
-          <p className="text-sm text-muted-foreground">STP matrix is not included in shared snapshots.</p>
-        ) : stpMatrix ? (
-          <div className={stpMatrixLoading ? 'opacity-70 transition-opacity' : undefined}>
-            <HeatMatrix data={stpMatrix} />
-            {stpMatrix.recovery ? (
-              <RareInstancesMatrixTable matrix={stpMatrix} recovery={stpMatrix.recovery} />
-            ) : null}
-          </div>
-        ) : stpMatrixLoading ? (
-          <HeatMatrixSkeleton />
-        ) : stpMatrixError ? (
-          <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            <p>{stpMatrixError}</p>
-            <button
-              type="button"
-              onClick={retryStpMatrix}
-              className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-medium"
-            >
-              Retry
-            </button>
-          </div>
-        ) : null}
-      </div>
+
+      <InvestmentMatrixPanel
+        scheme={scheme}
+        startDate={startDate}
+        isSharedView={isSharedView}
+        title="6-month STP return matrix"
+        tabs={[
+          { value: 'STP_6M', label: 'XIRR Matrix' },
+          { value: 'STP_6M_MULTIPLE', label: 'Multiplier Matrix' },
+        ]}
+      />
     </SectionShell>
   )
 }
 
-export function SwpSection({ scheme, startDate, isSharedView = false }: Pick<InvestmentSectionProps, 'scheme' | 'startDate' | 'isSharedView'>) {
+export function SwpSection({
+  scheme,
+  startDate,
+  isSharedView = false,
+}: Pick<InvestmentSectionProps, 'scheme' | 'startDate' | 'isSharedView'>) {
   return (
     <SectionShell
       id="swp"
@@ -136,6 +145,17 @@ export function SwpSection({ scheme, startDate, isSharedView = false }: Pick<Inv
         amount each month. Tax on withdrawals uses the same equity STCG/LTCG rules as SIP redemptions.
       </p>
       <SwpCalculatorPanel scheme={scheme} startDate={startDate} isSharedView={isSharedView} />
+
+      <InvestmentMatrixPanel
+        scheme={scheme}
+        startDate={startDate}
+        isSharedView={isSharedView}
+        title="SWP return matrix"
+        tabs={[
+          { value: 'SWP', label: 'XIRR Matrix' },
+          { value: 'SWP_MULTIPLE', label: 'Multiplier Matrix' },
+        ]}
+      />
     </SectionShell>
   )
 }

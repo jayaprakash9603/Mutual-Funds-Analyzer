@@ -1,6 +1,16 @@
 import { fetchFundReportMatrix, type MatrixReport } from '../../api'
 
-export type MatrixMode = 'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'
+export type MatrixMode =
+  | 'LUMPSUM'
+  | 'MULTIPLE'
+  | 'SIP'
+  | 'SIP_MULTIPLE'
+  | 'STP_6M'
+  | 'STP_6M_MULTIPLE'
+  | 'STEP_UP_SIP'
+  | 'STEP_UP_SIP_MULTIPLE'
+  | 'SWP'
+  | 'SWP_MULTIPLE'
 
 type MatrixCacheEntry = {
   data: MatrixReport | null

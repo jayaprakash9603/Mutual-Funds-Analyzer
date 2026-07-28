@@ -12,6 +12,7 @@ import {
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
+import { MAX_CHART_POINTS } from '@/lib/constants'
 import {
   AXIS_LINE,
   GRID_STROKE,
@@ -22,11 +23,13 @@ import {
 } from '@/lib/charts/chartAxes'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { downsample } from '@/lib/utils'
+import { enrichMonthlyAverageCorpus } from '../../../lib/sipTimeline'
 import type { SwpTimelinePoint } from '../../../schemas'
 
 const chartConfig = {
   corpus: { label: 'Remaining corpus', color: CHART_COLORS.fund },
   withdrawn: { label: 'Total withdrawn', color: CHART_COLORS.benchmark },
+  averageCorpus: { label: 'Monthly avg corpus', color: CHART_COLORS.violet },
 } satisfies ChartConfig
 
 function formatLakhs(value: number): string {
@@ -54,6 +57,9 @@ function SwpTooltip({
       <p>
         Withdrawn: <span className="font-mono font-semibold">{formatLakhs(point.withdrawn)}</span>
       </p>
+      <p>
+        Avg: <span className="font-mono font-semibold">{formatLakhs(point.averageCorpus ?? 0)}</span>
+      </p>
       <p className="text-xs text-muted-foreground">NAV ₹{point.nav.toFixed(2)}</p>
     </div>
   )
@@ -74,11 +80,13 @@ export function SwpCorpusChart({
 }: SwpCorpusChartProps) {
   const axis = useResponsiveAxis()
   const chartData = useMemo(() => {
-    const mapped = timeline.map((point) => ({
-      ...point,
-      label: point.date.slice(0, 7),
-    }))
-    return downsample(mapped, 120)
+    const mapped = enrichMonthlyAverageCorpus(
+      timeline.map((point) => ({
+        ...point,
+        label: point.date,
+      })),
+    )
+    return downsample(mapped, MAX_CHART_POINTS)
   }, [timeline])
 
   if (chartData.length === 0) {
@@ -108,8 +116,14 @@ export function SwpCorpusChart({
             tick={axis.tick}
             minTickGap={axis.xGap}
             height={axis.xHeight}
+            tickFormatter={(value: string) => {
+              if (typeof value !== 'string' || value.length < 7) return value
+              const year = value.slice(0, 4)
+              const month = value.slice(5, 7)
+              return month === '01' ? year : `${year.slice(2)}-${month}`
+            }}
           >
-            <Label {...xLabel('Month', -2)} />
+            <Label {...xLabel('Date', -2)} />
           </XAxis>
           <YAxis
             tickLine={TICK_LINE}
@@ -138,6 +152,16 @@ export function SwpCorpusChart({
             stroke={CHART_COLORS.benchmark}
             strokeWidth={2}
             strokeDasharray="6 4"
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="averageCorpus"
+            name="Monthly avg corpus"
+            stroke={CHART_COLORS.violet}
+            strokeWidth={2}
+            strokeDasharray="4 3"
             dot={false}
             isAnimationActive={false}
           />

@@ -13,7 +13,6 @@ import { FinalRecommendationPanel } from '@/features/fund-report/components/layo
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ChartContainer,
   ChartTooltip,
@@ -59,7 +58,6 @@ import {
   buildDistributionHeadline,
   buildDrawdownHeadline,
   buildIntraYearDeclineHeadline,
-  buildLumpsumHeadline,
   buildProbabilityHeadline,
   buildRollingReturnsHeadline,
   buildSortedReturnsHeadline,
@@ -83,7 +81,6 @@ import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart
 import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
-import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
 import { MultiplyProbabilityTable } from '../tables/MultiplyProbabilityTable'
 import { PeerComparisonTable } from '../tables/PeerComparisonTable'
 import { GaugeMeter, ProbabilityBar } from '../charts/ReportVisuals'
@@ -96,10 +93,9 @@ import {
 } from './ReportGroupBoundary'
 import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
-import { RareInstancesMatrixTable } from '../tables/RareInstancesMatrixTable'
-import { SipSection, StpSection, SwpSection } from '../investment/InvestmentStrategySections'
+import { LumpsumSection } from '../investment/LumpsumSection'
+import { SipSection, StepUpSipSection, StpSection, SwpSection } from '../investment/InvestmentStrategySections'
 import {
-  sectionNeedsMatrix,
   sectionNeedsMultipleMatrix,
   sectionNeedsPeersFetch,
 } from '../../lib/nav/reportSectionRequirements'
@@ -146,16 +142,11 @@ export function FundReportSections({
   renderAll = false,
   startDate,
 }: FundReportSectionsProps) {
-  const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE'>('LUMPSUM')
   const chartAxis = useResponsiveAxis()
   const schemeSelected = !!scheme
-  const matrixActive = renderAll || sectionNeedsMatrix(activeSection)
   const multipleMatrixActive = renderAll || sectionNeedsMultipleMatrix(activeSection)
   const peersActive = renderAll || sectionNeedsPeersFetch(activeSection)
-  const matrixEnabled = schemeSelected && !isSharedView && matrixActive
 
-  const { data: matrix, loading: matrixLoading, error: matrixError, retry: retryMatrix } =
-    useFundReportMatrix(scheme || null, matrixMode, matrixEnabled, startDate)
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
@@ -449,63 +440,12 @@ export function FundReportSections({
       ) : null}
 
       {shouldRender('lumpsum') ? (
-      <SectionShell id="lumpsum" title="Lump Sum Analysis">
-        <ReportGroupBoundary state={investment} skeleton={null}>
-          {(data) => (
-            <SectionHeadline className="mb-4" headline={buildLumpsumHeadline(data.lumpsum)} />
-          )}
-        </ReportGroupBoundary>
-        <Tabs value={matrixMode} onValueChange={(v) => setMatrixMode(v as typeof matrixMode)}>
-          <TabsList scrollable>
-            <TabsTrigger value="LUMPSUM">CAGR Matrix</TabsTrigger>
-            <TabsTrigger value="MULTIPLE">Multiplier Matrix</TabsTrigger>
-          </TabsList>
-          <TabsContent value={matrixMode} className="mt-4 w-full">
-            {isSharedView ? (
-              <p className="text-sm text-muted-foreground">
-                Investment matrices are not included in shared snapshots.
-              </p>
-            ) : matrix ? (
-              <div className={matrixLoading ? 'opacity-70 transition-opacity' : undefined}>
-                <HeatMatrix data={matrix} />
-                {matrix.recovery ? (
-                  <RareInstancesMatrixTable matrix={matrix} recovery={matrix.recovery} />
-                ) : null}
-              </div>
-            ) : matrixLoading ? (
-              <HeatMatrixSkeleton />
-            ) : matrixError ? (
-              <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-                <p>{matrixError}</p>
-                <button
-                  type="button"
-                  onClick={retryMatrix}
-                  className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs font-medium"
-                >
-                  Retry
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Matrix data is not available for this mode.</p>
-            )}
-          </TabsContent>
-        </Tabs>
-        <ReportGroupBoundary state={investment} skeleton={<MetricGridSkeleton count={5} />}>
-          {(data) => (
-            <div className="mt-5 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {data.lumpsum.scenarios.map((s) => (
-                <MetricTile
-                  key={s.principal}
-                  size="lg"
-                  label={`₹${(s.principal / 100000).toFixed(s.principal >= 100000 ? 0 : 1)}${s.principal >= 100000 ? 'L' : 'k'}`}
-                  value={`₹${s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  hint={`${s.moneyMultiplied.toFixed(2)}x · CAGR ${s.cagr.toFixed(1)}%`}
-                />
-              ))}
-            </div>
-          )}
-        </ReportGroupBoundary>
-      </SectionShell>
+        <LumpsumSection
+          scheme={scheme}
+          investment={investment}
+          startDate={startDate}
+          isSharedView={isSharedView}
+        />
       ) : null}
 
       {shouldRender("drawdown") ? (
@@ -683,6 +623,24 @@ export function FundReportSections({
       </SectionShell>
       ) : null}
 
+      {shouldRender("expense") ? (
+      <SectionShell id="expense" title="Expense Analysis">
+        <ReportGroupBoundary state={investment} skeleton={<MetricGridSkeleton count={3} />}>
+          {(data) =>
+            data.expense.expenseRatio == null ? (
+              <UnavailableNotice label="Expense ratio and category comparison" />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-3">
+                <MetricTile label="Expense ratio" value={`${data.expense.expenseRatio}%`} />
+                <MetricTile label="10Y cost on ₹1L" value={`₹${data.expense.costOver10Years?.toFixed(0)}`} />
+                <MetricTile label="20Y cost on ₹1L" value={`₹${data.expense.costOver20Years?.toFixed(0)}`} />
+              </div>
+            )
+          }
+        </ReportGroupBoundary>
+      </SectionShell>
+      ) : null}
+
       {shouldRender('sip') ? (
         <SipSection
           scheme={scheme}
@@ -692,8 +650,17 @@ export function FundReportSections({
         />
       ) : null}
 
+      {shouldRender('step-up-sip') ? (
+        <StepUpSipSection
+          scheme={scheme}
+          investment={investment}
+          startDate={startDate}
+          isSharedView={isSharedView}
+        />
+      ) : null}
+
       {shouldRender('stp') ? (
-        <StpSection scheme={scheme} isSharedView={isSharedView} />
+        <StpSection scheme={scheme} startDate={startDate} isSharedView={isSharedView} />
       ) : null}
 
       {shouldRender('swp') ? (

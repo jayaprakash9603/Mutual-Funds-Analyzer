@@ -2,8 +2,11 @@ package in.goldentriangle.mfa.domain.analytics.report.matrix;
 
 import in.goldentriangle.mfa.domain.analytics.report.core.NavLookup;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarMath;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import in.goldentriangle.mfa.domain.model.NavPoint;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpMode;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
@@ -86,7 +89,7 @@ public class MatrixCalculator {
     }
 
     private ReturnBand bandFor(MatrixMode mode, double value) {
-        if (mode == MatrixMode.MULTIPLE) {
+        if (mode.isMultiple()) {
             double impliedCagr = value <= 0 ? 0 : (Math.pow(value, 1.0 / 7) - 1) * 100;
             return ReturnBandClassifier.classify(impliedCagr);
         }
@@ -97,8 +100,14 @@ public class MatrixCalculator {
         return switch (mode) {
             case LUMPSUM -> lumpsumReturn(nav, start, end, false);
             case MULTIPLE -> lumpsumReturn(nav, start, end, true);
-            case SIP -> sipCagr(nav, start, end);
-            case STP_6M -> stpCagr(nav, start, end);
+            case SIP -> sipReturn(nav, start, end, false);
+            case SIP_MULTIPLE -> sipReturn(nav, start, end, true);
+            case STP_6M -> stpReturn(nav, start, end, false);
+            case STP_6M_MULTIPLE -> stpReturn(nav, start, end, true);
+            case STEP_UP_SIP -> stepUpSipReturn(nav, start, end, false);
+            case STEP_UP_SIP_MULTIPLE -> stepUpSipReturn(nav, start, end, true);
+            case SWP -> swpReturn(nav, start, end, false);
+            case SWP_MULTIPLE -> swpReturn(nav, start, end, true);
         };
     }
 
@@ -128,40 +137,145 @@ public class MatrixCalculator {
         return CalendarMath.cagr(startNav.get().nav(), endNav.get().nav(), years);
     }
 
-    private Double sipCagr(List<NavPoint> nav, Instant start, Instant end) {
+    private Double sipReturn(List<NavPoint> nav, Instant start, Instant end, boolean asMultiple) {
+        SipWindowResult result = simulateFlatSip(nav, start, end, 1);
+        if (result == null) {
+            return null;
+        }
+        return asMultiple ? result.finalValue / result.invested : result.xirr;
+    }
+
+    private Double stpReturn(List<NavPoint> nav, Instant start, Instant end, boolean asMultiple) {
+        Instant deployEnd = start.atZone(ZoneOffset.UTC).plusMonths(STP_MONTHS).toInstant();
+        if (deployEnd.isAfter(end)) {
+            return null;
+        }
+        return sipReturn(nav, start, end, asMultiple);
+    }
+
+    private Double stepUpSipReturn(List<NavPoint> nav, Instant start, Instant end, boolean asMultiple) {
+        StepUpSipConfig config = new StepUpSipConfig(
+                1,
+                1,
+                StepUpMode.PERCENT,
+                StepUpSipConfig.DEFAULT_STEP_UP_PERCENT,
+                0);
         List<Xirr.CashFlow> flows = new ArrayList<>();
         long baseDay = start.toEpochMilli() / (24 * 60 * 60 * 1000);
         Instant cursor = start;
         double units = 0;
+        double invested = 0;
+        int instalmentIndex = 0;
+        while (!cursor.isAfter(end)) {
+            Instant installmentDate = cursor;
+            Optional<NavPoint> point = NavLookup.navOnOrAfter(nav, installmentDate)
+                    .filter(p -> ChronoUnit.DAYS.between(installmentDate, p.date()) <= MAX_START_SLIP_DAYS);
+            if (point.isPresent() && point.get().nav() > 0) {
+                int amount = StepUpSipCalculator.resolveInstalmentAmount(1, instalmentIndex, config);
+                units += amount / point.get().nav();
+                invested += amount;
+                long day = point.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
+                flows.add(new Xirr.CashFlow(day - baseDay, -amount));
+                instalmentIndex++;
+            }
+            cursor = cursor.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+        }
+        Optional<NavPoint> endPoint = NavLookup.navOnOrBefore(nav, end);
+        if (endPoint.isEmpty() || units == 0 || invested <= 0 || flows.size() < 2) {
+            return null;
+        }
+        double finalValue = units * endPoint.get().nav();
+        long endDay = endPoint.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
+        flows.add(new Xirr.CashFlow(endDay - baseDay, finalValue));
+        if (asMultiple) {
+            return finalValue / invested;
+        }
+        return Xirr.compute(flows);
+    }
+
+    private Double swpReturn(List<NavPoint> nav, Instant start, Instant end, boolean asMultiple) {
+        Optional<NavPoint> startNav = NavLookup.navOnOrAfter(nav, start);
+        Optional<NavPoint> endNav = NavLookup.navOnOrBefore(nav, end);
+        if (startNav.isEmpty() || endNav.isEmpty()) {
+            return null;
+        }
+        if (!startNav.get().date().isBefore(endNav.get().date())) {
+            return null;
+        }
+        if (ChronoUnit.DAYS.between(start, startNav.get().date()) > MAX_START_SLIP_DAYS) {
+            return null;
+        }
+
+        double initialCorpus = 100.0;
+        double monthlyWithdrawal = 1.0;
+        double units = initialCorpus / startNav.get().nav();
+        double withdrawn = 0;
+        List<Xirr.CashFlow> flows = new ArrayList<>();
+        long baseDay = startNav.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
+        flows.add(new Xirr.CashFlow(0, -initialCorpus));
+
+        Instant cursor = startNav.get().date().atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+        while (!cursor.isAfter(end)) {
+            Instant withdrawalDate = cursor;
+            Optional<NavPoint> point = NavLookup.navOnOrAfter(nav, withdrawalDate)
+                    .filter(p -> ChronoUnit.DAYS.between(withdrawalDate, p.date()) <= MAX_START_SLIP_DAYS);
+            if (point.isPresent() && point.get().nav() > 0) {
+                double corpusValue = units * point.get().nav();
+                if (corpusValue <= 0) {
+                    break;
+                }
+                double payout = Math.min(monthlyWithdrawal, corpusValue);
+                units -= payout / point.get().nav();
+                withdrawn += payout;
+                long day = point.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
+                flows.add(new Xirr.CashFlow(day - baseDay, payout));
+            }
+            cursor = cursor.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+        }
+
+        double remaining = units * endNav.get().nav();
+        long endDay = endNav.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
+        flows.add(new Xirr.CashFlow(endDay - baseDay, remaining));
+        if (flows.size() < 2) {
+            return null;
+        }
+        if (asMultiple) {
+            return (withdrawn + remaining) / initialCorpus;
+        }
+        return Xirr.compute(flows);
+    }
+
+    private SipWindowResult simulateFlatSip(List<NavPoint> nav, Instant start, Instant end, int monthlyAmount) {
+        List<Xirr.CashFlow> flows = new ArrayList<>();
+        long baseDay = start.toEpochMilli() / (24 * 60 * 60 * 1000);
+        Instant cursor = start;
+        double units = 0;
+        double invested = 0;
         int installments = 0;
         while (!cursor.isAfter(end)) {
             Instant installmentDate = cursor;
             Optional<NavPoint> point = NavLookup.navOnOrAfter(nav, installmentDate)
                     .filter(p -> ChronoUnit.DAYS.between(installmentDate, p.date()) <= MAX_START_SLIP_DAYS);
             if (point.isPresent() && point.get().nav() > 0) {
-                units += 1.0 / point.get().nav();
+                units += monthlyAmount / point.get().nav();
+                invested += monthlyAmount;
                 installments++;
                 long day = point.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
-                flows.add(new Xirr.CashFlow(day - baseDay, -1));
+                flows.add(new Xirr.CashFlow(day - baseDay, -monthlyAmount));
             }
             cursor = cursor.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
         }
         Optional<NavPoint> endPoint = NavLookup.navOnOrBefore(nav, end);
-        if (endPoint.isEmpty() || units == 0 || installments < 2) {
+        if (endPoint.isEmpty() || units == 0 || installments < 2 || invested <= 0) {
             return null;
         }
         double finalValue = units * endPoint.get().nav();
         long endDay = endPoint.get().date().toEpochMilli() / (24 * 60 * 60 * 1000);
         flows.add(new Xirr.CashFlow(endDay - baseDay, finalValue));
-        return Xirr.compute(flows);
+        return new SipWindowResult(invested, finalValue, Xirr.compute(flows));
     }
 
-    private Double stpCagr(List<NavPoint> nav, Instant start, Instant end) {
-        Instant deployEnd = start.atZone(ZoneOffset.UTC).plusMonths(STP_MONTHS).toInstant();
-        if (deployEnd.isAfter(end)) {
-            return null;
-        }
-        return sipCagr(nav, start, end);
+    private record SipWindowResult(double invested, double finalValue, double xirr) {
     }
 
     private MatrixReport.MatrixRow summaryRow(String label, List<List<Double>> columns, Boolean max) {
