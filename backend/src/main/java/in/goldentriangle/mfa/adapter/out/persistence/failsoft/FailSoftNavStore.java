@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,6 +44,16 @@ public class FailSoftNavStore implements NavStorePort {
             return delegate.loadPoints(schemeCode, series);
         } catch (Exception ex) {
             log.warn("NAV point load failed for {} / {}: {}", schemeCode, series, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<NavPoint> loadPoints(int schemeCode, NavSeries series, Instant fromDateInclusive) {
+        try {
+            return delegate.loadPoints(schemeCode, series, fromDateInclusive);
+        } catch (Exception ex) {
+            log.warn("NAV point load failed for {} / {} from {}: {}", schemeCode, series, fromDateInclusive, ex.getMessage());
             return List.of();
         }
     }

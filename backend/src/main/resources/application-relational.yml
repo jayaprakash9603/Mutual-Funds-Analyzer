@@ -8,6 +8,8 @@ spring:
   datasource:
     hikari:
       initialization-fail-timeout: -1
+      maximum-pool-size: 32
+      minimum-idle: 8
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,7 +17,9 @@ spring:
     properties:
       hibernate:
         jdbc:
-          batch_size: 500
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
   flyway:
     enabled: true
 

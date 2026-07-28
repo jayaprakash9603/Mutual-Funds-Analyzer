@@ -20,9 +20,13 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
+import in.goldentriangle.mfa.config.metrics.ReportComputeMetrics;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.concurrent.Executor;
 
 @Configuration
 @EnableConfigurationProperties(ReportProperties.class)
@@ -120,7 +124,9 @@ public class ReportConfig {
             ExpenseCalculator expenseCalculator,
             QualityScoreCalculator qualityScoreCalculator,
             VerdictEngine verdictEngine,
-            MatrixCalculator matrixCalculator) {
+            MatrixCalculator matrixCalculator,
+            @Qualifier("computeExecutor") Executor computeExecutor,
+            ReportComputeMetrics metrics) {
         return new FundReportEngine(
                 goldenTriangleEvaluator,
                 trailingReturnsCalculator,
@@ -137,6 +143,8 @@ public class ReportConfig {
                 expenseCalculator,
                 qualityScoreCalculator,
                 verdictEngine,
-                matrixCalculator);
+                matrixCalculator,
+                computeExecutor,
+                metrics);
     }
 }

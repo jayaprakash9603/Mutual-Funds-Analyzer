@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.report.returns;
 
+import in.goldentriangle.mfa.domain.analytics.NavSeriesOrder;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
@@ -13,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class CalendarYearInsightsCalculator {
 
@@ -47,9 +47,7 @@ public class CalendarYearInsightsCalculator {
             return emptyReport();
         }
 
-        List<NavPoint> sortedNav = fundNav.stream()
-                .sorted(Comparator.comparing(NavPoint::date))
-                .toList();
+        List<NavPoint> sortedNav = NavSeriesOrder.dedupeAndSort(fundNav);
 
         return new CalendarYearInsightsReport(
                 buildDistribution(calendarYears),
@@ -142,24 +140,26 @@ public class CalendarYearInsightsCalculator {
     }
 
     private static CalendarYearInsightsReport.ProfitBookingComparison buildProfitBooking(List<NavPoint> sortedNav) {
-        Map<Integer, List<NavPoint>> byYear = sortedNav.stream()
-                .collect(Collectors.groupingBy(
-                        p -> p.date().atZone(ZoneOffset.UTC).getYear(),
-                        LinkedHashMap::new,
-                        Collectors.toList()));
+        Map<Integer, Integer> yearStartIndex = new LinkedHashMap<>();
+        Map<Integer, Integer> yearEndIndex = new LinkedHashMap<>();
+        for (int i = 0; i < sortedNav.size(); i++) {
+            int year = sortedNav.get(i).date().atZone(ZoneOffset.UTC).getYear();
+            yearStartIndex.putIfAbsent(year, i);
+            yearEndIndex.put(year, i);
+        }
 
-        List<Integer> years = byYear.keySet().stream().sorted().toList();
+        List<Integer> years = yearStartIndex.keySet().stream().sorted().toList();
         List<CalendarYearInsightsReport.ProfitBookingRow> rows = new ArrayList<>();
 
         for (int i = 0; i <= years.size() - ROLLING_WINDOW_YEARS; i++) {
             int startYear = years.get(i);
             int endYear = startYear + ROLLING_WINDOW_YEARS - 1;
-            List<NavPoint> window = sortedNav.stream()
-                    .filter(p -> {
-                        int year = p.date().atZone(ZoneOffset.UTC).getYear();
-                        return year >= startYear && year <= endYear;
-                    })
-                    .toList();
+            Integer fromIndex = yearStartIndex.get(startYear);
+            Integer toIndex = yearEndIndex.get(endYear);
+            if (fromIndex == null || toIndex == null || toIndex <= fromIndex) {
+                continue;
+            }
+            List<NavPoint> window = sortedNav.subList(fromIndex, toIndex + 1);
             if (window.size() < 2) {
                 continue;
             }

@@ -9,12 +9,15 @@ import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportRiskDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.ReportSectionEnvelopeDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
+import in.goldentriangle.mfa.adapter.in.web.support.ReportSectionResponses;
 import in.goldentriangle.mfa.config.feature.ConditionalOnFeature;
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportSectionUseCase;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,43 +63,58 @@ public class FundReportController {
     }
 
     @GetMapping("/fund-report/overview")
-    ReportSectionEnvelopeDto<FundReportOverviewDto> getOverview(
+    ResponseEntity<ReportSectionEnvelopeDto<FundReportOverviewDto>> getOverview(
             @RequestParam String scheme,
-            @RequestParam(name = "start_date", required = false) String startDate) {
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
         requireScheme(scheme);
-        return fundReportMapper.toOverviewDto(getFundReportSectionUseCase.getOverview(scheme, startDate));
+        return ReportSectionResponses.ok(
+                fundReportMapper.toOverviewDto(getFundReportSectionUseCase.getOverview(scheme, startDate)),
+                ifNoneMatch);
     }
 
     @GetMapping("/fund-report/performance")
-    ReportSectionEnvelopeDto<FundReportPerformanceDto> getPerformance(
+    ResponseEntity<ReportSectionEnvelopeDto<FundReportPerformanceDto>> getPerformance(
             @RequestParam String scheme,
-            @RequestParam(name = "start_date", required = false) String startDate) {
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
         requireScheme(scheme);
-        return fundReportMapper.toPerformanceDto(getFundReportSectionUseCase.getPerformance(scheme, startDate));
+        return ReportSectionResponses.ok(
+                fundReportMapper.toPerformanceDto(getFundReportSectionUseCase.getPerformance(scheme, startDate)),
+                ifNoneMatch);
     }
 
     @GetMapping("/fund-report/risk")
-    ReportSectionEnvelopeDto<FundReportRiskDto> getRisk(
+    ResponseEntity<ReportSectionEnvelopeDto<FundReportRiskDto>> getRisk(
             @RequestParam String scheme,
-            @RequestParam(name = "start_date", required = false) String startDate) {
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
         requireScheme(scheme);
-        return fundReportMapper.toRiskDto(getFundReportSectionUseCase.getRisk(scheme, startDate));
+        return ReportSectionResponses.ok(
+                fundReportMapper.toRiskDto(getFundReportSectionUseCase.getRisk(scheme, startDate)),
+                ifNoneMatch);
     }
 
     @GetMapping("/fund-report/investment")
-    ReportSectionEnvelopeDto<FundReportInvestmentDto> getInvestment(
+    ResponseEntity<ReportSectionEnvelopeDto<FundReportInvestmentDto>> getInvestment(
             @RequestParam String scheme,
-            @RequestParam(name = "start_date", required = false) String startDate) {
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
         requireScheme(scheme);
-        return fundReportMapper.toInvestmentDto(getFundReportSectionUseCase.getInvestment(scheme, startDate));
+        return ReportSectionResponses.ok(
+                fundReportMapper.toInvestmentDto(getFundReportSectionUseCase.getInvestment(scheme, startDate)),
+                ifNoneMatch);
     }
 
     @GetMapping("/fund-report/assessment")
-    ReportSectionEnvelopeDto<FundReportAssessmentDto> getAssessment(
+    ResponseEntity<ReportSectionEnvelopeDto<FundReportAssessmentDto>> getAssessment(
             @RequestParam String scheme,
-            @RequestParam(name = "start_date", required = false) String startDate) {
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
         requireScheme(scheme);
-        return fundReportMapper.toAssessmentDto(getFundReportSectionUseCase.getAssessment(scheme, startDate));
+        return ReportSectionResponses.ok(
+                fundReportMapper.toAssessmentDto(getFundReportSectionUseCase.getAssessment(scheme, startDate)),
+                ifNoneMatch);
     }
 
     private static void requireScheme(String scheme) {

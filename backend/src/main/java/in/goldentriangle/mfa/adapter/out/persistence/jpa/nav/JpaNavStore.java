@@ -11,22 +11,26 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Repository
 @Profile({Profiles.MYSQL, Profiles.H2, Profiles.POSTGRES, Profiles.JPA})
 public class JpaNavStore implements NavStorePort {
 
-    private final NavPointJpaRepository pointRepository;
+    private final NavPointJdbcReader pointReader;
+    private final NavPointJdbcWriter pointWriter;
     private final NavSeriesMetaJpaRepository metaRepository;
 
-    public JpaNavStore(NavPointJpaRepository pointRepository, NavSeriesMetaJpaRepository metaRepository) {
-        this.pointRepository = pointRepository;
+    public JpaNavStore(
+            NavPointJdbcReader pointReader,
+            NavPointJdbcWriter pointWriter,
+            NavSeriesMetaJpaRepository metaRepository) {
+        this.pointReader = pointReader;
+        this.pointWriter = pointWriter;
         this.metaRepository = metaRepository;
     }
 
@@ -37,32 +41,21 @@ public class JpaNavStore implements NavStorePort {
 
     @Override
     public List<NavPoint> loadPoints(int schemeCode, NavSeries series) {
-        return pointRepository.findBySchemeCodeAndSeriesOrderByNavDateAsc(schemeCode, series.name()).stream()
-                .map(NavStoreMapper::toDomain)
-                .toList();
+        return pointReader.loadAll(schemeCode, series);
+    }
+
+    @Override
+    public List<NavPoint> loadPoints(int schemeCode, NavSeries series, Instant fromDateInclusive) {
+        LocalDate from = fromDateInclusive == null
+                ? LocalDate.of(1900, 1, 1)
+                : fromDateInclusive.atZone(ZoneOffset.UTC).toLocalDate();
+        return pointReader.loadFrom(schemeCode, series, from);
     }
 
     @Override
     @Transactional
     public void append(int schemeCode, NavSeries series, List<NavPoint> points) {
-        if (points.isEmpty()) {
-            return;
-        }
-
-        Set<LocalDate> candidateDates = points.stream()
-                .map(point -> point.date().atZone(ZoneOffset.UTC).toLocalDate())
-                .collect(Collectors.toSet());
-        Set<LocalDate> existingDates = pointRepository.findExistingNavDates(
-                schemeCode, series.name(), candidateDates);
-
-        List<NavPointEntity> entities = points.stream()
-                .filter(point -> !existingDates.contains(point.date().atZone(ZoneOffset.UTC).toLocalDate()))
-                .map(point -> NavStoreMapper.toEntity(schemeCode, series, point))
-                .toList();
-        if (entities.isEmpty()) {
-            return;
-        }
-        pointRepository.saveAll(entities);
+        pointWriter.batchUpsert(schemeCode, series, points);
     }
 
     @Override

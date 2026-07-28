@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.adapter.out.persistence.mapper;
 
 import in.goldentriangle.mfa.adapter.out.persistence.jpa.nav.NavPointEntity;
+import in.goldentriangle.mfa.adapter.out.persistence.jpa.nav.NavPointId;
 import in.goldentriangle.mfa.adapter.out.persistence.jpa.nav.NavSeriesMetaEntity;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.NavSeries;
@@ -46,15 +47,16 @@ public final class NavStoreMapper {
 
     public static NavPointEntity toEntity(int schemeCode, NavSeries series, NavPoint point) {
         NavPointEntity entity = new NavPointEntity();
-        entity.setSchemeCode(schemeCode);
-        entity.setSeries(series.name());
-        entity.setNavDate(point.date().atZone(ZoneOffset.UTC).toLocalDate());
+        entity.setId(new NavPointId(
+                schemeCode,
+                series.name(),
+                point.date().atZone(ZoneOffset.UTC).toLocalDate()));
         entity.setNav(point.nav());
         return entity;
     }
 
     public static NavPoint toDomain(NavPointEntity entity) {
-        Instant date = entity.getNavDate().atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant date = entity.getId().getNavDate().atStartOfDay(ZoneOffset.UTC).toInstant();
         return new NavPoint(date, entity.getNav());
     }
 

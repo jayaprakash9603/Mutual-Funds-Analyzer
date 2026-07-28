@@ -84,8 +84,9 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
 
     private NavHistory load(String scheme, int code, String startDateUsed) {
         LoadedSeries loaded = ensureSeries(scheme, code, startDateUsed);
-        List<NavPoint> fundNav = NavStoreMapper.filterFromStart(loaded.fundNav(), startDateUsed);
-        List<NavPoint> benchmarkNav = NavStoreMapper.filterFromStart(loaded.benchmarkNav(), startDateUsed);
+        Instant cutoff = NavStoreMapper.parseStartDate(startDateUsed);
+        List<NavPoint> fundNav = navStore.loadPoints(code, NavSeries.FUND, cutoff);
+        List<NavPoint> benchmarkNav = navStore.loadPoints(code, NavSeries.BENCHMARK, cutoff);
 
         if (fundNav.isEmpty()) {
             throw new NoDataFoundException("No NAV history available for " + scheme);

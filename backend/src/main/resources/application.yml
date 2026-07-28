@@ -1,5 +1,9 @@
 server:
   port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 spring:
   application:
@@ -60,6 +64,7 @@ features:
       enabled: true
       ttl: 1h
       maxSize: 10000
+      maxWeightMb: 512
     rateLimit:
       enabled: false
       perMinute: 60

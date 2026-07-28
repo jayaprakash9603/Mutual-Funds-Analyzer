@@ -153,16 +153,20 @@ public class FeatureFlags {
 
     public static class CacheFeatures {
         private static final int DEFAULT_MAX_SIZE = 10_000;
+        private static final long DEFAULT_MAX_WEIGHT_MB = 512;
 
         private boolean enabled = true;
         private Duration ttl = Duration.ofHours(1);
         private long maxSize = DEFAULT_MAX_SIZE;
+        private long maxWeightMb = DEFAULT_MAX_WEIGHT_MB;
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
         public Duration getTtl() { return ttl; }
         public void setTtl(Duration ttl) { this.ttl = ttl; }
         public long getMaxSize() { return maxSize; }
         public void setMaxSize(long maxSize) { this.maxSize = maxSize; }
+        public long getMaxWeightMb() { return maxWeightMb; }
+        public void setMaxWeightMb(long maxWeightMb) { this.maxWeightMb = maxWeightMb; }
     }
 
     public static class RateLimitFeatures {

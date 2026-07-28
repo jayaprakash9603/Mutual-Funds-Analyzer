@@ -20,11 +20,24 @@ public class CaffeineCacheAdapter implements CachePort {
 
     public CaffeineCacheAdapter(FeatureFlags featureFlags, SingleFlightCoordinator singleFlight) {
         FeatureFlags.CacheFeatures settings = featureFlags.getPlatform().getCache();
+        long maxWeightBytes = Math.max(1, settings.getMaxWeightMb()) * 1024L * 1024L;
         this.cache = Caffeine.newBuilder()
                 .expireAfterWrite(settings.getTtl())
-                .maximumSize(settings.getMaxSize())
+                .maximumWeight(maxWeightBytes)
+                .weigher((String key, Object value) -> estimateWeight(value))
+                .recordStats()
                 .build();
         this.singleFlight = singleFlight;
+    }
+
+    private static int estimateWeight(Object value) {
+        if (value == null) {
+            return 1;
+        }
+        if (value instanceof String stringValue) {
+            return Math.max(64, stringValue.length() * 2);
+        }
+        return Math.max(512, value.toString().length() * 2);
     }
 
     @Override

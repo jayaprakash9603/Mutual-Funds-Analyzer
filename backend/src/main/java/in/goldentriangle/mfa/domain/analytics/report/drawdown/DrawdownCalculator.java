@@ -2,6 +2,7 @@ package in.goldentriangle.mfa.domain.analytics.report.drawdown;
 
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarMath;
 import in.goldentriangle.mfa.domain.analytics.NavDateParser;
+import in.goldentriangle.mfa.domain.analytics.NavSeriesOrder;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
 import in.goldentriangle.mfa.domain.model.report.drawdown.DrawdownReport;
@@ -92,8 +93,11 @@ public class DrawdownCalculator {
                 ? buildBearMarketDecades(decadeCounts, firstDate, lastDate)
                 : List.of();
 
-        List<DrawdownReport.DrawdownEpisode> episodes = detectEpisodes(series, EPISODE_LIST_THRESHOLD);
-        List<DrawdownReport.DrawdownPhase> phases = buildPhases(series, detectEpisodes(series, PHASE_THRESHOLD));
+        List<DrawdownReport.DrawdownEpisode> phaseEpisodes = detectEpisodes(series, PHASE_THRESHOLD);
+        List<DrawdownReport.DrawdownEpisode> episodes = phaseEpisodes.stream()
+                .filter(episode -> Math.abs(episode.fallPercent()) >= EPISODE_LIST_THRESHOLD)
+                .toList();
+        List<DrawdownReport.DrawdownPhase> phases = buildPhases(series, phaseEpisodes);
 
         double avgRecovery = episodes.stream()
                 .filter(DrawdownReport.DrawdownEpisode::recovered)
@@ -137,8 +141,9 @@ public class DrawdownCalculator {
             int[] fundCounts,
             int totalDays,
             List<NavPoint> benchmarkNav) {
-        int[] benchmarkCounts = countThresholds(normalizeNav(benchmarkNav));
-        int benchmarkTotal = Math.max(1, normalizeNav(benchmarkNav).size());
+        List<NavPoint> normalizedBenchmark = normalizeNav(benchmarkNav);
+        int[] benchmarkCounts = countThresholds(normalizedBenchmark);
+        int benchmarkTotal = Math.max(1, normalizedBenchmark.size());
 
         List<DrawdownReport.DrawdownThresholdRow> rows = new ArrayList<>();
         for (int i = 0; i < THRESHOLD_PERCENTS.length; i++) {
@@ -297,16 +302,7 @@ public class DrawdownCalculator {
     }
 
     static List<NavPoint> normalizeNav(List<NavPoint> nav) {
-        if (nav == null || nav.isEmpty()) {
-            return List.of();
-        }
-        Map<String, NavPoint> byDate = new HashMap<>();
-        for (NavPoint point : nav) {
-            byDate.put(NavDateParser.dateKey(point.date()), point);
-        }
-        return byDate.values().stream()
-                .sorted(Comparator.comparing(NavPoint::date))
-                .toList();
+        return NavSeriesOrder.dedupeAndSort(nav);
     }
 
     static List<DrawdownReport.DrawdownPoint> downsampleSeries(
@@ -480,12 +476,17 @@ public class DrawdownCalculator {
         Map<Integer, NavPoint> yearStart = new HashMap<>();
         Map<Integer, NavPoint> yearEnd = new HashMap<>();
         Map<Integer, Double> yearPeak = new HashMap<>();
+        Map<Integer, Double> yearMaxDd = new HashMap<>();
 
         for (NavPoint point : series) {
             int year = point.date().atZone(ZoneOffset.UTC).getYear();
             yearStart.putIfAbsent(year, point);
             yearEnd.put(year, point);
             yearPeak.merge(year, point.nav(), Math::max);
+
+            double peak = yearPeak.get(year);
+            double dd = peak <= 0 ? 0 : ((point.nav() / peak) - 1) * 100;
+            yearMaxDd.merge(year, dd, Math::min);
         }
 
         List<ConsistencyReport.CalendarYearReturn> calendarYears = new ArrayList<>();
@@ -496,17 +497,7 @@ public class DrawdownCalculator {
             NavPoint start = yearStart.get(year);
             NavPoint end = yearEnd.get(year);
             double cyReturn = CalendarMath.absoluteReturn(start.nav(), end.nav());
-
-            double peak = yearPeak.getOrDefault(year, end.nav());
-            double maxDd = 0;
-            for (NavPoint point : series) {
-                int y = point.date().atZone(ZoneOffset.UTC).getYear();
-                if (y != year) {
-                    continue;
-                }
-                double dd = peak <= 0 ? 0 : ((point.nav() / peak) - 1) * 100;
-                maxDd = Math.min(maxDd, dd);
-            }
+            double maxDd = yearMaxDd.getOrDefault(year, 0.0);
 
             calendarYears.add(new ConsistencyReport.CalendarYearReturn(year, cyReturn, maxDd));
             worstYear = Math.min(worstYear, cyReturn);

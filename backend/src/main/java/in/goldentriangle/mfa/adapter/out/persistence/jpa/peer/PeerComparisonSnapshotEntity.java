@@ -25,7 +25,7 @@ public class PeerComparisonSnapshotEntity implements PeerComparisonSnapshotRecor
     @Column(nullable = false, length = 512)
     private String scheme;
 
-    @Column(nullable = false, length = 256)
+    @Column(nullable = false, length = 128)
     private String category;
 
     @Column(name = "start_date", nullable = false, length = 32)

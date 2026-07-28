@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.report.returns;
 
+import in.goldentriangle.mfa.domain.analytics.NavSeriesOrder;
 import in.goldentriangle.mfa.domain.analytics.NavDateParser;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
@@ -38,9 +39,7 @@ public class AllTimeHighsCalculator {
             return emptyReport();
         }
 
-        List<NavPoint> sorted = fundNav.stream()
-                .sorted(Comparator.comparing(NavPoint::date))
-                .toList();
+        List<NavPoint> sorted = NavSeriesOrder.dedupeAndSort(fundNav);
 
         Instant first = sorted.get(0).date();
         Instant last = sorted.get(sorted.size() - 1).date();

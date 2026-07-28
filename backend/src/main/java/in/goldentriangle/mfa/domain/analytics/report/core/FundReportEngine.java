@@ -1,5 +1,6 @@
 package in.goldentriangle.mfa.domain.analytics.report.core;
 
+import in.goldentriangle.mfa.config.metrics.ReportComputeMetrics;
 import in.goldentriangle.mfa.domain.analytics.report.drawdown.DrawdownCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
@@ -12,7 +13,6 @@ import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.ExpenseCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
-import in.goldentriangle.mfa.domain.model.OverallRating;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
 import in.goldentriangle.mfa.domain.analytics.RollingReturnFilters;
 import in.goldentriangle.mfa.domain.model.AnalysisInput;
@@ -35,6 +35,7 @@ import in.goldentriangle.mfa.domain.model.report.assessment.InvestorFitReport;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.ProbabilityReport;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.assessment.ProsConsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
@@ -43,10 +44,13 @@ import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class FundReportEngine {
 
@@ -66,6 +70,8 @@ public class FundReportEngine {
     private final QualityScoreCalculator qualityScoreCalculator;
     private final VerdictEngine verdictEngine;
     private final MatrixCalculator matrixCalculator;
+    private final Executor computeExecutor;
+    private final ReportComputeMetrics metrics;
 
     public FundReportEngine(
             GoldenTriangleEvaluator goldenTriangleEvaluator,
@@ -83,7 +89,9 @@ public class FundReportEngine {
             ExpenseCalculator expenseCalculator,
             QualityScoreCalculator qualityScoreCalculator,
             VerdictEngine verdictEngine,
-            MatrixCalculator matrixCalculator) {
+            MatrixCalculator matrixCalculator,
+            Executor computeExecutor,
+            ReportComputeMetrics metrics) {
         this.goldenTriangleEvaluator = goldenTriangleEvaluator;
         this.trailingReturnsCalculator = trailingReturnsCalculator;
         this.rollingBandCalculator = rollingBandCalculator;
@@ -100,6 +108,8 @@ public class FundReportEngine {
         this.qualityScoreCalculator = qualityScoreCalculator;
         this.verdictEngine = verdictEngine;
         this.matrixCalculator = matrixCalculator;
+        this.computeExecutor = computeExecutor;
+        this.metrics = metrics;
     }
 
     public FundReport build(
@@ -114,50 +124,92 @@ public class FundReportEngine {
                 fundPeriod.isEmpty() ? rollingData.fund() : fundPeriod,
                 benchmarkPeriod.isEmpty() ? rollingData.benchmark() : benchmarkPeriod,
                 periodLabel);
-        GoldenTriangleResult goldenTriangle = goldenTriangleEvaluator.evaluate(input);
-        FundMetrics metrics = goldenTriangle.metrics();
 
-        FundProfile profile = buildProfile(history, metadata, goldenTriangle, metrics);
-        TrailingReturnsReport trailing = trailingReturnsCalculator.compute(history);
-        RollingReturnsReport rolling = rollingBandCalculator.compute(rollingData, metrics.consistencyScore());
-        BenchmarkComparisonReport benchmark = buildBenchmark(metrics, rollingBandCalculator.winningPercent(rollingData));
-        DrawdownReport drawdown = drawdownCalculator.compute(history.fundNav(), history.benchmarkNav());
-        BestDaysReport bestDays = bestDaysCalculator.compute(history.fundNav());
-        AllTimeHighsReport allTimeHighs = allTimeHighsCalculator.compute(history.fundNav(), history.fundName());
-        ConsistencyReport consistency = drawdownCalculator.calendarYears(history.fundNav());
-        CalendarYearInsightsReport calendarYearInsights =
-                calendarYearInsightsCalculator.compute(history.fundNav(), consistency);
-        SipReport sip = sipCalculator.compute(history);
-        LumpsumReport lumpsum = lumpsumCalculator.compute(history);
-        TaxReport tax = taxCalculator.compute(metrics.totalReturn(), metrics.fundAgeYears(), 100_000);
-        ExpenseReport expense = expenseCalculator.compute(
-                metadata.flatMap(m -> Optional.of(m.expenseRatio())),
-                100_000,
-                metrics.fundAnnReturn());
-        QualityScoreReport quality = qualityScoreCalculator.compute(metrics);
+        CompletableFuture<GoldenTriangleResult> goldenTriangleFuture = supplyAsync(
+                "goldenTriangle",
+                () -> goldenTriangleEvaluator.evaluate(input));
+        CompletableFuture<TrailingReturnsReport> trailingFuture = supplyAsync(
+                "trailing",
+                () -> trailingReturnsCalculator.compute(history));
+        CompletableFuture<DrawdownReport> drawdownFuture = supplyAsync(
+                "drawdown",
+                () -> drawdownCalculator.compute(history.fundNav(), history.benchmarkNav()));
+        CompletableFuture<BestDaysReport> bestDaysFuture = supplyAsync(
+                "bestDays",
+                () -> bestDaysCalculator.compute(history.fundNav()));
+        CompletableFuture<AllTimeHighsReport> allTimeHighsFuture = supplyAsync(
+                "allTimeHighs",
+                () -> allTimeHighsCalculator.compute(history.fundNav(), history.fundName()));
+        CompletableFuture<ConsistencyReport> consistencyFuture = supplyAsync(
+                "consistency",
+                () -> drawdownCalculator.calendarYears(history.fundNav()));
+        CompletableFuture<SipReport> sipFuture = supplyAsync(
+                "sip",
+                () -> sipCalculator.compute(history));
+        CompletableFuture<LumpsumReport> lumpsumFuture = supplyAsync(
+                "lumpsum",
+                () -> lumpsumCalculator.compute(history));
+        CompletableFuture<ProbabilityReport> probabilityFuture = supplyAsync(
+                "probability",
+                () -> probabilityCalculator.compute(rollingData));
+
+        GoldenTriangleResult goldenTriangle = goldenTriangleFuture.join();
+        FundMetrics fundMetrics = goldenTriangle.metrics();
+
+        CompletableFuture<RollingReturnsReport> rollingFuture = supplyAsync(
+                "rolling",
+                () -> rollingBandCalculator.compute(rollingData, fundMetrics.consistencyScore()));
+        CompletableFuture<BenchmarkComparisonReport> benchmarkFuture = supplyAsync(
+                "benchmark",
+                () -> buildBenchmark(fundMetrics, rollingBandCalculator.winningPercent(rollingData)));
+        CompletableFuture<TaxReport> taxFuture = supplyAsync(
+                "tax",
+                () -> taxCalculator.compute(fundMetrics.totalReturn(), fundMetrics.fundAgeYears(), 100_000));
+        CompletableFuture<ExpenseReport> expenseFuture = supplyAsync(
+                "expense",
+                () -> expenseCalculator.compute(
+                        metadata.flatMap(m -> Optional.of(m.expenseRatio())),
+                        100_000,
+                        fundMetrics.fundAnnReturn()));
+        CompletableFuture<QualityScoreReport> qualityFuture = supplyAsync(
+                "quality",
+                () -> qualityScoreCalculator.compute(fundMetrics));
+
+        DrawdownReport drawdown = drawdownFuture.join();
+        ConsistencyReport consistency = consistencyFuture.join();
+
+        CompletableFuture<CalendarYearInsightsReport> calendarInsightsFuture = supplyAsync(
+                "calendarYearInsights",
+                () -> calendarYearInsightsCalculator.compute(history.fundNav(), consistency));
+        CompletableFuture<RiskReport> riskFuture = supplyAsync(
+                "risk",
+                () -> riskReportBuilder.build(rollingData, periodLabel, fundMetrics, drawdown));
+
+        FundProfile profile = buildProfile(history, metadata, goldenTriangle, fundMetrics);
+        QualityScoreReport quality = qualityFuture.join();
         List<String> insights = goldenTriangleEvaluator.generateInsights(goldenTriangle);
-        ProsConsReport prosCons = verdictEngine.prosCons(goldenTriangle, metrics);
-        InvestorFitReport investorFit = verdictEngine.investorFit(goldenTriangle, metrics);
-        RecommendationReport recommendation = verdictEngine.recommend(goldenTriangle, metrics, quality.score());
+        ProsConsReport prosCons = verdictEngine.prosCons(goldenTriangle, fundMetrics);
+        InvestorFitReport investorFit = verdictEngine.investorFit(goldenTriangle, fundMetrics);
+        RecommendationReport recommendation = verdictEngine.recommend(goldenTriangle, fundMetrics, quality.score());
 
         return new FundReport(
                 history.scheme(),
                 profile,
                 goldenTriangle,
-                trailing,
-                rolling,
-                calendarYearInsights,
-                benchmark,
-                probabilityCalculator.compute(rollingData),
-                riskReportBuilder.build(rollingData, periodLabel, metrics, drawdown),
+                trailingFuture.join(),
+                rollingFuture.join(),
+                calendarInsightsFuture.join(),
+                benchmarkFuture.join(),
+                probabilityFuture.join(),
+                riskFuture.join(),
                 consistency,
                 drawdown,
-                bestDays,
-                allTimeHighs,
-                sip,
-                lumpsum,
-                tax,
-                expense,
+                bestDaysFuture.join(),
+                allTimeHighsFuture.join(),
+                sipFuture.join(),
+                lumpsumFuture.join(),
+                taxFuture.join(),
+                expenseFuture.join(),
                 quality,
                 insights,
                 prosCons,
@@ -167,7 +219,13 @@ public class FundReportEngine {
     }
 
     public MatrixReport buildMatrix(NavHistory history, MatrixMode mode) {
-        return matrixCalculator.compute(history, mode);
+        return metrics.time("matrix", () -> matrixCalculator.compute(history, mode));
+    }
+
+    private <T> CompletableFuture<T> supplyAsync(String stage, java.util.function.Supplier<T> supplier) {
+        return CompletableFuture.supplyAsync(
+                () -> metrics.time(stage, supplier),
+                computeExecutor);
     }
 
     private FundProfile buildProfile(

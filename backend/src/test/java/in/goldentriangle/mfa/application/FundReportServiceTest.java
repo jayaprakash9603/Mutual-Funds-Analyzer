@@ -7,7 +7,9 @@ import in.goldentriangle.mfa.application.report.ReportDataCoordinator;
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.config.properties.ReportProperties;
 import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
+import in.goldentriangle.mfa.config.metrics.ReportComputeMetrics;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import in.goldentriangle.mfa.domain.analytics.MetricsCalculator;
 import in.goldentriangle.mfa.domain.analytics.TimelineBuilder;
 import in.goldentriangle.mfa.domain.analytics.insight.InsightComposer;
@@ -105,7 +107,9 @@ class FundReportServiceTest {
                 new ExpenseCalculator(),
                 new QualityScoreCalculator(),
                 new VerdictEngine(),
-                new MatrixCalculator());
+                new MatrixCalculator(),
+                Runnable::run,
+                new ReportComputeMetrics(new SimpleMeterRegistry()));
 
         ReportProperties reportProperties = new ReportProperties();
         FeatureFlags featureFlags = new FeatureFlags();

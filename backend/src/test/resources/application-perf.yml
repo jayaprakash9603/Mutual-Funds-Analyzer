@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+
+management:
+  metrics:
+    enable:
+      all: true
