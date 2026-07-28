@@ -290,7 +290,7 @@ public class FundReportMapper {
                                 p.durationYears(), p.ongoing()))
                         .toList(),
                 report.indexedNav().stream()
-                        .map(p -> new DrawdownReportDto.NavIndexPointDto(p.date(), p.indexValue()))
+                        .map(p -> new DrawdownReportDto.NavIndexPointDto(p.date(), p.indexValue(), p.nav()))
                         .toList());
     }
 

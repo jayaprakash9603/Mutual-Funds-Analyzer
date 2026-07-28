@@ -239,6 +239,7 @@ export const fundReportSchema = z.object({
     indexedNav: z.array(z.object({
       date: z.string(),
       indexValue: z.number(),
+      nav: z.number().optional(),
     })).optional().default([]),
   }),
   bestDays: z.object({

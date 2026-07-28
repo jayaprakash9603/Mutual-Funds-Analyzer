@@ -52,6 +52,6 @@ public record DrawdownReport(
             boolean ongoing) {
     }
 
-    public record NavIndexPoint(String date, double indexValue) {
+    public record NavIndexPoint(String date, double indexValue, double nav) {
     }
 }

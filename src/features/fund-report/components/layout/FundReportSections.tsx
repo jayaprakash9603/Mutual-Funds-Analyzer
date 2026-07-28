@@ -199,6 +199,7 @@ export function FundReportSections({
                 fundName={data.profile.fundName}
                 category={data.profile.category}
                 fundAgeYears={data.profile.fundAgeYears}
+                latestNav={data.profile.latestNav}
                 dataTo={data.profile.dataTo}
                 indexedNav={risk.data?.drawdown.indexedNav ?? []}
                 loading={risk.loading && (risk.data?.drawdown.indexedNav?.length ?? 0) === 0}

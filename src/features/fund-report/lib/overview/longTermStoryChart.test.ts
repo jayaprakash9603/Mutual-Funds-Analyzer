@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildLongTermStoryChartPoints,
   buildLongTermStorySeries,
   computeLongTermStoryStats,
   formatStoryMonthYear,
@@ -23,6 +24,18 @@ describe('longTermStoryChart', () => {
     expect(stats!.moneyMultiple).toBeCloseTo(8.4, 1)
     expect(stats!.cagrPercent).toBeGreaterThan(0)
     expect(stats!.categoryHeadline).toBe('Flexi Cap Fund')
+  })
+
+  it('builds chart points with nav fallback', () => {
+    const series = buildLongTermStoryChartPoints(
+      [
+        { date: '2013-05-28', indexValue: 100 },
+        { date: '2026-07-27', indexValue: 840, nav: 84.5 },
+      ],
+      84.5,
+    )
+    expect(series[0]!.nav).toBeCloseTo(10.06, 1)
+    expect(series.at(-1)!.nav).toBeCloseTo(84.5, 2)
   })
 
   it('builds linear trend series', () => {

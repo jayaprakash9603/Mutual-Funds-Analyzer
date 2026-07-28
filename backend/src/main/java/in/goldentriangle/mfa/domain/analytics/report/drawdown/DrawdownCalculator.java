@@ -62,7 +62,8 @@ public class DrawdownCalculator {
                     NavDateParser.dateKey(point.date()), drawdown));
             indexedSeries.add(new DrawdownReport.NavIndexPoint(
                     NavDateParser.dateKey(point.date()),
-                    startNav <= 0 ? 100 : (point.nav() / startNav) * 100));
+                    startNav <= 0 ? 100 : (point.nav() / startNav) * 100,
+                    point.nav()));
 
             for (int i = 0; i < THRESHOLD_PERCENTS.length; i++) {
                 if (isBelowThreshold(drawdown, THRESHOLD_PERCENTS[i])) {
@@ -121,7 +122,7 @@ public class DrawdownCalculator {
                 bearMarketDecades,
                 thresholdRows,
                 phases,
-                downsampleIndexedNav(indexedSeries, MAX_SERIES_POINTS));
+                List.copyOf(indexedSeries));
     }
 
     private static DrawdownReport emptyReport() {
