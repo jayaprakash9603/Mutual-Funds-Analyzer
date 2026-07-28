@@ -20,7 +20,11 @@ import org.springframework.stereotype.Service;
 
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
+import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
+import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
+import in.goldentriangle.mfa.domain.model.report.investment.SwpSimulation;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -38,6 +42,8 @@ public class FundReportService implements GetFundReportUseCase {
 
     private final NavHistoryPort navHistoryPort;
     private final FundReportEngine fundReportEngine;
+    private final SipCalculator sipCalculator;
+    private final SwpCalculator swpCalculator;
     private final MatrixSnapshotPort matrixSnapshotPort;
     private final ReportDataCoordinator reportDataCoordinator;
     private final FeatureGuard featureGuard;
@@ -51,6 +57,8 @@ public class FundReportService implements GetFundReportUseCase {
     public FundReportService(
             NavHistoryPort navHistoryPort,
             FundReportEngine fundReportEngine,
+            SipCalculator sipCalculator,
+            SwpCalculator swpCalculator,
             MatrixSnapshotPort matrixSnapshotPort,
             ReportDataCoordinator reportDataCoordinator,
             FeatureGuard featureGuard,
@@ -61,6 +69,8 @@ public class FundReportService implements GetFundReportUseCase {
             SingleFlightCoordinator singleFlightCoordinator) {
         this.navHistoryPort = navHistoryPort;
         this.fundReportEngine = fundReportEngine;
+        this.sipCalculator = sipCalculator;
+        this.swpCalculator = swpCalculator;
         this.matrixSnapshotPort = matrixSnapshotPort;
         this.reportDataCoordinator = reportDataCoordinator;
         this.featureGuard = featureGuard;
@@ -94,6 +104,27 @@ public class FundReportService implements GetFundReportUseCase {
                 cached.lastNavDate(),
                 cached.computedAt(),
                 cached.fromSnapshot());
+    }
+
+    @Override
+    public SipSimulation simulateSip(String scheme, String startDate, int amount, int scheduleDay) {
+        featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
+        String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
+        NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
+        return sipCalculator.simulate(history, amount, scheduleDay);
+    }
+
+    @Override
+    public SwpSimulation simulateSwp(
+            String scheme,
+            String startDate,
+            int initialCorpus,
+            int monthlyWithdrawal,
+            int scheduleDay) {
+        featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
+        String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
+        NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
+        return swpCalculator.simulate(history, initialCorpus, monthlyWithdrawal, scheduleDay);
     }
 
     private CachedMatrix buildMatrix(String scheme, String startDate, MatrixMode mode) {

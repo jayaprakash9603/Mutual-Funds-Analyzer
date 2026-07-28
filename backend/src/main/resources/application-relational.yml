@@ -27,3 +27,5 @@ features:
   platform:
     persistence:
       enabled: true
+  sync:
+    enabled: true

@@ -1,5 +1,11 @@
-import { Download, Link2, Loader2, Share2 } from 'lucide-react'
+import { Download, Link2, Loader2, MoreVertical, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -70,24 +76,55 @@ export function FundReportToolbar({
 }: FundReportToolbarProps) {
   if (variant === 'compact') {
     const busy = exporting || sharing
+    const downloadLabel = exporting
+      ? 'Preparing PDF…'
+      : exportReady
+        ? 'Download PDF'
+        : 'Download PDF (loads full report)'
+    const shareLabel = sharing
+      ? 'Encoding share link…'
+      : exportReady
+        ? 'Share link'
+        : 'Share link (loads full report)'
+    const copyLabel = sharing
+      ? 'Encoding link…'
+      : exportReady
+        ? 'Copy link'
+        : 'Copy link (loads full report)'
 
-    return (
+    const handleShare = () => {
+      void (async () => {
+        try {
+          await onShareLink()
+          toast.success('Share link copied to clipboard')
+        } catch {
+          /* toast shown by handler */
+        }
+      })()
+    }
+
+    const handleCopy = () => {
+      void (async () => {
+        try {
+          await onCopyLink()
+          toast.success('Link copied to clipboard')
+        } catch {
+          /* toast shown by handler */
+        }
+      })()
+    }
+
+    const desktopToolbar = (
       <div
         className={cn(
-          'flex shrink-0 items-center gap-0.5 rounded-xl border border-border/60 bg-muted/25 p-0.5',
+          'hidden shrink-0 items-center gap-0.5 rounded-xl border border-border/60 bg-muted/25 p-0.5 sm:flex',
           exportActionsEnabled && !exportReady && !busy && 'border-dashed',
         )}
         role="toolbar"
         aria-label="Report export actions"
       >
         <CompactToolbarButton
-          label={
-            exporting
-              ? 'Preparing PDF…'
-              : exportReady
-                ? 'Download PDF'
-                : 'Download PDF (loads full report)'
-          }
+          label={downloadLabel}
           disabled={!exportActionsEnabled || busy}
           busy={exporting}
           onClick={onDownloadPdf}
@@ -97,53 +134,78 @@ export function FundReportToolbar({
         {!isSharedView && (
           <>
             <CompactToolbarButton
-              label={
-                sharing
-                  ? 'Encoding share link…'
-                  : exportReady
-                    ? 'Share link'
-                    : 'Share link (loads full report)'
-              }
+              label={shareLabel}
               disabled={!exportActionsEnabled || busy}
               busy={sharing}
-              onClick={() => {
-                void (async () => {
-                  try {
-                    await onShareLink()
-                    toast.success('Share link copied to clipboard')
-                  } catch {
-                    /* toast shown by handler */
-                  }
-                })()
-              }}
+              onClick={handleShare}
             >
               <Share2 className="size-4" aria-hidden="true" />
             </CompactToolbarButton>
             <CompactToolbarButton
-              label={
-                sharing
-                  ? 'Encoding link…'
-                  : exportReady
-                    ? 'Copy link'
-                    : 'Copy link (loads full report)'
-              }
+              label={copyLabel}
               disabled={!exportActionsEnabled || busy}
               busy={sharing}
-              onClick={() => {
-                void (async () => {
-                  try {
-                    await onCopyLink()
-                    toast.success('Link copied to clipboard')
-                  } catch {
-                    /* toast shown by handler */
-                  }
-                })()
-              }}
+              onClick={handleCopy}
             >
               <Link2 className="size-4" aria-hidden="true" />
             </CompactToolbarButton>
           </>
         )}
+      </div>
+    )
+
+    const mobileMenu = (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="-mr-1 size-10 shrink-0 rounded-lg text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:hidden"
+            disabled={!exportActionsEnabled || busy}
+            aria-label="Report actions"
+          >
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <MoreVertical className="size-4" aria-hidden="true" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem
+            disabled={!exportActionsEnabled || busy}
+            onSelect={() => onDownloadPdf()}
+          >
+            <Download className="size-4" aria-hidden="true" />
+            {exporting ? 'Preparing PDF…' : 'Download PDF'}
+          </DropdownMenuItem>
+          {!isSharedView && (
+            <>
+              <DropdownMenuItem
+                disabled={!exportActionsEnabled || busy}
+                onSelect={handleShare}
+              >
+                <Share2 className="size-4" aria-hidden="true" />
+                {sharing ? 'Encoding…' : 'Share link'}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!exportActionsEnabled || busy}
+                onSelect={handleCopy}
+              >
+                <Link2 className="size-4" aria-hidden="true" />
+                {sharing ? 'Encoding…' : 'Copy link'}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+
+    return (
+      <div className="flex shrink-0 items-center">
+        {mobileMenu}
+        {desktopToolbar}
       </div>
     )
   }

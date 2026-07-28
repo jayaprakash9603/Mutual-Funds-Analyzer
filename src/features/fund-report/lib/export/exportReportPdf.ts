@@ -70,7 +70,17 @@ function injectSanitizedStyles(clonedDoc: Document, sourceDoc: Document) {
   clonedDoc.head.appendChild(style)
 }
 
-function mirrorResolvedColors(source: Element, target: Element): void {
+function resolveColorValue(value: string, doc: Document): string {
+  if (!value || value === 'none' || value === 'normal' || value === 'rgba(0, 0, 0, 0)') {
+    return value
+  }
+  if (/oklch\(|oklab\(|color\(/.test(value)) {
+    return resolveOklch(value, doc)
+  }
+  return value
+}
+
+function mirrorResolvedColors(source: Element, target: Element, doc: Document): void {
   if (source instanceof HTMLElement && target instanceof HTMLElement) {
     const computed = getComputedStyle(source)
     for (const prop of COLOR_PROPS) {
@@ -78,8 +88,15 @@ function mirrorResolvedColors(source: Element, target: Element): void {
       if (!value || value === 'none' || value === 'normal' || value === 'rgba(0, 0, 0, 0)') {
         continue
       }
-      if (value.includes('oklch')) continue
-      target.style.setProperty(prop, value)
+      if (prop === 'background-image' && /oklch\(|oklab\(/.test(value)) {
+        target.style.setProperty('background-image', 'none')
+        const bg = computed.getPropertyValue('background-color')
+        if (bg) {
+          target.style.setProperty('background-color', resolveColorValue(bg, doc))
+        }
+        continue
+      }
+      target.style.setProperty(prop, resolveColorValue(value, doc))
     }
   }
 
@@ -87,7 +104,7 @@ function mirrorResolvedColors(source: Element, target: Element): void {
     for (const attr of ['fill', 'stroke'] as const) {
       const value = source.getAttribute(attr)
       if (value && !value.startsWith('url(') && value !== 'none') {
-        target.setAttribute(attr, value)
+        target.setAttribute(attr, resolveColorValue(value, doc))
       }
     }
   }
@@ -96,7 +113,7 @@ function mirrorResolvedColors(source: Element, target: Element): void {
   const targetChildren = target.children
   for (let i = 0; i < sourceChildren.length; i += 1) {
     const targetChild = targetChildren[i]
-    if (targetChild) mirrorResolvedColors(sourceChildren[i]!, targetChild)
+    if (targetChild) mirrorResolvedColors(sourceChildren[i]!, targetChild, doc)
   }
 }
 
@@ -108,7 +125,7 @@ function prepareCloneForCapture(
 ) {
   injectSanitizedStyles(clonedDoc, sourceDoc)
   cloneRoot.classList.add('pdf-export-capture')
-  mirrorResolvedColors(sourceRoot, cloneRoot)
+  mirrorResolvedColors(sourceRoot, cloneRoot, sourceDoc)
 
   const patch = clonedDoc.createElement('style')
   patch.textContent = `

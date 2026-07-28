@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { centerElementInScroller } from '../../lib/nav/reportScroll'
 import { REPORT_SECTIONS } from '../../lib/nav/reportSectionCatalog'
 
 type ReportSectionMobileNavProps = {
@@ -12,6 +14,17 @@ export function ReportSectionMobileNav({
   onSectionSelect,
   className,
 }: ReportSectionMobileNavProps) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const activeButton = scroller.querySelector<HTMLElement>(`[data-section-id="${activeSection}"]`)
+    if (activeButton) {
+      centerElementInScroller(scroller, activeButton)
+    }
+  }, [activeSection])
+
   return (
     <nav
       aria-label="Report sections"
@@ -21,13 +34,17 @@ export function ReportSectionMobileNav({
         className,
       )}
     >
-      <div className="flex gap-1 overflow-x-auto scrollbar-thin pb-0.5">
+      <div
+        ref={scrollerRef}
+        className="flex gap-1 overflow-x-auto scrollbar-thin pb-0.5"
+      >
         {REPORT_SECTIONS.map((section) => {
           const isActive = activeSection === section.id
           return (
             <button
               key={section.id}
               type="button"
+              data-section-id={section.id}
               onClick={() => onSectionSelect(section.id)}
               aria-current={isActive ? 'page' : undefined}
               className={cn(

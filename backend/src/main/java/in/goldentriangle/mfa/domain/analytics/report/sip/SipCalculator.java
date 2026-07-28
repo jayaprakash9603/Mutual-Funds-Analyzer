@@ -55,10 +55,10 @@ public class SipCalculator {
 
         List<SipReport.SipScenario> scenarios = new ArrayList<>();
         for (int amount : AMOUNTS) {
-            scenarios.add(buildScenario(amount, schedule, end, years).scenario());
+            scenarios.add(buildScenario(amount, schedule, nav, end, years).scenario());
         }
 
-        ScenarioResult chart = buildScenario(DEFAULT_CHART_AMOUNT, schedule, end, years);
+        ScenarioResult chart = buildScenario(DEFAULT_CHART_AMOUNT, schedule, nav, end, years);
         return new SipReport(scheduleDay, DEFAULT_CHART_AMOUNT, chart.timeline(), scenarios);
     }
 
@@ -78,7 +78,7 @@ public class SipCalculator {
 
         double years = CalendarMath.yearsBetweenMillis(
                 schedule.get(0).date().toEpochMilli(), end.date().toEpochMilli());
-        ScenarioResult result = buildScenario(monthly, schedule, end, years);
+        ScenarioResult result = buildScenario(monthly, schedule, nav, end, years);
         return new SipSimulation(result.scenario(), result.timeline());
     }
 
@@ -112,21 +112,21 @@ public class SipCalculator {
         return schedule;
     }
 
-    private ScenarioResult buildScenario(int amount, List<Instalment> schedule, NavPoint end, double years) {
+    private ScenarioResult buildScenario(
+            int amount,
+            List<Instalment> schedule,
+            List<NavPoint> nav,
+            NavPoint end,
+            double years) {
         long baseDay = (long) (schedule.get(0).date().toEpochMilli() / MILLIS_PER_DAY);
         long endDay = (long) (end.date().toEpochMilli() / MILLIS_PER_DAY);
 
         List<Xirr.CashFlow> flows = new ArrayList<>(schedule.size() + 1);
-        List<SipTimelinePoint> timeline = new ArrayList<>(schedule.size());
-        double units = 0;
-        double invested = 0;
         double shortTermGain = 0;
         double longTermGain = 0;
 
         for (Instalment instalment : schedule) {
             double lotUnits = amount / instalment.nav();
-            units += lotUnits;
-            invested += amount;
             flows.add(new Xirr.CashFlow(
                     (long) (instalment.date().toEpochMilli() / MILLIS_PER_DAY) - baseDay, -amount));
 
@@ -136,20 +136,11 @@ public class SipCalculator {
             } else {
                 shortTermGain += lotGain;
             }
-
-            timeline.add(new SipTimelinePoint(
-                    ISO_DATE.format(instalment.date().atZone(ZoneOffset.UTC)),
-                    invested,
-                    units * instalment.nav(),
-                    instalment.nav()));
         }
 
+        double units = schedule.stream().mapToDouble(inst -> amount / inst.nav()).sum();
+        double invested = amount * schedule.size();
         double currentValue = units * end.nav();
-        timeline.add(new SipTimelinePoint(
-                ISO_DATE.format(end.date().atZone(ZoneOffset.UTC)),
-                invested,
-                currentValue,
-                end.nav()));
 
         flows.add(new Xirr.CashFlow(endDay - baseDay, currentValue));
         double xirr = Xirr.compute(flows);
@@ -168,7 +159,62 @@ public class SipCalculator {
                 tax.ltcg(),
                 postTaxXirr);
 
+        List<SipTimelinePoint> timeline = buildDailyTimeline(amount, schedule, nav, end);
         return new ScenarioResult(scenario, timeline);
+    }
+
+    /** One point per fund NAV date from first SIP instalment through latest NAV. */
+    private List<SipTimelinePoint> buildDailyTimeline(
+            int amount,
+            List<Instalment> schedule,
+            List<NavPoint> nav,
+            NavPoint end) {
+        if (schedule.isEmpty()) {
+            return List.of();
+        }
+
+        Instant start = schedule.get(0).date();
+        List<SipTimelinePoint> timeline = new ArrayList<>();
+        int scheduleIndex = 0;
+        double units = 0;
+        double invested = 0;
+
+        for (NavPoint point : nav) {
+            if (point.date().isBefore(start)) {
+                continue;
+            }
+            if (point.date().isAfter(end.date())) {
+                break;
+            }
+
+            while (scheduleIndex < schedule.size()
+                    && !schedule.get(scheduleIndex).date().isAfter(point.date())) {
+                Instalment instalment = schedule.get(scheduleIndex++);
+                units += amount / instalment.nav();
+                invested += amount;
+            }
+
+            if (invested <= 0) {
+                continue;
+            }
+
+            timeline.add(new SipTimelinePoint(
+                    ISO_DATE.format(point.date().atZone(ZoneOffset.UTC)),
+                    invested,
+                    units * point.nav(),
+                    point.nav()));
+        }
+
+        String endDate = ISO_DATE.format(end.date().atZone(ZoneOffset.UTC));
+        if (timeline.isEmpty() || !timeline.get(timeline.size() - 1).date().equals(endDate)) {
+            timeline.add(new SipTimelinePoint(endDate, invested, currentValueAt(units, end.nav()), end.nav()));
+        }
+
+        return timeline;
+    }
+
+    private static double currentValueAt(double units, double nav) {
+        return units * nav;
     }
 
     private double postTaxXirr(List<Xirr.CashFlow> flows, double postTaxValue) {

@@ -40,34 +40,37 @@ export function ReportStickyHeader({
       <div
         className={cn(
           'fixed top-16 z-30 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
-          sidebarVisible ? 'right-0 lg:left-[var(--report-sidebar-width)]' : 'inset-x-0',
+          'inset-x-0',
+          sidebarVisible && 'lg:left-[var(--report-sidebar-width)]',
         )}
         style={{ height: 'var(--report-sticky-bar-height)' }}
       >
-        <div className="mx-auto flex h-full max-w-[1600px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
-          {isSharedView ? (
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <span
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-                aria-hidden="true"
-              >
-                <FileText className="size-4" />
-              </span>
-              <span className="min-w-0 truncate text-sm font-medium" title={fundLabel}>
-                {fundLabel}
-              </span>
-              <span className="hidden shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:inline">
-                Shared snapshot
-              </span>
-            </div>
-          ) : (
-            <FundSelector
-              mode="fund-only"
-              variant="compact"
-              selectedScheme={scheme || null}
-              onSelectScheme={onSelectScheme}
-            />
-          )}
+        <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+          <div className="min-w-0 flex-1">
+            {isSharedView ? (
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                  aria-hidden="true"
+                >
+                  <FileText className="size-4" />
+                </span>
+                <span className="min-w-0 truncate text-sm font-medium" title={fundLabel}>
+                  {fundLabel}
+                </span>
+                <span className="hidden shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:inline">
+                  Shared snapshot
+                </span>
+              </div>
+            ) : (
+              <FundSelector
+                mode="fund-only"
+                variant="compact"
+                selectedScheme={scheme || null}
+                onSelectScheme={onSelectScheme}
+              />
+            )}
+          </div>
 
           <div className="hidden h-7 w-px shrink-0 bg-border/70 sm:block" aria-hidden="true" />
 

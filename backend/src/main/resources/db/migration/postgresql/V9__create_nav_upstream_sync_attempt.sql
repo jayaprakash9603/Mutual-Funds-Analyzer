@@ -1,0 +1,14 @@
+CREATE TABLE nav_upstream_sync_attempt (
+    id BIGSERIAL PRIMARY KEY,
+    scheme_code INT NOT NULL,
+    source VARCHAR(32) NOT NULL,
+    sync_date DATE NOT NULL,
+    attempt_count INT NOT NULL DEFAULT 0,
+    last_attempt_at TIMESTAMP,
+    status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    last_error VARCHAR(512),
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT uk_nav_upstream_sync_attempt UNIQUE (scheme_code, source, sync_date)
+);
+
+CREATE INDEX idx_nav_upstream_sync_date ON nav_upstream_sync_attempt (sync_date, status);

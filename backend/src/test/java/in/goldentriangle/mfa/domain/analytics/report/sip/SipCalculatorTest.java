@@ -12,6 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SipCalculatorTest {
 
@@ -24,6 +25,12 @@ class SipCalculatorTest {
         assertFalse(report.timeline().isEmpty());
         assertEquals(SipCalculator.DEFAULT_SCHEDULE_DAY, report.scheduleDay());
         assertEquals(SipCalculator.DEFAULT_CHART_AMOUNT, report.chartAmount());
+    }
+
+    @Test
+    void timelineUsesEveryNavDateAfterFirstInstalment() {
+        SipReport report = calculator.compute(sampleHistory());
+        assertTrue(report.timeline().size() >= 2, "timeline should include a point per NAV date after SIP starts");
     }
 
     @Test

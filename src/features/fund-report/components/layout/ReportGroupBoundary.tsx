@@ -10,11 +10,7 @@ type ReportGroupBoundaryProps<T> = {
 }
 
 export function ReportGroupBoundary<T>({ state, skeleton, children }: ReportGroupBoundaryProps<T>) {
-  const { data, loading, error, refreshing, retry } = state
-
-  if (loading && !data) {
-    return <>{skeleton}</>
-  }
+  const { data, error, refreshing, retry } = state
 
   if (error && !data) {
     return (
@@ -28,7 +24,7 @@ export function ReportGroupBoundary<T>({ state, skeleton, children }: ReportGrou
   }
 
   if (!data) {
-    return null
+    return <>{skeleton}</>
   }
 
   return (

@@ -32,7 +32,8 @@ public class ReportDataCoordinator {
     /** Bumped when drawdown report carries bear-market and recovery analytics. */
     public static final String REPORT_CACHE_PREFIX = "fund-report:v12:";
     /** Bumped when the persisted report shape changes; older snapshots are recomputed. */
-    public static final int REPORT_SCHEMA_VERSION = 7;
+    /** Bumped when SIP timeline uses daily NAV dates instead of monthly instalments only. */
+    public static final int REPORT_SCHEMA_VERSION = 8;
 
     private static final String CONTEXT_CACHE_PREFIX = "report-context:v1:";
 

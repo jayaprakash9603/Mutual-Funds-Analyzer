@@ -12,6 +12,7 @@ import {
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
+import { MAX_CHART_POINTS } from '@/lib/constants'
 import {
   AXIS_LINE,
   GRID_STROKE,
@@ -73,9 +74,9 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
   const chartData = useMemo(() => {
     const mapped = timeline.map((point) => ({
       ...point,
-      label: point.date.slice(0, 7),
+      label: point.date,
     }))
-    return downsample(mapped, 120)
+    return downsample(mapped, MAX_CHART_POINTS)
   }, [timeline])
 
   if (chartData.length === 0) {
@@ -102,10 +103,16 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
             tick={TICK_MD}
-            minTickGap={48}
+            minTickGap={36}
             height={44}
+            tickFormatter={(value: string) => {
+              if (typeof value !== 'string' || value.length < 7) return value
+              const year = value.slice(0, 4)
+              const month = value.slice(5, 7)
+              return month === '01' ? year : `${year.slice(2)}-${month}`
+            }}
           >
-            <Label {...xLabel('Month', -2)} />
+            <Label {...xLabel('Date', -2)} />
           </XAxis>
           <YAxis
             tickLine={TICK_LINE}

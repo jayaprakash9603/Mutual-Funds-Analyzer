@@ -3,13 +3,15 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useIsReportMobileLayout } from '@/hooks/useMediaQuery'
 import { ReportScrollProvider, REPORT_PAGE_TOP_PX } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { ReportStickyHeader, ReportStickyHeaderSpacer } from '@/features/fund-report/components/layout/ReportStickyHeader'
 import { ReportPageShell } from '@/features/fund-report/components/layout/ReportPageShell'
 import { ReportSectionMobileNav } from '@/features/fund-report/components/layout/ReportSectionMobileNav'
 import { ReportSectionSidebar } from '@/features/fund-report/components/layout/ReportSectionSidebar'
-import { DEFAULT_REPORT_SECTION } from '@/features/fund-report/lib/nav/reportSectionCatalog'
+import { DEFAULT_REPORT_SECTION, REPORT_SECTIONS } from '@/features/fund-report/lib/nav/reportSectionCatalog'
+import { useSectionNav } from '@/features/fund-report/hooks/useSectionNav'
 import {
   ALL_REPORT_GROUP_KEYS,
   groupsRequiredForSections,
@@ -35,7 +37,14 @@ export function FundReportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
 
-  const [activeSection, setActiveSection] = useState(DEFAULT_REPORT_SECTION)
+  const isMobileReportLayout = useIsReportMobileLayout()
+  const sectionIds = useMemo(() => REPORT_SECTIONS.map((section) => section.id), [])
+  const { activeSection: scrollActiveSection, scrollToSection } = useSectionNav(
+    isMobileReportLayout ? sectionIds : [],
+  )
+
+  const [desktopActiveSection, setDesktopActiveSection] = useState(DEFAULT_REPORT_SECTION)
+  const activeSection = isMobileReportLayout ? scrollActiveSection : desktopActiveSection
   const [visitedSections, setVisitedSections] = useState<Set<string>>(
     () => new Set([DEFAULT_REPORT_SECTION]),
   )
@@ -97,19 +106,22 @@ export function FundReportPage() {
   }, [])
 
   useEffect(() => {
-    setActiveSection(DEFAULT_REPORT_SECTION)
+    setDesktopActiveSection(DEFAULT_REPORT_SECTION)
     setVisitedSections(new Set([DEFAULT_REPORT_SECTION]))
-  }, [scheme])
+    if (isMobileReportLayout) {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [scheme, isMobileReportLayout])
 
   const isSharedView = sharedSnapshot != null
   const startDate = sharedSnapshot?.startDate ?? searchParams.get('start_date') ?? undefined
 
   const enabledGroups = useMemo(() => {
-    if (isSharedView || renderAllSections) {
+    if (isSharedView || renderAllSections || isMobileReportLayout) {
       return new Set(ALL_REPORT_GROUP_KEYS)
     }
     return groupsRequiredForSections(visitedSections)
-  }, [isSharedView, renderAllSections, visitedSections])
+  }, [isSharedView, renderAllSections, isMobileReportLayout, visitedSections])
 
   const liveReport = useProgressiveFundReport(isSharedView ? null : scheme || null, startDate, {
     enabledGroups,
@@ -117,14 +129,18 @@ export function FundReportPage() {
   const reportGroups = isSharedView ? snapshotToGroups(sharedSnapshot) : liveReport
 
   const selectSection = useCallback((sectionId: string) => {
-    setActiveSection(sectionId)
+    if (isMobileReportLayout) {
+      scrollToSection(sectionId)
+      return
+    }
+    setDesktopActiveSection(sectionId)
     setVisitedSections((prev) => {
       if (prev.has(sectionId)) return prev
       const next = new Set(prev)
       next.add(sectionId)
       return next
     })
-  }, [])
+  }, [isMobileReportLayout, scrollToSection])
 
   const selectScheme = (next: string) => {
     if (isSharedView) return
@@ -333,7 +349,7 @@ export function FundReportPage() {
               exportRootId={EXPORT_ROOT_ID}
               exportTitle={renderAllSections ? fundLabel : undefined}
               activeSection={activeSection}
-              renderAll={renderAllSections || isSharedView}
+              renderAll={renderAllSections || isSharedView || isMobileReportLayout}
               startDate={startDate}
             />
           </div>

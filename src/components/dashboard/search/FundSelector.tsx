@@ -111,7 +111,7 @@ export function FundSelector({
     showResults && query.trim().length >= SEARCH_MIN_QUERY_LENGTH && query !== selectedScheme
 
   const searchField = (
-    <div className={cn('relative', variant === 'compact' ? 'min-w-0 flex-1' : '')} ref={inputWrapRef}>
+    <div className={cn('relative w-full min-w-0')} ref={inputWrapRef}>
       <Search
         className={cn(
           'pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground',
@@ -132,7 +132,7 @@ export function FundSelector({
         className={cn(
           'pl-10',
           variant === 'compact' && [
-            'h-11 rounded-full border-border/60 bg-muted/30 pr-10 text-sm shadow-inner',
+            'h-11 w-full min-w-0 truncate rounded-full border-border/60 bg-muted/30 pr-10 text-sm shadow-inner',
             'transition-[border-color,background-color,box-shadow] duration-200',
             'placeholder:text-muted-foreground/75',
             'hover:border-primary/30 hover:bg-muted/45',
@@ -170,7 +170,7 @@ export function FundSelector({
   if (variant === 'compact') {
     return (
       <div
-        className={cn('relative min-w-0 flex-1', dropdownOpen && 'z-[60]')}
+        className={cn('relative w-full min-w-0', dropdownOpen && 'z-[60]')}
         ref={containerRef}
       >
         {searchField}

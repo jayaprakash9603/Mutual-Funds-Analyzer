@@ -82,6 +82,11 @@ features:
     host: api.mfapi.in
     timeout: 20s
     navTtl: 6h
+  sync:
+    enabled: false
+    daily-cron: "0 30 7 * * *"
+    max-attempts-per-day: 3
+    zone-id: Asia/Kolkata
 
 analytics:
   riskFreeRate: 0.06

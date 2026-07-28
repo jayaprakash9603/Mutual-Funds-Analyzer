@@ -27,3 +27,8 @@ export function useIsTablet() {
     `(min-width: ${MOBILE_BREAKPOINT_PX + 1}px) and (max-width: ${TABLET_BREAKPOINT_PX}px)`,
   )
 }
+
+/** Report sidebar is lg+; mobile section nav is below lg. */
+export function useIsReportMobileLayout() {
+  return useMediaQuery(`(max-width: ${TABLET_BREAKPOINT_PX}px)`)
+}
