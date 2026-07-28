@@ -11,10 +11,11 @@ export function useResponsiveAxis(options?: ResponsiveAxisOptions) {
 
   return {
     tick: isSmall ? TICK_SM : TICK_MD,
-    xHeight: isSmall ? 48 : dense ? 60 : 70,
+    xHeight: isSmall ? 40 : dense ? 60 : 70,
     xAngle: isSmall ? 0 : dense ? -45 : -20,
     xAnchor: isSmall ? ('middle' as const) : ('end' as const),
-    xGap: isSmall ? 56 : dense ? 48 : 48,
-    yWidth: isSmall ? 40 : 52,
+    xGap: isSmall ? 32 : dense ? 48 : 48,
+    yWidth: isSmall ? 36 : 48,
+    showYLabel: !isSmall,
   }
 }

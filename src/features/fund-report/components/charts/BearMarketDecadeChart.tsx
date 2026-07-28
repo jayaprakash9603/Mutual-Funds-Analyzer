@@ -12,12 +12,12 @@ import {
   AXIS_LINE,
   formatAxisPercentTick,
   GRID_STROKE,
-  MARGIN_LEFT,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   xLabel,
   yLabel,
 } from '@/lib/charts/chartAxes'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { formatPercent } from '@/lib/utils'
 import type { FundReport } from '../../schemas'
 
@@ -40,6 +40,7 @@ type BearMarketDecadeChartProps = {
 }
 
 export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeChartProps) {
+  const axis = useResponsiveAxis()
   const rows = useMemo(
     () =>
       decades
@@ -90,7 +91,7 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
         >
           <BarChart
             data={rows}
-            margin={{ ...MARGIN_LEFT, top: 12, bottom: 0, left: 44 }}
+            margin={chartPlotMargin({ top: 12, bottom: 0 })}
             barCategoryGap={rows.length <= 3 ? '20%' : '18%'}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -98,8 +99,8 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
               dataKey="label"
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
-              height={44}
+              tick={axis.tick}
+              height={axis.xHeight}
               interval={0}
               padding={axisPadding}
             >
@@ -108,12 +109,12 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={formatAxisPercentTick}
-              width={44}
+              width={axis.yWidth}
               domain={[0, 'auto']}
             >
-              <Label {...yLabel('% days below -20%')} />
+              {axis.showYLabel ? <Label {...yLabel('% days below -20%')} /> : null}
             </YAxis>
             <ChartTooltip
               cursor={CHART_TOOLTIP_CURSOR}

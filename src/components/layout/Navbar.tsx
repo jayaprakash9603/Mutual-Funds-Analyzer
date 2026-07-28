@@ -3,6 +3,7 @@ import { BarChart3, GitCompare, Home, Moon, Sun, BookOpen, FileText } from 'luci
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { DemoModeToggle } from '@/components/layout/DemoModeToggle'
+import { NavMobileMenu } from '@/components/layout/NavMobileMenu'
 import { NavTabs, type NavTabItem } from '@/components/layout/NavTabs'
 import { useFeature } from '@/context/FeatureFlagProvider'
 
@@ -71,12 +72,9 @@ export function Navbar() {
           <NavTabs items={visibleItems} pathname={location.pathname} />
         </nav>
 
-        <nav
-          className="relative flex min-w-0 flex-1 overflow-x-auto scroll-smooth [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
-          aria-label="Main navigation"
-        >
-          <NavTabs items={visibleItems} pathname={location.pathname} compact />
-        </nav>
+        <div className="flex-1 md:hidden" aria-hidden="true" />
+
+        <NavMobileMenu items={visibleItems} pathname={location.pathname} />
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <DemoModeToggle />

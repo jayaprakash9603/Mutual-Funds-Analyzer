@@ -21,6 +21,22 @@ export const MARGIN_X = { top: 8, right: 16, left: 8, bottom: 8 }
 export const MARGIN_LEFT = { top: 8, right: 8, left: 8, bottom: 8 }
 export const DOMAIN_0_100: [number, number] = [0, 100]
 
+export type ChartPlotMarginOverrides = {
+  top?: number
+  right?: number
+  bottom?: number
+}
+
+/** Plot margins when YAxis `width` reserves the left gutter — never duplicate in margin.left. */
+export function chartPlotMargin(overrides: ChartPlotMarginOverrides = {}) {
+  return {
+    top: overrides.top ?? 8,
+    right: overrides.right ?? 8,
+    bottom: overrides.bottom ?? 8,
+    left: 0,
+  }
+}
+
 export function xLabel(text: string, offset = 0) {
   return {
     value: text,
@@ -35,7 +51,7 @@ export function yLabel(text: string, angle = -90) {
     value: text,
     angle,
     position: 'insideLeft' as const,
-    style: AXIS_LABEL,
+    style: { ...AXIS_LABEL, fontSize: 10 },
   }
 }
 

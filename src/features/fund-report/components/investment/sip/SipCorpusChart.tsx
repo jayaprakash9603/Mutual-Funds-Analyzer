@@ -16,12 +16,12 @@ import { MAX_CHART_POINTS } from '@/lib/constants'
 import {
   AXIS_LINE,
   GRID_STROKE,
-  MARGIN_X,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   xLabel,
   yLabel,
 } from '@/lib/charts/chartAxes'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { downsample } from '@/lib/utils'
 import type { SipTimelinePoint } from '../../../schemas'
 
@@ -71,6 +71,7 @@ type SipCorpusChartProps = {
 }
 
 export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorpusChartProps) {
+  const axis = useResponsiveAxis()
   const chartData = useMemo(() => {
     const mapped = timeline.map((point) => ({
       ...point,
@@ -96,15 +97,15 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
         </p>
       </div>
       <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full sm:h-[360px]">
-        <ComposedChart data={chartData} margin={{ ...MARGIN_X, left: 56, right: 16 }}>
+        <ComposedChart data={chartData} margin={chartPlotMargin({ top: 8, right: 12, bottom: 8 })}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
-            tick={TICK_MD}
-            minTickGap={36}
-            height={44}
+            tick={axis.tick}
+            minTickGap={axis.xGap}
+            height={axis.xHeight}
             tickFormatter={(value: string) => {
               if (typeof value !== 'string' || value.length < 7) return value
               const year = value.slice(0, 4)
@@ -117,11 +118,11 @@ export function SipCorpusChart({ timeline, monthlyAmount, scheduleDay }: SipCorp
           <YAxis
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
-            tick={TICK_MD}
+            tick={axis.tick}
             tickFormatter={formatLakhs}
-            width={52}
+            width={axis.yWidth}
           >
-            <Label {...yLabel('Value')} />
+            {axis.showYLabel ? <Label {...yLabel('Value')} /> : null}
           </YAxis>
           <Tooltip content={<SipTooltip />} />
           <Legend />

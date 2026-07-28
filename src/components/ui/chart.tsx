@@ -46,7 +46,7 @@ const ChartContainer = React.forwardRef<
         data-chart={chartId}
         ref={ref}
         className={cn(
-          'flex aspect-video justify-center rounded-lg bg-[var(--chart-surface)] text-xs text-foreground',
+          'flex aspect-video justify-center rounded-lg bg-[var(--chart-surface)] text-xs text-foreground min-w-0 w-full',
           '[&_.recharts-cartesian-axis-tick_text]:fill-[var(--chart-axis)]',
           '[&_.recharts-cartesian-grid_line]:stroke-[var(--chart-grid-stroke)]',
           '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[var(--chart-tooltip-cursor)]',

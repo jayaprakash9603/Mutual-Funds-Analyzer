@@ -16,9 +16,8 @@ import {
   AXIS_LINE,
   formatAxisPercentTick,
   GRID_STROKE,
-  MARGIN_LEFT,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   yLabel,
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
@@ -221,7 +220,7 @@ export function SortedCalendarReturnsChart({
         >
           <BarChart
             data={rows}
-            margin={{ ...MARGIN_LEFT, top: 52, right: 12, bottom: 8 }}
+            margin={chartPlotMargin({ top: 52, bottom: 8 })}
             barCategoryGap="22%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -238,13 +237,13 @@ export function SortedCalendarReturnsChart({
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={formatAxisPercentTick}
-              width={44}
+              width={axis.yWidth}
               domain={yDomain}
               tickCount={Math.min(8, Math.floor((yDomain[1] - yDomain[0]) / 10) + 1)}
             >
-              <Label {...yLabel('Annual return (%)')} />
+              {axis.showYLabel ? <Label {...yLabel('Annual return (%)')} /> : null}
             </YAxis>
             <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeWidth={1.5} />
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<SortedReturnTooltip />} />

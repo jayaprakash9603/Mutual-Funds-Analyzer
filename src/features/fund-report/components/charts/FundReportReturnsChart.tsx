@@ -30,8 +30,8 @@ import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import {
   AXIS_LINE,
   GRID_STROKE,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_SM,
   xLabel,
   yLabelRight,
 } from '@/lib/charts/chartAxes'
@@ -51,7 +51,6 @@ const absoluteConfig = {
   indexValue: { label: 'Indexed NAV', color: FUND_COLOR },
 } satisfies ChartConfig
 
-const CHART_MARGIN = { top: 16, right: 24, left: 8, bottom: 8 }
 const ROLLING_CHART_MARGIN = { top: 16, right: 56, left: 8, bottom: 12 }
 const TOOLTIP_CURSOR = { stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }
 const Y_DOMAIN: ['auto', 'auto'] = ['auto', 'auto']
@@ -306,27 +305,29 @@ export function FundReportReturnsChart({
           ) : (
             <div className={CHART_PANEL_CLASS}>
             <ChartContainer config={absoluteConfig} className={CHART_HEIGHT_CLASS}>
-              <LineChart data={absoluteChartData} margin={{ ...CHART_MARGIN, left: 48 }}>
+              <LineChart data={absoluteChartData} margin={chartPlotMargin({ top: 16, right: 12, bottom: 8 })}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
                 <XAxis
                   dataKey="date"
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
-                  minTickGap={48}
-                  tick={TICK_SM}
-                  height={44}
+                  minTickGap={axis.xGap}
+                  tick={axis.tick}
+                  height={axis.xHeight}
                 >
                   <Label {...xLabel('Date', -2)} />
                 </XAxis>
                 <YAxis
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
-                  tick={TICK_SM}
+                  tick={axis.tick}
                   tickFormatter={formatIndexedNavTick}
-                  width={48}
+                  width={axis.yWidth}
                   domain={Y_DOMAIN}
                 >
-                  <Label value="Indexed NAV" angle={-90} position="insideLeft" style={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
+                  {axis.showYLabel ? (
+                    <Label value="Indexed NAV" angle={-90} position="insideLeft" style={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
+                  ) : null}
                 </YAxis>
                 <Tooltip
                   formatter={(value) => [

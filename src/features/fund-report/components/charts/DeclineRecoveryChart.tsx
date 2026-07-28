@@ -17,14 +17,14 @@ import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
   GRID_STROKE,
-  MARGIN_X,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   formatAxisPercentTick,
   xLabel,
   yLabel,
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReport } from '../../schemas'
 import {
@@ -288,6 +288,7 @@ function IndexedNavTimeline({
   fundName: string
   headline: string | null
 }) {
+  const axis = useResponsiveAxis()
   const model = useMemo(
     () => buildIndexedNavTimelineModel(indexedNav, phases),
     [indexedNav, phases],
@@ -307,7 +308,7 @@ function IndexedNavTimeline({
           config={timelineConfig}
           className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
         >
-          <AreaChart data={model.points} margin={{ ...MARGIN_X, left: 48 }}>
+          <AreaChart data={model.points} margin={chartPlotMargin({ top: 12, bottom: 8 })}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
 
             {model.bands.map((band, index) => (
@@ -326,22 +327,22 @@ function IndexedNavTimeline({
               dataKey="date"
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
-              minTickGap={48}
-              height={44}
+              tick={axis.tick}
+              minTickGap={axis.xGap}
+              height={axis.xHeight}
             >
               <Label {...xLabel('Date', -2)} />
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={formatIndexedNavTick}
-              width={48}
+              width={axis.yWidth}
               domain={model.yDomain}
               type="number"
             >
-              <Label {...yLabel('Indexed NAV')} />
+              {axis.showYLabel ? <Label {...yLabel('Indexed NAV')} /> : null}
             </YAxis>
 
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent />} />
@@ -400,6 +401,7 @@ function ContinuousPhaseTimeline({
   headline: string | null
 }) {
   const isSmall = useIsSmallScreen()
+  const axis = useResponsiveAxis()
   const model = useMemo(
     () => buildContinuousPhaseTimelineModel(phases, indexedNav, cycles),
     [phases, indexedNav, cycles],
@@ -452,7 +454,7 @@ function ContinuousPhaseTimeline({
           config={phaseConfig}
           className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
         >
-          <AreaChart data={model.points} margin={{ top: 36, right: 12, left: 48, bottom: 8 }}>
+          <AreaChart data={model.points} margin={chartPlotMargin({ top: 36, bottom: 8 })}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
 
             {model.bands.map((band: PhaseTimelineBand, index: number) => (
@@ -473,22 +475,22 @@ function ContinuousPhaseTimeline({
               dataKey="date"
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
-              minTickGap={48}
-              height={44}
+              tick={axis.tick}
+              minTickGap={axis.xGap}
+              height={axis.xHeight}
             >
               <Label {...xLabel('Date', -2)} />
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={formatAxisPercentTick}
-              width={48}
+              width={axis.yWidth}
               domain={[-model.yLimit, model.yLimit]}
               type="number"
             >
-              <Label {...yLabel('% move', -90)} />
+              {axis.showYLabel ? <Label {...yLabel('% move', -90)} /> : null}
             </YAxis>
 
             <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeWidth={1.5} strokeOpacity={0.65} />

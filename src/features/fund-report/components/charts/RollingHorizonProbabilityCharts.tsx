@@ -6,11 +6,11 @@ import {
   AXIS_LINE,
   formatAxisPercentTick,
   GRID_STROKE,
-  MARGIN_LEFT,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   yLabel,
 } from '@/lib/charts/chartAxes'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { formatPercent } from '@/lib/utils'
@@ -150,6 +150,7 @@ function HorizonProbabilityCard({
   rows: HorizonProbabilityRow[]
   metric: HorizonProbabilityMetric
 }) {
+  const axis = useResponsiveAxis()
   const maxY = Math.max(...rows.map((row) => row.value), 5)
   const yDomainMax = Math.ceil(maxY * 1.12)
   const windowCount = rows.reduce((max, row) => Math.max(max, row.count), 0)
@@ -191,7 +192,7 @@ function HorizonProbabilityCard({
         >
           <BarChart
             data={rows}
-            margin={{ ...MARGIN_LEFT, top: 40, right: 16, bottom: 8 }}
+            margin={chartPlotMargin({ top: 40, bottom: 8 })}
             barCategoryGap={categoryCount > 6 ? '12%' : '18%'}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -199,18 +200,18 @@ function HorizonProbabilityCard({
               dataKey="shortLabel"
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={{ ...TICK_MD, fontSize: 11, fontWeight: 600 }}
+              tick={{ ...axis.tick, fontWeight: 600 }}
               interval={0}
             />
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={formatAxisPercentTick}
-              width={44}
+              width={axis.yWidth}
               domain={[0, yDomainMax]}
             >
-              <Label {...yLabel('% of windows')} />
+              {axis.showYLabel ? <Label {...yLabel('% of windows')} /> : null}
             </YAxis>
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<HorizonTooltip />} />
             {highlightOverlay ? <Customized component={highlightOverlay} /> : null}

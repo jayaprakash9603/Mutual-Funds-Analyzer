@@ -24,13 +24,13 @@ import {
   drawdownYDomain,
   formatAxisPercentTick,
   GRID_STROKE,
-  MARGIN_X,
+  chartPlotMargin,
   TICK_LINE,
-  TICK_MD,
   xLabel,
   yLabel,
   ZERO_LINE_STROKE,
 } from '@/lib/charts/chartAxes'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { formatPercent } from '@/lib/utils'
@@ -146,6 +146,7 @@ export function FundReportSections({
   startDate,
 }: FundReportSectionsProps) {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE'>('LUMPSUM')
+  const chartAxis = useResponsiveAxis()
   const schemeSelected = !!scheme
   const matrixActive = renderAll || sectionNeedsMatrix(activeSection)
   const multipleMatrixActive = renderAll || sectionNeedsMultipleMatrix(activeSection)
@@ -548,28 +549,28 @@ export function FundReportSections({
                   config={drawdownChartConfig}
                   className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
                 >
-                  <AreaChart data={data.drawdown.series} margin={{ ...MARGIN_X, left: 48 }}>
+                  <AreaChart data={data.drawdown.series} margin={chartPlotMargin({ top: 12, bottom: 8 })}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                     <XAxis
                       dataKey="date"
                       tickLine={TICK_LINE}
                       axisLine={AXIS_LINE}
-                      tick={TICK_MD}
-                      minTickGap={48}
-                      height={44}
+                      tick={chartAxis.tick}
+                      minTickGap={chartAxis.xGap}
+                      height={chartAxis.xHeight}
                     >
                       <Label {...xLabel('Date', -2)} />
                     </XAxis>
                     <YAxis
                       tickLine={TICK_LINE}
                       axisLine={AXIS_LINE}
-                      tick={TICK_MD}
+                      tick={chartAxis.tick}
                       tickFormatter={formatAxisPercentTick}
-                      width={48}
+                      width={chartAxis.yWidth}
                       domain={drawdownYDomain(data.drawdown.series)}
                       type="number"
                     >
-                      <Label {...yLabel('Drawdown (%)')} />
+                      {chartAxis.showYLabel ? <Label {...yLabel('Drawdown (%)')} /> : null}
                     </YAxis>
                     <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.35} strokeWidth={1.5} />
                     <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent format="percent" />} />

@@ -21,7 +21,7 @@ import {
   AXIS_LINE,
   formatAxisPercentTick,
   GRID_STROKE,
-  MARGIN_LEFT,
+  chartPlotMargin,
   TICK_LINE,
   xLabel,
   yLabel,
@@ -59,12 +59,12 @@ export function AnnualStressAnalysis({
 }: AnnualStressAnalysisProps) {
   const axis = useResponsiveAxis()
   const chartMargin = useMemo(
-    () => ({ ...MARGIN_LEFT, top: 12, bottom: 0, left: axis.yWidth }),
-    [axis.yWidth],
+    () => chartPlotMargin({ top: 12, bottom: 0 }),
+    [],
   )
   const returnChartMargin = useMemo(
-    () => ({ ...MARGIN_LEFT, top: 8, bottom: 4, left: axis.yWidth }),
-    [axis.yWidth],
+    () => chartPlotMargin({ top: 8, bottom: 4 }),
+    [],
   )
 
   const rows = useMemo(() => {
@@ -122,7 +122,7 @@ export function AnnualStressAnalysis({
                 domain={['dataMin', 0]}
                 type="number"
               >
-                <Label {...yLabel('Drawdown (%)')} />
+                {axis.showYLabel ? <Label {...yLabel('Drawdown (%)')} /> : null}
               </YAxis>
               <ReferenceLine
                 y={-stats.averageDrawdown}
@@ -184,7 +184,7 @@ export function AnnualStressAnalysis({
                 width={axis.yWidth}
                 type="number"
               >
-                <Label {...yLabel('Return (%)')} />
+                {axis.showYLabel ? <Label {...yLabel('Return (%)')} /> : null}
               </YAxis>
               <ReferenceLine y={0} stroke={CHART_COLORS.muted} strokeWidth={1.5} />
               <ChartTooltip
