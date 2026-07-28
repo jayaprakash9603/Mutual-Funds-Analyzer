@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 import { GoldenTriangleResultCard } from '@/components/dashboard/cards/GoldenTriangleResultCard'
+import { FinalRecommendationPanel } from '@/features/fund-report/components/layout/FinalRecommendationPanel'
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
@@ -85,7 +86,7 @@ import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { HeatMatrix, HeatMatrixSkeleton } from '../charts/HeatMatrix'
 import { MultiplyProbabilityTable } from '../tables/MultiplyProbabilityTable'
 import { PeerComparisonTable } from '../tables/PeerComparisonTable'
-import { GaugeMeter, ProbabilityBar, VerdictBadge } from '../charts/ReportVisuals'
+import { GaugeMeter, ProbabilityBar } from '../charts/ReportVisuals'
 import {
   CardSkeleton,
   ChartSkeleton,
@@ -802,15 +803,7 @@ export function FundReportSections({
       {shouldRender("verdict") ? (
       <SectionShell id="verdict" title="Final Recommendation">
         <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
-          {(data) => (
-            <div className="flex flex-col items-center gap-4 text-center">
-              <VerdictBadge
-                verdict={data.recommendation.verdict}
-                confidence={data.recommendation.confidencePercent}
-              />
-              <p className="max-w-2xl text-muted-foreground">{data.recommendation.summary}</p>
-            </div>
-          )}
+          {(data) => <FinalRecommendationPanel assessment={data} />}
         </ReportGroupBoundary>
       </SectionShell>
       ) : null}
