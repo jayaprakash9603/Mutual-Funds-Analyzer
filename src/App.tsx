@@ -8,8 +8,8 @@ import { Navbar } from '@/components/layout/Navbar'
 import { CommandPalette, useCommandPalette } from '@/components/layout/CommandPalette'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LandingPage } from '@/pages/LandingPage'
 
-const LandingPage = lazy(() => import('@/pages/LandingPage').then((m) => ({ default: m.LandingPage })))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const ComparePage = lazy(() => import('@/pages/ComparePage').then((m) => ({ default: m.ComparePage })))
 const MethodPage = lazy(() => import('@/pages/MethodPage').then((m) => ({ default: m.MethodPage })))

@@ -1,90 +1,135 @@
-import { motion } from 'framer-motion'
+import { useEffect, type ReactNode } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowRight, BarChart3, Shield, TrendingUp, Triangle } from 'lucide-react'
-import { PageContainer } from '@/components/layout/PageContainer'
+import { ArrowRight, Gauge, Repeat, Shield, Triangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { AnimatedStockGraph } from '@/components/landing/AnimatedStockGraph'
+import { HeroBackdrop } from '@/components/landing/HeroBackdrop'
+import { MagneticCta } from '@/components/landing/MagneticCta'
+import { PerformanceCurve } from '@/components/landing/PerformanceCurve'
 
-const rules = [
+const criteria = [
   {
-    icon: TrendingUp,
+    icon: Repeat,
     title: 'Rolling Return',
-    description: 'Fund 5-Year Rolling Return Average must exceed Benchmark Average.',
+    description: 'Five-year rolling average has to clear the benchmark average.',
   },
   {
     icon: Shield,
     title: 'Chance of Beating Benchmark',
-    description: 'COB must be greater than 70% across rolling windows.',
+    description: 'The fund has to win more than 70% of all rolling windows.',
   },
   {
-    icon: BarChart3,
+    icon: Gauge,
     title: 'Sharpe Ratio',
-    description: 'Fund Sharpe Ratio must exceed Benchmark Sharpe Ratio.',
+    description: 'Return per unit of risk has to stay above the index.',
   },
 ]
 
-export function LandingPage() {
+const EASE = [0.16, 1, 0.3, 1] as const
+
+function HeadlineLine({ children, delay }: { children: ReactNode; delay: number }) {
+  const reduceMotion = useReducedMotion()
+
   return (
-    <div className="relative overflow-hidden">
-      <AnimatedStockGraph />
+    <span className="block overflow-hidden pb-[0.12em]">
+      <motion.span
+        className="block"
+        initial={reduceMotion ? false : { y: '108%' }}
+        animate={{ y: '0%' }}
+        transition={{ duration: 0.85, delay, ease: EASE }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  )
+}
 
-      <PageContainer width="default" className="relative flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl"
-        >
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary">
-            <Triangle className="h-4 w-4" aria-hidden="true" />
-            Golden Triangle Strategy
+export function LandingPage() {
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.add('landing-locked')
+    return () => root.classList.remove('landing-locked')
+  }, [])
+
+  const reduceMotion = useReducedMotion()
+  const fade = (delay: number) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: 18 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.7, delay, ease: EASE },
+  })
+
+  return (
+    <div className="landing-viewport relative">
+      <HeroBackdrop />
+
+      <div className="relative mx-auto flex w-full max-w-[84rem] flex-1 flex-col px-4 sm:px-6 lg:px-8">
+        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-12 lg:gap-14 lg:py-8">
+          <div className="lg:col-span-7">
+            <motion.p
+              {...fade(0)}
+              className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold tracking-tight"
+            >
+              <Triangle className="size-3.5 text-primary" aria-hidden="true" />
+              Golden Triangle Strategy
+            </motion.p>
+
+            <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.25rem] xl:text-[4rem]">
+              <HeadlineLine delay={0.08}>
+                Find <span className="text-primary">winning</span> funds,
+              </HeadlineLine>
+              <HeadlineLine delay={0.18}>not lucky ones.</HeadlineLine>
+            </h1>
+
+            <motion.p {...fade(0.38)} className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Every mutual fund gets three tests against its benchmark: rolling returns, consistency,
+              and risk-adjusted performance. Scored on full NAV history.
+            </motion.p>
+
+            <motion.div {...fade(0.5)} className="mt-9 flex flex-wrap items-center gap-3">
+              <MagneticCta>
+                <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                  <Link to="/dashboard">
+                    Analyze a fund
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </MagneticCta>
+              <MagneticCta strength={0.16}>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/method">Learn the method</Link>
+                </Button>
+              </MagneticCta>
+            </motion.div>
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Find Winning Mutual Funds Using The{' '}
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Golden Triangle
-            </span>{' '}
-            Strategy
-          </h1>
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9, delay: 0.22, ease: EASE }}
+            className="lg:col-span-5"
+          >
+            <PerformanceCurve />
+          </motion.div>
+        </div>
 
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            Compare any mutual fund against its benchmark using rolling returns, consistency and Sharpe Ratio.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button asChild size="lg" className="gap-2">
-              <Link to="/dashboard">
-                Analyze Fund
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link to="/method">Learn Method</Link>
-            </Button>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="mt-16 grid gap-4 sm:grid-cols-3"
-        >
-          {rules.map((rule) => (
-            <Card key={rule.title} className="glass glass-hover">
-              <CardContent className="p-6">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <rule.icon className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <h3 className="font-semibold">{rule.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{rule.description}</p>
-              </CardContent>
-            </Card>
+        <div className="mb-8 grid border-t border-border/60 sm:grid-cols-[1.05fr_1.15fr_0.9fr] sm:divide-x sm:divide-border/60 lg:mb-10">
+          {criteria.map((rule, index) => (
+            <motion.div
+              key={rule.title}
+              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 + index * 0.09, ease: EASE }}
+              className="py-5 sm:first:pr-6 sm:last:pl-6 sm:[&:nth-child(2)]:px-6"
+            >
+              <div className="flex items-center gap-2.5">
+                <rule.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                <h2 className="text-sm font-semibold tracking-tight">{rule.title}</h2>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{rule.description}</p>
+            </motion.div>
           ))}
-        </motion.div>
-      </PageContainer>
+        </div>
+      </div>
     </div>
   )
 }

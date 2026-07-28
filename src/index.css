@@ -191,6 +191,20 @@
       radial-gradient(circle at 80% 0%, oklch(0.58 0.14 250 / 0.08), transparent 35%);
   }
 
+  /* The landing route is a single-screen composition, so the reserved scrollbar
+     gutter is dropped along with the overflow it would otherwise sit next to.
+     Below this threshold the content cannot fit and scrolling stays available. */
+  @media (min-width: 1024px) and (min-height: 680px) {
+    html.landing-locked,
+    html.landing-locked body {
+      overflow: hidden;
+    }
+
+    html.landing-locked body {
+      scrollbar-gutter: auto;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -205,6 +219,18 @@
 }
 
 @layer utilities {
+  .landing-viewport {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 1024px) and (min-height: 680px) {
+    .landing-viewport {
+      height: calc(100dvh - 4rem);
+      overflow: hidden;
+    }
+  }
+
   .glass {
     @apply bg-card/70 backdrop-blur-xl border border-border/60 shadow-xl;
   }
