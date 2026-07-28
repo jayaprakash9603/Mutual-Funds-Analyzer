@@ -21,6 +21,8 @@ interface FundSelectorProps {
   onSelectScheme: (scheme: string) => void
   /** Analyze page: full controls. Report page: fund search only. */
   mode?: 'full' | 'fund-only'
+  /** Report page: single-line sticky bar without card chrome. */
+  variant?: 'default' | 'compact'
   period?: Period
   onPeriodChange?: (period: Period) => void
   category?: string
@@ -32,6 +34,7 @@ export function FundSelector({
   selectedScheme,
   onSelectScheme,
   mode = 'full',
+  variant = 'default',
   period,
   onPeriodChange,
   category = 'All',
@@ -107,6 +110,74 @@ export function FundSelector({
   const dropdownOpen =
     showResults && query.trim().length >= SEARCH_MIN_QUERY_LENGTH && query !== selectedScheme
 
+  const searchField = (
+    <div className={cn('relative', variant === 'compact' ? 'min-w-0 flex-1' : '')} ref={inputWrapRef}>
+      <Search
+        className={cn(
+          'pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground',
+          variant === 'compact' ? 'left-3.5' : 'left-3',
+        )}
+        aria-hidden="true"
+      />
+      <Input
+        id="fund-search"
+        placeholder={variant === 'compact' ? 'Search or change fund…' : 'Search funds e.g. Parag Parikh, HDFC, Axis...'}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setShowResults(true)
+        }}
+        onFocus={() => setShowResults(true)}
+        onKeyDown={onKeyDown}
+        className={cn(
+          'pl-10',
+          variant === 'compact' && [
+            'h-11 rounded-full border-border/60 bg-muted/30 pr-10 text-sm shadow-inner',
+            'transition-[border-color,background-color,box-shadow] duration-200',
+            'placeholder:text-muted-foreground/75',
+            'hover:border-primary/30 hover:bg-muted/45',
+            'focus-visible:border-primary/45 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20',
+            selectedScheme && 'font-medium',
+          ],
+        )}
+        autoComplete="off"
+        role="combobox"
+        aria-label={variant === 'compact' ? 'Search mutual fund' : undefined}
+        aria-expanded={dropdownOpen}
+        aria-controls="fund-search-results"
+        aria-autocomplete="list"
+      />
+      {loading && (
+        <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+      )}
+      <FundSearchDropdown
+        open={dropdownOpen}
+        anchorRef={inputWrapRef}
+        query={query}
+        schemes={schemes}
+        loading={loading}
+        selectedScheme={selectedScheme}
+        activeIndex={activeIndex}
+        onActiveIndexChange={setActiveIndex}
+        onSelect={selectScheme}
+        isFavorite={isFavorite}
+        onToggleFavorite={toggleFavorite}
+        listRef={listRef}
+      />
+    </div>
+  )
+
+  if (variant === 'compact') {
+    return (
+      <div
+        className={cn('relative min-w-0 flex-1', dropdownOpen && 'z-[60]')}
+        ref={containerRef}
+      >
+        {searchField}
+      </div>
+    )
+  }
+
   return (
     <Card className={cn('glass', dropdownOpen && 'relative z-[60]')}>
       <CardHeader>
@@ -115,43 +186,7 @@ export function FundSelector({
       <CardContent className={fundOnly ? 'space-y-2' : 'grid gap-4 md:grid-cols-2'}>
         <div className={fundOnly ? 'space-y-2' : 'space-y-2 md:col-span-2'} ref={containerRef}>
           <Label htmlFor="fund-search">Mutual Fund</Label>
-          <div className="relative" ref={inputWrapRef}>
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="fund-search"
-              placeholder="Search funds e.g. Parag Parikh, HDFC, Axis..."
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setShowResults(true)
-              }}
-              onFocus={() => setShowResults(true)}
-              onKeyDown={onKeyDown}
-              className="pl-10"
-              autoComplete="off"
-              role="combobox"
-              aria-expanded={dropdownOpen}
-              aria-controls="fund-search-results"
-              aria-autocomplete="list"
-            />
-            {loading && (
-              <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            )}
-            <FundSearchDropdown
-              open={dropdownOpen}
-              anchorRef={inputWrapRef}
-              query={query}
-              schemes={schemes}
-              loading={loading}
-              selectedScheme={selectedScheme}
-              activeIndex={activeIndex}
-              onActiveIndexChange={setActiveIndex}
-              onSelect={selectScheme}
-              isFavorite={isFavorite}
-              onToggleFavorite={toggleFavorite}
-              listRef={listRef}
-            />
-          </div>
+          {searchField}
           {fundOnly && (
             <p className="text-xs text-muted-foreground">
               Category, benchmark, and rolling periods are shown in the report below after you select a fund.

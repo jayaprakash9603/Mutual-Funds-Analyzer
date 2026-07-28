@@ -1,5 +1,6 @@
-/** Default offset when nav height has not been measured yet (header + sticky section nav). */
-export const REPORT_SECTION_SCROLL_OFFSET = 144
+import { REPORT_SECTION_SCROLL_OFFSET } from './reportLayoutConstants'
+
+export { REPORT_SECTION_SCROLL_OFFSET } from './reportLayoutConstants'
 
 export function scrollToReportSection(
   id: string,

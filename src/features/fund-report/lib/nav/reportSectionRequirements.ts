@@ -19,6 +19,9 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'all-time-highs': ['risk'],
   lumpsum: ['investment'],
   expense: ['investment'],
+  sip: ['investment'],
+  stp: ['investment'],
+  swp: ['investment'],
   peers: [],
   quality: ['assessment'],
   insights: ['assessment'],
@@ -53,7 +56,7 @@ export function groupsRequiredForSections(sectionIds: Iterable<string>): Set<Rep
 }
 
 export function sectionNeedsMatrix(sectionId: string): boolean {
-  return sectionId === 'lumpsum'
+  return sectionId === 'lumpsum' || sectionId === 'sip' || sectionId === 'stp'
 }
 
 export function sectionNeedsMultipleMatrix(sectionId: string): boolean {

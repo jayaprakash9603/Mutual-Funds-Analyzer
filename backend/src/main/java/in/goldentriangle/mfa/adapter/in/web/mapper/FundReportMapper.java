@@ -29,6 +29,10 @@ import in.goldentriangle.mfa.adapter.in.web.dto.section.ReportSectionEnvelopeDto
 import in.goldentriangle.mfa.adapter.in.web.dto.report.RiskReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.RollingReturnsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SipTimelinePointDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
@@ -60,9 +64,14 @@ import in.goldentriangle.mfa.domain.model.report.matrix.ReturnBand;
 import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
+import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
+import in.goldentriangle.mfa.domain.model.report.investment.SwpReport;
+import in.goldentriangle.mfa.domain.model.report.investment.SwpSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class FundReportMapper {
@@ -405,11 +414,51 @@ public class FundReportMapper {
     }
 
     private SipReportDto toDto(SipReport report) {
-        return new SipReportDto(report.scenarios().stream()
-                .map(s -> new SipReportDto.SipScenarioDto(
+        List<SipTimelinePointDto> timeline = report.timeline() == null
+                ? List.of()
+                : report.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(p.date(), p.invested(), p.corpus(), p.nav()))
+                        .toList();
+        return new SipReportDto(
+                report.scheduleDay(),
+                report.chartAmount(),
+                timeline,
+                report.scenarios().stream()
+                        .map(s -> new SipReportDto.SipScenarioDto(
+                                s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
+                                s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()))
+                        .toList());
+    }
+
+    public SipSimulationDto toDto(SipSimulation simulation, int scheduleDay) {
+        SipReport.SipScenario s = simulation.scenario();
+        return new SipSimulationDto(
+                scheduleDay,
+                new SipReportDto.SipScenarioDto(
                         s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
-                        s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()))
-                .toList());
+                        s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()),
+                simulation.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(p.date(), p.invested(), p.corpus(), p.nav()))
+                        .toList());
+    }
+
+    public SwpSimulationDto toDto(SwpSimulation simulation, int scheduleDay) {
+        SwpReport.SwpScenario s = simulation.scenario();
+        return new SwpSimulationDto(
+                scheduleDay,
+                new SwpSimulationDto.SwpScenarioDto(
+                        s.initialCorpus(),
+                        s.monthlyWithdrawal(),
+                        s.totalWithdrawn(),
+                        s.remainingCorpus(),
+                        s.withdrawalCount(),
+                        s.depleted(),
+                        s.stcg(),
+                        s.ltcg(),
+                        s.postTaxRemaining()),
+                simulation.timeline().stream()
+                        .map(p -> new SwpTimelinePointDto(p.date(), p.corpus(), p.withdrawn(), p.nav()))
+                        .toList());
     }
 
     private LumpsumReportDto toDto(LumpsumReport report) {

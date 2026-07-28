@@ -13,8 +13,6 @@ import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollTable } from '@/components/ui/scroll-table'
-import { fiStickyLabelCell } from '@/components/fundsindia/tableStyles'
 import {
   ChartContainer,
   ChartTooltip,
@@ -35,7 +33,7 @@ import {
 } from '@/lib/charts/chartAxes'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
-import { cn, formatPercent } from '@/lib/utils'
+import { formatPercent } from '@/lib/utils'
 import type { GoldenTriangleResult } from '@/api/schemas'
 import { fetchPeerComparison } from '../../api'
 import type { ProgressiveFundReportGroups } from '../../hooks/useProgressiveFundReport'
@@ -63,7 +61,6 @@ import {
   buildLumpsumHeadline,
   buildProbabilityHeadline,
   buildRollingReturnsHeadline,
-  buildSipHeadline,
   buildSortedReturnsHeadline,
   buildTrailingReturnsHeadline,
 } from '../../lib/headlines/sectionHeadlines'
@@ -99,6 +96,7 @@ import {
 import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
 import { RareInstancesMatrixTable } from '../tables/RareInstancesMatrixTable'
+import { SipSection, StpSection, SwpSection } from '../investment/InvestmentStrategySections'
 import {
   sectionNeedsMatrix,
   sectionNeedsMultipleMatrix,
@@ -128,6 +126,7 @@ type FundReportSectionsProps = {
   exportTitle?: string
   activeSection?: string
   renderAll?: boolean
+  startDate?: string
 }
 
 export function FundReportSections({
@@ -144,8 +143,9 @@ export function FundReportSections({
   exportTitle,
   activeSection = 'overview',
   renderAll = false,
+  startDate,
 }: FundReportSectionsProps) {
-  const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
+  const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE'>('LUMPSUM')
   const schemeSelected = !!scheme
   const matrixActive = renderAll || sectionNeedsMatrix(activeSection)
   const multipleMatrixActive = renderAll || sectionNeedsMultipleMatrix(activeSection)
@@ -153,11 +153,12 @@ export function FundReportSections({
   const matrixEnabled = schemeSelected && !isSharedView && matrixActive
 
   const { data: matrix, loading: matrixLoading, error: matrixError, retry: retryMatrix } =
-    useFundReportMatrix(scheme || null, matrixMode, matrixEnabled)
+    useFundReportMatrix(scheme || null, matrixMode, matrixEnabled, startDate)
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
     schemeSelected && !isSharedView && multipleMatrixActive,
+    startDate,
   )
 
   const profile = overview.data?.profile
@@ -445,76 +446,7 @@ export function FundReportSections({
       </SectionShell>
       ) : null}
 
-      <SectionShell
-        id="sip"
-        title="SIP Analysis"
-        description="Monthly SIP outcomes from daily NAV history (mfapi.in). Tax assumes a full redemption today: each instalment is taxed as its own lot — units held over 1 year at 12.5% above ₹1.25 lakh, newer units at 20%."
-      >
-        <ReportGroupBoundary state={investment} skeleton={<TableSkeleton rows={4} />}>
-          {(data) => (
-            <>
-            <SectionHeadline className="mb-4" headline={buildSipHeadline(data.sip)} />
-            <ScrollTable minWidth={960} className="rounded-xl border border-border/70">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className={cn('px-4 py-3', fiStickyLabelCell('normal-case'))}>Monthly SIP</th>
-                    <th className="px-4 py-3">Invested</th>
-                    <th className="px-4 py-3">Current value</th>
-                    <th className="px-4 py-3">Gain</th>
-                    <th className="px-4 py-3">XIRR</th>
-                    <th className="px-4 py-3">Tax payable</th>
-                    <th className="px-4 py-3">Post-tax XIRR</th>
-                    <th className="px-4 py-3">10Y projection</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.sip.scenarios.map((s) => {
-                    const stcg = s.stcg ?? 0
-                    const ltcg = s.ltcg ?? 0
-                    const totalTax = stcg + ltcg
-                    return (
-                      <tr key={s.monthlyAmount} className="border-b border-border/40 last:border-0">
-                        <td className={cn('px-4 py-3 font-medium', fiStickyLabelCell())}>
-                          ₹{s.monthlyAmount.toLocaleString('en-IN')}
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums">
-                          ₹{s.moneyInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums">
-                          ₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                          +₹{s.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums">{s.xirr.toFixed(1)}%</td>
-                        <td className="px-4 py-3">
-                          <span className="block font-mono font-medium tabular-nums text-amber-700 dark:text-amber-400">
-                            −₹{totalTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            STCG ₹{stcg.toLocaleString('en-IN', { maximumFractionDigits: 0 })} · LTCG ₹
-                            {ltcg.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums">
-                          {formatPercent(s.postTaxXirr ?? 0, 1)}
-                        </td>
-                        <td className="px-4 py-3 font-mono tabular-nums">
-                          ₹{s.projectedValue10Y.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </ScrollTable>
-            </>
-          )}
-        </ReportGroupBoundary>
-      </SectionShell>
-
-      {shouldRender("lumpsum") ? (
+      {shouldRender('lumpsum') ? (
       <SectionShell id="lumpsum" title="Lump Sum Analysis">
         <ReportGroupBoundary state={investment} skeleton={null}>
           {(data) => (
@@ -525,8 +457,6 @@ export function FundReportSections({
           <TabsList scrollable>
             <TabsTrigger value="LUMPSUM">CAGR Matrix</TabsTrigger>
             <TabsTrigger value="MULTIPLE">Multiplier Matrix</TabsTrigger>
-            <TabsTrigger value="SIP">SIP Matrix</TabsTrigger>
-            <TabsTrigger value="STP_6M">6M STP Matrix</TabsTrigger>
           </TabsList>
           <TabsContent value={matrixMode} className="mt-4 w-full">
             {isSharedView ? (
@@ -767,6 +697,23 @@ export function FundReportSections({
           }
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
+
+      {shouldRender('sip') ? (
+        <SipSection
+          scheme={scheme}
+          investment={investment}
+          startDate={startDate}
+          isSharedView={isSharedView}
+        />
+      ) : null}
+
+      {shouldRender('stp') ? (
+        <StpSection scheme={scheme} isSharedView={isSharedView} />
+      ) : null}
+
+      {shouldRender('swp') ? (
+        <SwpSection scheme={scheme} startDate={startDate} isSharedView={isSharedView} />
       ) : null}
 
       {shouldRender('peers') ? (

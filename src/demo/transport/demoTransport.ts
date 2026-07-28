@@ -215,6 +215,46 @@ async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest)
   return loadDemoFixture(file, request.signal)
 }
 
+async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const envelope = await handleFundReportInvestment(request, manifest) as {
+    data: { sip: { scheduleDay?: number; chartAmount?: number; timeline?: unknown[]; scenarios: Array<{ monthlyAmount: number }> } }
+  }
+  const sip = envelope.data.sip
+  const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
+  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const scenario =
+    sip.scenarios.find((row) => row.monthlyAmount === amount) ?? sip.scenarios[0] ?? null
+  if (!scenario) {
+    throw new ApiError('Demo mode has no SIP scenario data for this fund.', NOT_FOUND)
+  }
+  const defaultAmount = sip.chartAmount ?? 10_000
+  const defaultDay = sip.scheduleDay ?? 1
+  const timeline =
+    amount === defaultAmount && scheduleDay === defaultDay ? sip.timeline ?? [] : sip.timeline ?? []
+  return { scheduleDay, scenario, timeline }
+}
+
+async function handleSwpSimulate(request: DemoRequest): Promise<unknown> {
+  const initialCorpus = Number.parseInt(request.params.get('initial_corpus') ?? '1000000', 10)
+  const monthlyWithdrawal = Number.parseInt(request.params.get('monthly_withdrawal') ?? '10000', 10)
+  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  return {
+    scheduleDay,
+    scenario: {
+      initialCorpus,
+      monthlyWithdrawal,
+      totalWithdrawn: 0,
+      remainingCorpus: initialCorpus,
+      withdrawalCount: 0,
+      depleted: false,
+      stcg: 0,
+      ltcg: 0,
+      postTaxRemaining: initialCorpus,
+    },
+    timeline: [],
+  }
+}
+
 /** A table instead of branching, so adding an endpoint stays a one-line change. */
 const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.schemes]: handleSchemes,
@@ -229,6 +269,8 @@ const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.fundReportInvestment]: handleFundReportInvestment,
   [API_ROUTES.fundReportAssessment]: handleFundReportAssessment,
   [API_ROUTES.fundReportMatrix]: handleFundReportMatrix,
+  [API_ROUTES.fundReportSipSimulate]: handleSipSimulate,
+  [API_ROUTES.fundReportSwpSimulate]: handleSwpSimulate,
   [API_ROUTES.fundReportPeers]: handlePeers,
   [API_ROUTES.fundReportDrawdownPeers]: handleDrawdownPeers,
 }

@@ -144,7 +144,7 @@ class FundReportControllerTest {
                 new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
                 emptyBestDays,
                 emptyAllTimeHighs,
-                new SipReportDto(List.of()),
+                new SipReportDto(1, 10_000, List.of(), List.of()),
                 new LumpsumReportDto(List.of()),
                 new TaxReportDto(0, 0, 0, 0, ""),
                 new ExpenseReportDto(null, null, null, null, ""),

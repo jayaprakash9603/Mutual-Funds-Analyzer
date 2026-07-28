@@ -11,12 +11,18 @@ export function useFundReportMatrix(
   scheme: string | null,
   mode: MatrixMode,
   enabled = true,
+  startDate?: string,
 ) {
   const cached = scheme && enabled ? peekMatrixCache(scheme, mode) : null
   const [data, setData] = useState<MatrixReport | null>(cached)
   const [loading, setLoading] = useState(enabled && !!scheme && !cached)
   const [error, setError] = useState<string | null>(null)
   const [retryToken, setRetryToken] = useState(0)
+
+  const syncFromCache = useCallback(() => {
+    if (!scheme || !enabled) return null
+    return peekMatrixCache(scheme, mode)
+  }, [scheme, mode, enabled])
 
   useEffect(() => {
     if (!scheme) {
@@ -26,11 +32,11 @@ export function useFundReportMatrix(
       return
     }
 
-    const warm = peekMatrixCache(scheme, mode)
+    const warm = syncFromCache()
     setData(warm)
     setError(null)
     setLoading(enabled && !warm)
-  }, [scheme, mode, enabled])
+  }, [scheme, mode, enabled, syncFromCache])
 
   const retry = useCallback(() => {
     if (scheme) {
@@ -45,7 +51,7 @@ export function useFundReportMatrix(
       return
     }
 
-    const warm = peekMatrixCache(scheme, mode)
+    const warm = syncFromCache()
     if (warm) {
       setData(warm)
       setLoading(false)
@@ -53,30 +59,35 @@ export function useFundReportMatrix(
       return
     }
 
-    const controller = new AbortController()
+    let cancelled = false
     setLoading(true)
     setError(null)
 
-    fetchMatrixCached(scheme, mode, controller.signal)
+    fetchMatrixCached(scheme, mode, startDate)
       .then((matrix) => {
-        if (!controller.signal.aborted) {
-          setData(matrix)
-        }
+        if (cancelled) return
+        setData(matrix)
       })
       .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err.message : 'Failed to load matrix')
+        if (cancelled) return
+        const cachedAfterError = syncFromCache()
+        if (cachedAfterError) {
+          setData(cachedAfterError)
+          setError(null)
+          return
         }
+        setError(err instanceof Error ? err.message : 'Failed to load matrix')
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!cancelled) {
           setLoading(false)
         }
       })
 
-    return () => controller.abort()
-  }, [scheme, mode, enabled, retryToken])
+    return () => {
+      cancelled = true
+    }
+  }, [scheme, mode, enabled, startDate, retryToken, syncFromCache])
 
   return { data, loading, error, retry }
 }

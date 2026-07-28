@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FundSelector } from '@/components/dashboard/search/FundSelector'
-import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ReportScrollProvider } from '@/features/fund-report/context/ReportScrollContext'
+import { ReportScrollProvider, REPORT_PAGE_TOP_PX } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
-import { FundReportToolbar } from '@/features/fund-report/components/layout/FundReportToolbar'
+import { ReportStickyHeader, ReportStickyHeaderSpacer } from '@/features/fund-report/components/layout/ReportStickyHeader'
 import { ReportPageShell } from '@/features/fund-report/components/layout/ReportPageShell'
 import { ReportSectionMobileNav } from '@/features/fund-report/components/layout/ReportSectionMobileNav'
 import { ReportSectionSidebar } from '@/features/fund-report/components/layout/ReportSectionSidebar'
@@ -130,24 +128,65 @@ export function FundReportPage() {
     setSearchParams({ scheme: next })
   }
 
+  const liveReportRef = useRef(liveReport)
+  liveReportRef.current = liveReport
+
   const fundLabel =
     sharedSnapshot?.overview.profile.fundName
     ?? liveReport.overview.data?.profile.fundName
     ?? scheme
     ?? 'Fund report'
 
-  const canExport = isSharedView || isReportReadyForExport(liveReport)
+  const exportActionsEnabled = isSharedView || Boolean(scheme)
+  const exportReady = isSharedView || isReportReadyForExport(liveReport)
+
+  const waitForExportReady = useCallback(async (): Promise<boolean> => {
+    if (isSharedView) return true
+    if (isReportReadyForExport(liveReportRef.current)) return true
+
+    setRenderAllSections(true)
+    const deadline = Date.now() + 90_000
+
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => window.setTimeout(resolve, 250))
+      const current = liveReportRef.current
+      if (isReportReadyForExport(current)) return true
+
+      const groups = [current.overview, current.performance, current.risk, current.investment, current.assessment]
+      const stillLoading = groups.some((group) => group.loading)
+      const failed = groups.some((group) => group.error)
+      if (!stillLoading && failed) return false
+      if (!stillLoading && !isReportReadyForExport(current)) return false
+    }
+
+    return isReportReadyForExport(liveReportRef.current)
+  }, [isSharedView])
 
   const handleDownloadPdf = async () => {
-    const root = document.getElementById(EXPORT_ROOT_ID)
-    if (!root) {
-      toast.error('Report content is not ready for export yet.')
+    if (!exportActionsEnabled) {
+      toast.error('Select a fund first.')
       return
     }
+
     setExporting(true)
-    setRenderAllSections(true)
     try {
+      const loadingToast = toast.loading('Preparing full report for PDF export…')
+      const ready = await waitForExportReady()
+      toast.dismiss(loadingToast)
+
+      if (!ready) {
+        toast.error('Could not load the full report for export. Try again shortly.')
+        return
+      }
+
       await new Promise((resolve) => window.setTimeout(resolve, 400))
+
+      const root = document.getElementById(EXPORT_ROOT_ID)
+      if (!root) {
+        toast.error('Report content is not ready for export yet.')
+        return
+      }
+
       await exportReportElementToPdf(root, fundLabel)
       toast.success('PDF downloaded')
     } catch (err) {
@@ -160,17 +199,35 @@ export function FundReportPage() {
 
   const buildCurrentSnapshot = useCallback((): SharedReportSnapshot | null => {
     if (isSharedView) return sharedSnapshot
-    return buildSnapshotFromGroups(scheme, startDate, liveReport, peersRef.current ?? peersData)
-  }, [isSharedView, sharedSnapshot, scheme, startDate, liveReport, peersData])
+    return buildSnapshotFromGroups(scheme, startDate, liveReportRef.current, peersRef.current ?? peersData)
+  }, [isSharedView, sharedSnapshot, scheme, startDate, peersData])
 
   const handleCopyShareLink = async () => {
+    if (!exportActionsEnabled) {
+      toast.error('Select a fund first.')
+      return
+    }
+
     setSharing(true)
     try {
+      const loadingToast = toast.loading('Preparing full report for sharing…')
+      const ready = await waitForExportReady()
+      toast.dismiss(loadingToast)
+
+      if (!ready) {
+        toast.error('Could not load the full report for sharing. Try again shortly.')
+        return
+      }
+
       const snapshot = buildCurrentSnapshot()
       if (!snapshot) throw new Error('Wait for the full report to finish loading before sharing.')
       const url = await buildShareUrl(snapshot)
       await navigator.clipboard.writeText(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not create share link')
+      throw err
     } finally {
+      setRenderAllSections(false)
       setSharing(false)
     }
   }
@@ -205,22 +262,27 @@ export function FundReportPage() {
         />
       }
     >
-      <PageContainer width="wide">
-        <ReportScrollProvider offset={120}>
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Fund Report</h1>
-          <p className="text-muted-foreground">
-            FundsIndia-style analysis — returns, consistency, drawdowns, and investment verdict.
-          </p>
-        </header>
+      {!snapshotLoading && (
+        <ReportStickyHeader
+          scheme={scheme}
+          fundLabel={fundLabel}
+          isSharedView={isSharedView}
+          sidebarVisible={showReportShell}
+          exportActionsEnabled={exportActionsEnabled}
+          exportReady={exportReady}
+          exporting={exporting}
+          sharing={sharing}
+          isDemoBuild={isDemoBuild()}
+          onSelectScheme={selectScheme}
+          onDownloadPdf={() => void handleDownloadPdf()}
+          onShareLink={handleCopyShareLink}
+          onCopyLink={handleCopyShareLink}
+        />
+      )}
 
-        {!isSharedView && (
-          <>
-            <DemoFundPicker selectedScheme={scheme} onSelect={selectScheme} />
-            <FundSelector mode="fund-only" selectedScheme={scheme} onSelectScheme={selectScheme} />
-          </>
-        )}
-
+      <PageContainer width="wide" className="space-y-4 pb-6 pt-2">
+        <ReportScrollProvider offset={REPORT_PAGE_TOP_PX + 40}>
+        {!snapshotLoading && <ReportStickyHeaderSpacer />}
         {snapshotLoading && (
           <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             Loading shared report snapshot…
@@ -234,21 +296,10 @@ export function FundReportPage() {
         )}
 
         {showReportShell && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <ReportSectionMobileNav
               activeSection={activeSection}
               onSectionSelect={selectSection}
-            />
-            <FundReportToolbar
-              canExport={canExport}
-              exporting={exporting}
-              sharing={sharing}
-              fundLabel={fundLabel}
-              isSharedView={isSharedView}
-              isDemoBuild={isDemoBuild()}
-              onDownloadPdf={() => void handleDownloadPdf()}
-              onShareLink={handleCopyShareLink}
-              onCopyLink={handleCopyShareLink}
             />
             <FundReportSections
               scheme={isSharedView ? sharedSnapshot.scheme : scheme}
@@ -262,9 +313,10 @@ export function FundReportPage() {
               isSharedView={isSharedView}
               onPeersLoaded={onPeersLoaded}
               exportRootId={EXPORT_ROOT_ID}
-              exportTitle={fundLabel}
+              exportTitle={renderAllSections ? fundLabel : undefined}
               activeSection={activeSection}
               renderAll={renderAllSections || isSharedView}
+              startDate={startDate}
             />
           </div>
         )}

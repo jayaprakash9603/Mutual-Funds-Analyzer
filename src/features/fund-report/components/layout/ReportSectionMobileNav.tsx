@@ -15,8 +15,9 @@ export function ReportSectionMobileNav({
   return (
     <nav
       aria-label="Report sections"
+      style={{ top: 'var(--report-page-top)' }}
       className={cn(
-        'sticky top-16 z-20 -mx-4 border-b border-border/50 bg-background/95 px-4 py-2 backdrop-blur-sm lg:hidden',
+        'sticky z-20 -mx-4 border-b border-border/50 bg-background/95 px-4 py-2 backdrop-blur-sm lg:hidden',
         className,
       )}
     >

@@ -1,9 +1,12 @@
 package in.goldentriangle.mfa.adapter.in.web.dto.report;
 
-import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import java.util.List;
 
-public record SipReportDto(List<SipScenarioDto> scenarios) {
+public record SipReportDto(
+        int scheduleDay,
+        int chartAmount,
+        List<SipTimelinePointDto> timeline,
+        List<SipScenarioDto> scenarios) {
 
     public record SipScenarioDto(
             int monthlyAmount,

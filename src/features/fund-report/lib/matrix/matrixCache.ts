@@ -47,6 +47,7 @@ export function invalidateMatrixCache(scheme?: string): void {
 export async function fetchMatrixCached(
   scheme: string,
   mode: MatrixMode,
+  startDate?: string,
   signal?: AbortSignal,
 ): Promise<MatrixReport> {
   const key = cacheKey(scheme, mode)
@@ -64,7 +65,7 @@ export async function fetchMatrixCached(
   const generation = entry.generation
   entry.error = null
 
-  const promise = fetchFundReportMatrix(scheme, mode, undefined, signal)
+  const promise = fetchFundReportMatrix(scheme, mode, startDate, signal)
     .then((matrix) => {
       if (entry.generation !== generation) return matrix
       entry.data = matrix

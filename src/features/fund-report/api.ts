@@ -20,6 +20,8 @@ import {
   fundReportSchema,
   matrixReportSchema,
   peerComparisonSchema,
+  sipSimulationSchema,
+  swpSimulationSchema,
   type DrawdownPeers,
   type FundReport,
   type FundReportAssessment,
@@ -34,6 +36,8 @@ import {
   type FundReportRiskEnvelope,
   type MatrixReport,
   type PeerComparison,
+  type SipSimulation,
+  type SwpSimulation,
 } from './schemas'
 
 export type {
@@ -177,6 +181,47 @@ export async function fetchDrawdownPeers(
     label: 'Drawdown peers',
   })
   return drawdownPeersSchema.parse(data)
+}
+
+export async function fetchSipSimulation(
+  scheme: string,
+  options: { amount: number; scheduleDay: number; startDate?: string; signal?: AbortSignal },
+): Promise<SipSimulation> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportSipSimulate, {
+    params: withStartDate(
+      { scheme, amount: String(options.amount), schedule_day: String(options.scheduleDay) },
+      options.startDate,
+    ),
+    signal: options.signal,
+    label: 'SIP simulation',
+  })
+  return sipSimulationSchema.parse(data)
+}
+
+export async function fetchSwpSimulation(
+  scheme: string,
+  options: {
+    initialCorpus: number
+    monthlyWithdrawal: number
+    scheduleDay: number
+    startDate?: string
+    signal?: AbortSignal
+  },
+): Promise<SwpSimulation> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportSwpSimulate, {
+    params: withStartDate(
+      {
+        scheme,
+        initial_corpus: String(options.initialCorpus),
+        monthly_withdrawal: String(options.monthlyWithdrawal),
+        schedule_day: String(options.scheduleDay),
+      },
+      options.startDate,
+    ),
+    signal: options.signal,
+    label: 'SWP simulation',
+  })
+  return swpSimulationSchema.parse(data)
 }
 
 export {

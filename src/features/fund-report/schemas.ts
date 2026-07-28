@@ -318,6 +318,14 @@ export const fundReportSchema = z.object({
     }),
   }),
   sip: z.object({
+    scheduleDay: z.number().optional(),
+    chartAmount: z.number().optional(),
+    timeline: z.array(z.object({
+      date: z.string(),
+      invested: z.number(),
+      corpus: z.number(),
+      nav: z.number(),
+    })).optional(),
     scenarios: z.array(z.object({
       monthlyAmount: z.number(),
       currentValue: z.number(),
@@ -411,6 +419,62 @@ export const fundReportInvestmentSchema = fundReportSchema.pick({
   expense: true,
 })
 export type FundReportInvestment = z.infer<typeof fundReportInvestmentSchema>
+
+export const sipScenarioSchema = z.object({
+  monthlyAmount: z.number(),
+  currentValue: z.number(),
+  totalGain: z.number(),
+  xirr: z.number(),
+  moneyInvested: z.number(),
+  projectedValue10Y: z.number(),
+  stcg: z.number().optional(),
+  ltcg: z.number().optional(),
+  postTaxXirr: z.number().optional(),
+})
+export type SipScenario = z.infer<typeof sipScenarioSchema>
+
+export const sipTimelinePointSchema = z.object({
+  date: z.string(),
+  invested: z.number(),
+  corpus: z.number(),
+  nav: z.number(),
+})
+export type SipTimelinePoint = z.infer<typeof sipTimelinePointSchema>
+
+export const sipSimulationSchema = z.object({
+  scheduleDay: z.number(),
+  scenario: sipScenarioSchema,
+  timeline: z.array(sipTimelinePointSchema),
+})
+export type SipSimulation = z.infer<typeof sipSimulationSchema>
+
+export const swpScenarioSchema = z.object({
+  initialCorpus: z.number(),
+  monthlyWithdrawal: z.number(),
+  totalWithdrawn: z.number(),
+  remainingCorpus: z.number(),
+  withdrawalCount: z.number(),
+  depleted: z.boolean(),
+  stcg: z.number().optional(),
+  ltcg: z.number().optional(),
+  postTaxRemaining: z.number(),
+})
+export type SwpScenario = z.infer<typeof swpScenarioSchema>
+
+export const swpTimelinePointSchema = z.object({
+  date: z.string(),
+  corpus: z.number(),
+  withdrawn: z.number(),
+  nav: z.number(),
+})
+export type SwpTimelinePoint = z.infer<typeof swpTimelinePointSchema>
+
+export const swpSimulationSchema = z.object({
+  scheduleDay: z.number(),
+  scenario: swpScenarioSchema,
+  timeline: z.array(swpTimelinePointSchema),
+})
+export type SwpSimulation = z.infer<typeof swpSimulationSchema>
 
 export const fundReportAssessmentSchema = fundReportSchema.pick({
   goldenTriangle: true,

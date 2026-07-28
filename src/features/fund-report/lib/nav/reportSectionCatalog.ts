@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   BarChart3,
   CalendarDays,
+  ArrowRightLeft,
   CircleDollarSign,
   CloudRain,
   Gauge,
@@ -11,6 +12,7 @@ import {
   Mountain,
   Percent,
   PieChart,
+  Repeat,
   Scale,
   Shield,
   Sparkles,
@@ -18,6 +20,7 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
+  Wallet,
 } from 'lucide-react'
 
 export type ReportSection = {
@@ -74,6 +77,9 @@ export const SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'lumpsum', label: 'Lump Sum', icon: CircleDollarSign },
       { id: 'expense', label: 'Expense', icon: CircleDollarSign },
+      { id: 'sip', label: 'SIP', icon: Repeat },
+      { id: 'stp', label: 'STP', icon: ArrowRightLeft },
+      { id: 'swp', label: 'SWP', icon: Wallet },
     ],
   },
   {
