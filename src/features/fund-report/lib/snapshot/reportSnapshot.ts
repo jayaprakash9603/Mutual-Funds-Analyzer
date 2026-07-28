@@ -52,15 +52,41 @@ async function compressText(text: string): Promise<Uint8Array> {
   return new Uint8Array(buffer)
 }
 
-async function decompressText(bytes: Uint8Array): Promise<string> {
+async function decompressText(bytes: Uint8Array, format: 'deflate' | 'gzip'): Promise<string> {
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
   const input = new Blob([buffer]).stream()
-  const decompressed = input.pipeThrough(new DecompressionStream('deflate'))
+  const decompressed = input.pipeThrough(new DecompressionStream(format))
   return new Response(decompressed).text()
 }
 
 export function isSnapshotCompressionSupported(): boolean {
   return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined'
+}
+
+function parseSnapshotJson(json: string): SharedReportSnapshot | null {
+  try {
+    const parsed = JSON.parse(json) as SharedReportSnapshot
+    if (parsed.v !== SNAPSHOT_VERSION || !parsed.scheme || !parsed.overview?.profile) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+async function decodeSnapshotBytes(bytes: Uint8Array): Promise<SharedReportSnapshot | null> {
+  if (isSnapshotCompressionSupported()) {
+    for (const format of ['deflate', 'gzip'] as const) {
+      try {
+        const json = await decompressText(bytes, format)
+        const parsed = parseSnapshotJson(json)
+        if (parsed) return parsed
+      } catch {
+        // try next format
+      }
+    }
+  }
+
+  return parseSnapshotJson(new TextDecoder().decode(bytes))
 }
 
 export async function encodeSnapshot(snapshot: SharedReportSnapshot): Promise<string> {
@@ -73,29 +99,76 @@ export async function encodeSnapshot(snapshot: SharedReportSnapshot): Promise<st
 }
 
 export async function decodeSnapshot(encoded: string): Promise<SharedReportSnapshot | null> {
-  if (!encoded || !isSnapshotCompressionSupported()) return null
+  if (!encoded) return null
+
+  if (encoded.startsWith('{')) {
+    return parseSnapshotJson(encoded)
+  }
+
   try {
-    const bytes = base64UrlToBytes(encoded)
-    const json = await decompressText(bytes)
-    const parsed = JSON.parse(json) as SharedReportSnapshot
-    if (parsed.v !== SNAPSHOT_VERSION || !parsed.scheme || !parsed.overview?.profile) return null
-    return parsed
+    return decodeSnapshotBytes(base64UrlToBytes(encoded))
   } catch {
     return null
   }
 }
 
-export function hasSnapshotHash(hash = window.location.hash): boolean {
-  const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  return raw.startsWith(SNAPSHOT_HASH_PREFIX)
+export function getSnapshotPayloadFromLocation(
+  location: Pick<Location, 'hash' | 'search'> = window.location,
+): string | null {
+  const rawHash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash
+  if (rawHash.startsWith(SNAPSHOT_HASH_PREFIX)) {
+    return rawHash.slice(SNAPSHOT_HASH_PREFIX.length)
+  }
+
+  const fromQuery = new URLSearchParams(location.search).get('r')
+  return fromQuery || null
 }
 
+export function hasSnapshotInLocation(
+  location: Pick<Location, 'hash' | 'search'> = window.location,
+): boolean {
+  return getSnapshotPayloadFromLocation(location) != null
+}
+
+/** @deprecated Prefer {@link hasSnapshotInLocation}. */
+export function hasSnapshotHash(hash = window.location.hash): boolean {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  if (raw.startsWith(SNAPSHOT_HASH_PREFIX)) return true
+  return hasSnapshotInLocation()
+}
+
+export function normalizeSnapshotUrl(location: Location = window.location): boolean {
+  const payload = getSnapshotPayloadFromLocation(location)
+  if (!payload) return false
+
+  const rawHash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash
+  if (rawHash.startsWith(SNAPSHOT_HASH_PREFIX)) return false
+
+  const params = new URLSearchParams(location.search)
+  params.delete('r')
+  const search = params.toString()
+  const next = `${location.pathname}${search ? `?${search}` : ''}#${SNAPSHOT_HASH_PREFIX}${payload}`
+  window.history.replaceState(null, '', next)
+  return true
+}
+
+export async function readSnapshotFromLocationAsync(
+  location: Pick<Location, 'hash' | 'search'> = window.location,
+): Promise<SharedReportSnapshot | null> {
+  const payload = getSnapshotPayloadFromLocation(location)
+  if (!payload) return null
+  return decodeSnapshot(payload)
+}
+
+/** @deprecated Prefer {@link readSnapshotFromLocationAsync}. */
 export async function readSnapshotFromLocationHashAsync(
   hash = window.location.hash,
 ): Promise<SharedReportSnapshot | null> {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  if (!raw.startsWith(SNAPSHOT_HASH_PREFIX)) return null
-  return decodeSnapshot(raw.slice(SNAPSHOT_HASH_PREFIX.length))
+  if (raw.startsWith(SNAPSHOT_HASH_PREFIX)) {
+    return decodeSnapshot(raw.slice(SNAPSHOT_HASH_PREFIX.length))
+  }
+  return readSnapshotFromLocationAsync()
 }
 
 export async function buildShareUrl(snapshot: SharedReportSnapshot): Promise<string> {
@@ -121,9 +194,6 @@ export function buildSnapshotFromGroups(
     || !investment.data
     || !assessment.data
   ) {
-    return null
-  }
-  if (overview.loading || performance.loading || risk.loading || investment.loading || assessment.loading) {
     return null
   }
   return {

@@ -3,7 +3,6 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { PageContainer } from '@/components/layout/PageContainer'
-import { Skeleton } from '@/components/ui/skeleton'
 import { ReportScrollProvider, REPORT_PAGE_TOP_PX } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { ReportStickyHeader, ReportStickyHeaderSpacer } from '@/features/fund-report/components/layout/ReportStickyHeader'
@@ -19,9 +18,10 @@ import { exportReportElementToPdf } from '@/features/fund-report/lib/export/expo
 import {
   buildShareUrl,
   buildSnapshotFromGroups,
-  hasSnapshotHash,
+  hasSnapshotInLocation,
   isReportReadyForExport,
-  readSnapshotFromLocationHashAsync,
+  normalizeSnapshotUrl,
+  readSnapshotFromLocationAsync,
   type SharedReportSnapshot,
 } from '@/features/fund-report/lib/snapshot/reportSnapshot'
 import { snapshotToGroups } from '@/features/fund-report/lib/snapshot/snapshotToGroups'
@@ -42,7 +42,7 @@ export function FundReportPage() {
   const [renderAllSections, setRenderAllSections] = useState(false)
 
   const [sharedSnapshot, setSharedSnapshot] = useState<SharedReportSnapshot | null>(null)
-  const [snapshotLoading, setSnapshotLoading] = useState(hasSnapshotHash())
+  const [snapshotLoading, setSnapshotLoading] = useState(hasSnapshotInLocation())
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
   const [peersData, setPeersData] = useState<PeerComparison | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -58,7 +58,9 @@ export function FundReportPage() {
     let cancelled = false
 
     const loadSnapshot = () => {
-      if (!hasSnapshotHash()) {
+      normalizeSnapshotUrl()
+
+      if (!hasSnapshotInLocation()) {
         if (!cancelled) {
           setSnapshotLoading(false)
           setSharedSnapshot(null)
@@ -67,7 +69,7 @@ export function FundReportPage() {
         return
       }
       setSnapshotLoading(true)
-      readSnapshotFromLocationHashAsync()
+      readSnapshotFromLocationAsync()
         .then((snapshot) => {
           if (cancelled) return
           if (!snapshot) {
@@ -86,9 +88,11 @@ export function FundReportPage() {
 
     loadSnapshot()
     window.addEventListener('hashchange', loadSnapshot)
+    window.addEventListener('popstate', loadSnapshot)
     return () => {
       cancelled = true
       window.removeEventListener('hashchange', loadSnapshot)
+      window.removeEventListener('popstate', loadSnapshot)
     }
   }, [])
 
@@ -145,18 +149,35 @@ export function FundReportPage() {
     if (isReportReadyForExport(liveReportRef.current)) return true
 
     setRenderAllSections(true)
+    // Allow React to enable all report groups before polling.
+    await new Promise((resolve) => window.setTimeout(resolve, 50))
+
     const deadline = Date.now() + 90_000
+    const allGroups = () => {
+      const current = liveReportRef.current
+      return [
+        current.overview,
+        current.performance,
+        current.risk,
+        current.investment,
+        current.assessment,
+      ]
+    }
 
     while (Date.now() < deadline) {
       await new Promise((resolve) => window.setTimeout(resolve, 250))
-      const current = liveReportRef.current
-      if (isReportReadyForExport(current)) return true
+      if (isReportReadyForExport(liveReportRef.current)) return true
 
-      const groups = [current.overview, current.performance, current.risk, current.investment, current.assessment]
-      const stillLoading = groups.some((group) => group.loading)
-      const failed = groups.some((group) => group.error)
-      if (!stillLoading && failed) return false
-      if (!stillLoading && !isReportReadyForExport(current)) return false
+      const groups = allGroups()
+      const pending = groups.filter((group) => !group.data)
+      if (pending.length === 0) return true
+
+      if (groups.some((group) => group.loading)) continue
+
+      const pendingErrors = pending.filter((group) => group.error)
+      if (pendingErrors.length === pending.length) return false
+
+      // Some groups have not started fetching yet (disabled → enabled); keep waiting.
     }
 
     return isReportReadyForExport(liveReportRef.current)
@@ -231,9 +252,6 @@ export function FundReportPage() {
       setSharing(false)
     }
   }
-
-  const showInitialLoading =
-    !isSharedView && !!scheme && liveReport.anyLoading && !liveReport.overview.data
 
   const showGlobalError =
     !isSharedView
@@ -318,18 +336,6 @@ export function FundReportPage() {
               renderAll={renderAllSections || isSharedView}
               startDate={startDate}
             />
-          </div>
-        )}
-
-        {showInitialLoading && (
-          <div className="space-y-4" aria-busy="true" aria-live="polite">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Skeleton className="h-4 w-4 rounded-full" />
-              Loading report for selected fund…
-            </div>
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
           </div>
         )}
 
