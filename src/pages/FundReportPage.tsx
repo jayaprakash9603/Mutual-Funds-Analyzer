@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
+import { isDemoBuild } from '@/demo/config/demoMode'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ReportScrollProvider } from '@/features/fund-report/context/ReportScrollContext'
@@ -47,29 +48,40 @@ export function FundReportPage() {
   }, [])
 
   useEffect(() => {
-    if (!hasSnapshotHash()) {
-      setSnapshotLoading(false)
-      return
-    }
     let cancelled = false
-    setSnapshotLoading(true)
-    readSnapshotFromLocationHashAsync()
-      .then((snapshot) => {
-        if (cancelled) return
-        if (!snapshot) {
-          setSnapshotError('Could not read shared report from this link.')
+
+    const loadSnapshot = () => {
+      if (!hasSnapshotHash()) {
+        if (!cancelled) {
+          setSnapshotLoading(false)
           setSharedSnapshot(null)
-          return
+          setSnapshotError(null)
         }
-        setSharedSnapshot(snapshot)
-        setScheme(snapshot.scheme)
-        setSnapshotError(null)
-      })
-      .finally(() => {
-        if (!cancelled) setSnapshotLoading(false)
-      })
+        return
+      }
+      setSnapshotLoading(true)
+      readSnapshotFromLocationHashAsync()
+        .then((snapshot) => {
+          if (cancelled) return
+          if (!snapshot) {
+            setSnapshotError('Could not read shared report from this link.')
+            setSharedSnapshot(null)
+            return
+          }
+          setSharedSnapshot(snapshot)
+          setScheme(snapshot.scheme)
+          setSnapshotError(null)
+        })
+        .finally(() => {
+          if (!cancelled) setSnapshotLoading(false)
+        })
+    }
+
+    loadSnapshot()
+    window.addEventListener('hashchange', loadSnapshot)
     return () => {
       cancelled = true
+      window.removeEventListener('hashchange', loadSnapshot)
     }
   }, [])
 
@@ -184,6 +196,7 @@ export function FundReportPage() {
               sharing={sharing}
               fundLabel={fundLabel}
               isSharedView={isSharedView}
+              isDemoBuild={isDemoBuild()}
               onDownloadPdf={() => void handleDownloadPdf()}
               onShareLink={handleCopyShareLink}
               onCopyLink={handleCopyShareLink}

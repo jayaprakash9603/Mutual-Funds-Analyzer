@@ -8,6 +8,7 @@ type FundReportToolbarProps = {
   sharing: boolean
   fundLabel: string
   isSharedView: boolean
+  isDemoBuild?: boolean
   onDownloadPdf: () => void
   onShareLink: () => void
   onCopyLink: () => void
@@ -19,6 +20,7 @@ export function FundReportToolbar({
   sharing,
   fundLabel,
   isSharedView,
+  isDemoBuild = false,
   onDownloadPdf,
   onShareLink,
   onCopyLink,
@@ -28,7 +30,10 @@ export function FundReportToolbar({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
         <div>
           <p className="text-sm font-medium text-foreground">Shared snapshot — offline view</p>
-          <p className="text-xs text-muted-foreground">{fundLabel} (no backend calls)</p>
+          <p className="text-xs text-muted-foreground">
+            {fundLabel}
+            {isDemoBuild ? ' · opens from URL in demo mode without backend' : ' · no backend calls'}
+          </p>
         </div>
         <Button type="button" variant="outline" size="sm" className="gap-2" onClick={onDownloadPdf} disabled={exporting}>
           <Download className="size-4" aria-hidden="true" />

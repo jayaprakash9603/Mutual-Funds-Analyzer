@@ -126,6 +126,8 @@ type FundReportReturnsChartProps = {
   benchmarkName: string
   indexedNav?: FundReportRisk['drawdown']['indexedNav']
   indexedNavLoading?: boolean
+  /** Shared snapshot / offline view — uses indexed NAV only, no analysis API. */
+  offlineView?: boolean
 }
 
 export function FundReportReturnsChart({
@@ -134,13 +136,14 @@ export function FundReportReturnsChart({
   benchmarkName,
   indexedNav = [],
   indexedNavLoading = false,
+  offlineView = false,
 }: FundReportReturnsChartProps) {
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD)
-  const [mode, setMode] = useState<'rolling' | 'absolute'>('rolling')
+  const [mode, setMode] = useState<'rolling' | 'absolute'>(offlineView ? 'absolute' : 'rolling')
   const axis = useResponsiveAxis()
 
   const { data: analysisData, loading: analysisLoading } = useFundAnalysis(
-    mode === 'rolling' ? scheme : null,
+    !offlineView && mode === 'rolling' ? scheme : null,
     period,
   )
 
@@ -205,7 +208,11 @@ export function FundReportReturnsChart({
         </div>
 
         <TabsContent value="rolling" className="m-0 px-4 py-6 sm:px-6">
-          {analysisLoading && rollingChartData.length === 0 ? (
+          {offlineView ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              Rolling returns are not included in shared snapshots. Switch to absolute returns.
+            </p>
+          ) : analysisLoading && rollingChartData.length === 0 ? (
             <Skeleton className={CHART_HEIGHT_CLASS} />
           ) : rollingChartData.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">

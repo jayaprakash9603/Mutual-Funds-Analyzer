@@ -138,13 +138,14 @@ export function FundReportSections({
 }: FundReportSectionsProps) {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
   const schemeSelected = !!scheme
+  const matrixEnabled = schemeSelected && !isSharedView
 
   const { data: matrix, loading: matrixLoading, error: matrixError, retry: retryMatrix } =
-    useFundReportMatrix(scheme || null, matrixMode, schemeSelected)
+    useFundReportMatrix(scheme || null, matrixMode, matrixEnabled)
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
-    schemeSelected,
+    matrixEnabled,
   )
 
   const profile = overview.data?.profile
@@ -200,6 +201,7 @@ export function FundReportSections({
               benchmarkName={benchmarkName}
               indexedNav={risk.data?.drawdown.indexedNav}
               indexedNavLoading={risk.loading && risk.data == null}
+              offlineView={isSharedView}
             />
           ) : null}
           <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
@@ -329,7 +331,11 @@ export function FundReportSections({
                 <ProbabilityBar label="Double money (7Y)" value={data.probability.doubleMoney} />
                 <ProbabilityBar label="Triple money (7Y)" value={data.probability.tripleMoney} />
               </div>
-              {multipleMatrix ? (
+              {isSharedView ? (
+                <p className="text-sm text-muted-foreground">
+                  Multiply-probability matrix is not included in shared snapshots.
+                </p>
+              ) : multipleMatrix ? (
                 <div className={multipleMatrixLoading ? 'opacity-70 transition-opacity' : undefined}>
                   <MultiplyProbabilityTable
                     matrix={multipleMatrix}
@@ -488,7 +494,11 @@ export function FundReportSections({
             <TabsTrigger value="STP_6M">6M STP Matrix</TabsTrigger>
           </TabsList>
           <TabsContent value={matrixMode} className="mt-4 w-full">
-            {matrix ? (
+            {isSharedView ? (
+              <p className="text-sm text-muted-foreground">
+                Investment matrices are not included in shared snapshots.
+              </p>
+            ) : matrix ? (
               <div className={matrixLoading ? 'opacity-70 transition-opacity' : undefined}>
                 <HeatMatrix data={matrix} />
                 {matrix.recovery ? (
