@@ -143,6 +143,26 @@ export function ReportSectionNav({
     }
   }
 
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const onScroll = () => {
+      updateScrollState()
+      updateUnderline()
+    }
+    const onResize = () => {
+      updateScrollState()
+      updateUnderline()
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onResize)
+    updateScrollState()
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
   useLayoutEffect(() => {
     updateScrollState()
     updateUnderline()
@@ -168,26 +188,6 @@ export function ReportSectionNav({
     }
   }, [onOffsetChange])
 
-  useEffect(() => {
-    const el = scrollerRef.current
-    if (!el) return
-    const onScroll = () => {
-      updateScrollState()
-      updateUnderline()
-    }
-    const onResize = () => {
-      updateScrollState()
-      updateUnderline()
-      centerActiveTab()
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onResize)
-    return () => {
-      el.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [activeSection])
-
   const scrollByAmount = (direction: -1 | 1) => {
     scrollerRef.current?.scrollBy({ left: direction * 240, behavior: 'smooth' })
   }
@@ -196,7 +196,7 @@ export function ReportSectionNav({
     <nav
       ref={navRef}
       aria-label="Report sections"
-      className="sticky top-16 z-20 rounded-2xl border border-border/70 bg-card/90 shadow-sm backdrop-blur-xl"
+      className="sticky top-16 z-20 rounded-2xl border border-border/70 bg-card/95 shadow-sm supports-[backdrop-filter]:bg-card/90 supports-[backdrop-filter]:backdrop-blur-sm"
     >
       <div className="relative flex items-center gap-1 px-1 py-1 sm:px-2">
         <button

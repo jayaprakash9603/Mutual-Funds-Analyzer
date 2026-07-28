@@ -44,6 +44,17 @@ class BestDaysCalculatorTest {
         assertTrue(report.topDaysCumulative().get(0).cumulativeReturnPercent() > 0);
     }
 
+    @Test
+    void lowerByPercentIsZeroWhenBaselineValueIsZero() {
+        assertEquals(0, BestDaysCalculator.lowerByPercent(10, 0, 0));
+        assertEquals(0, BestDaysCalculator.lowerByPercent(10, 0, -1));
+    }
+
+    @Test
+    void lowerByPercentReflectsMissedBestDays() {
+        assertEquals(50, BestDaysCalculator.lowerByPercent(5, 500_000, 1_000_000), 0.001);
+    }
+
     private static List<NavPoint> syntheticNavWithSpikes() {
         List<NavPoint> points = new ArrayList<>();
         Instant start = Instant.parse("2010-01-01T00:00:00Z");

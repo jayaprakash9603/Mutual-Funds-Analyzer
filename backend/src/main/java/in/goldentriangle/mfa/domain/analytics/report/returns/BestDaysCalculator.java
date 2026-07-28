@@ -69,9 +69,7 @@ public class BestDaysCalculator {
                         s.label(),
                         s.finalValue(),
                         s.cagrPercent(),
-                        s.missCount() == 0
-                                ? 0
-                                : Math.max(0, (1 - s.finalValue() / baselineValue) * 100)))
+                        lowerByPercent(s.missCount(), s.finalValue(), baselineValue)))
                 .toList();
 
         List<BestDaysReport.BestDayEntry> topBestDays = new ArrayList<>();
@@ -160,6 +158,20 @@ public class BestDaysCalculator {
             }
         }
         return value;
+    }
+
+    static double lowerByPercent(int missCount, double finalValue, double baselineValue) {
+        if (missCount == 0) {
+            return 0;
+        }
+        if (baselineValue <= 0 || !Double.isFinite(baselineValue)) {
+            return 0;
+        }
+        double pct = (1 - finalValue / baselineValue) * 100;
+        if (!Double.isFinite(pct)) {
+            return 0;
+        }
+        return Math.max(0, pct);
     }
 
     private static List<BestDaysReport.CrashPeriodBestDays> buildCrashPeriods(List<DailyReturn> ranked) {

@@ -36,8 +36,6 @@ export function VerdictBadge({ verdict, confidence }: { verdict: string; confide
   )
 }
 
-import { CHART_COLORS } from '@/lib/charts/chartColors'
-
 export function GaugeMeter({ score, label }: { score: number; label: string }) {
   const pct = Math.min(100, Math.max(0, score))
   return (
@@ -45,15 +43,15 @@ export function GaugeMeter({ score, label }: { score: number; label: string }) {
       <div
         className="relative flex size-36 items-center justify-center rounded-full"
         style={{
-          background: `conic-gradient(${CHART_COLORS.fund} ${pct * 3.6}deg, ${CHART_COLORS.track} 0deg)`,
+          background: `conic-gradient(var(--chart-gauge-fill) ${pct * 3.6}deg, var(--chart-gauge-track) 0deg)`,
         }}
       >
-        <div className="flex size-28 flex-col items-center justify-center rounded-full bg-card">
-          <span className="font-mono text-3xl font-bold">{score}</span>
+        <div className="flex size-28 flex-col items-center justify-center rounded-full bg-card text-card-foreground">
+          <span className="font-mono text-3xl font-bold text-foreground">{score}</span>
           <span className="text-xs text-muted-foreground">/ 100</span>
         </div>
       </div>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}</span>
     </div>
   )
 }

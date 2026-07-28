@@ -715,10 +715,10 @@ export function FundReportSections({
                   .map((c) => (
                     <div
                       key={c.name}
-                      className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm"
+                      className="flex items-center justify-between rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground"
                     >
                       <span>{c.name}</span>
-                      <span className="font-mono text-base font-medium">{c.score}/100</span>
+                      <span className="font-mono text-base font-medium text-foreground">{c.score}/100</span>
                     </div>
                   ))}
               </div>
@@ -784,7 +784,7 @@ export function FundReportSections({
 
 function PeerSection({ scheme, category }: { scheme: string; category: string }) {
   const [peers, setPeers] = useState<Awaited<ReturnType<typeof fetchPeerComparison>> | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -818,9 +818,7 @@ function PeerSection({ scheme, category }: { scheme: string; category: string })
       title="Peer Comparison"
       description="Top funds in the same category."
     >
-      {(loading || peers || error) && (
-        <PeerComparisonTable data={peers} loading={loading} error={error} />
-      )}
+      <PeerComparisonTable data={peers} loading={loading} error={error} />
     </SectionShell>
   )
 }

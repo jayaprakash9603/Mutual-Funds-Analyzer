@@ -2,6 +2,23 @@ import { z } from 'zod'
 import { goldenTriangleResultSchema } from '@/api/schemas'
 import { withFundReportDefaults } from './sectionDefaults'
 
+function coerceFiniteNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback
+  }
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase()
+    if (lower === 'nan' || lower === 'infinity' || lower === '-infinity') {
+      return fallback
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+  return fallback
+}
+
+const numericField = (fallback = 0) => z.preprocess((value) => coerceFiniteNumber(value, fallback), z.number())
+
 function coerceNumericBound(value: unknown): unknown {
   if (value == null) {
     return value
@@ -222,9 +239,9 @@ export const fundReportSchema = z.object({
     missingScenarios: z.array(z.object({
       missCount: z.number(),
       label: z.string(),
-      finalValue: z.number(),
-      cagrPercent: z.number(),
-      lowerByPercent: z.number(),
+      finalValue: numericField(),
+      cagrPercent: numericField(),
+      lowerByPercent: numericField(),
     })),
     topBestDays: z.array(z.object({
       rank: z.number(),

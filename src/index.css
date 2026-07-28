@@ -90,6 +90,8 @@
   --chart-annotation-stroke: #cbd5e1;
   --chart-annotation-text: #475569;
   --chart-marker-detail: #64748b;
+  --chart-gauge-fill: var(--chart-1);
+  --chart-gauge-track: oklch(0.92 0.01 240);
 }
 
 .dark {
@@ -138,6 +140,8 @@
   --chart-annotation-stroke: #475569;
   --chart-annotation-text: #cbd5e1;
   --chart-marker-detail: #94a3b8;
+  --chart-gauge-fill: var(--chart-1);
+  --chart-gauge-track: oklch(0.3 0.02 240);
 }
 
 @layer base {
@@ -146,7 +150,7 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   body {
