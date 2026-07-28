@@ -623,24 +623,6 @@ export function FundReportSections({
       </SectionShell>
       ) : null}
 
-      {shouldRender("expense") ? (
-      <SectionShell id="expense" title="Expense Analysis">
-        <ReportGroupBoundary state={investment} skeleton={<MetricGridSkeleton count={3} />}>
-          {(data) =>
-            data.expense.expenseRatio == null ? (
-              <UnavailableNotice label="Expense ratio and category comparison" />
-            ) : (
-              <div className="grid gap-3 md:grid-cols-3">
-                <MetricTile label="Expense ratio" value={`${data.expense.expenseRatio}%`} />
-                <MetricTile label="10Y cost on ₹1L" value={`₹${data.expense.costOver10Years?.toFixed(0)}`} />
-                <MetricTile label="20Y cost on ₹1L" value={`₹${data.expense.costOver20Years?.toFixed(0)}`} />
-              </div>
-            )
-          }
-        </ReportGroupBoundary>
-      </SectionShell>
-      ) : null}
-
       {shouldRender('sip') ? (
         <SipSection
           scheme={scheme}
