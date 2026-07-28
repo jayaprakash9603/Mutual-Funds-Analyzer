@@ -31,6 +31,8 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.RollingReturnsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipTimelinePointDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
@@ -65,6 +67,9 @@ import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipReport;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
@@ -417,7 +422,8 @@ public class FundReportMapper {
         List<SipTimelinePointDto> timeline = report.timeline() == null
                 ? List.of()
                 : report.timeline().stream()
-                        .map(p -> new SipTimelinePointDto(p.date(), p.invested(), p.corpus(), p.nav()))
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
                         .toList();
         return new SipReportDto(
                 report.scheduleDay(),
@@ -438,7 +444,8 @@ public class FundReportMapper {
                         s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
                         s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()),
                 simulation.timeline().stream()
-                        .map(p -> new SipTimelinePointDto(p.date(), p.invested(), p.corpus(), p.nav()))
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
                         .toList());
     }
 
@@ -457,7 +464,67 @@ public class FundReportMapper {
                         s.ltcg(),
                         s.postTaxRemaining()),
                 simulation.timeline().stream()
-                        .map(p -> new SwpTimelinePointDto(p.date(), p.corpus(), p.withdrawn(), p.nav()))
+                        .map(p -> new SwpTimelinePointDto(
+                                p.date(), p.corpus(), p.withdrawn(), p.nav(), p.averageCorpus()))
+                        .toList());
+    }
+
+    private StepUpSipReportDto toDto(StepUpSipReport report) {
+        List<SipTimelinePointDto> timeline = report.timeline() == null
+                ? List.of()
+                : report.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
+                        .toList();
+        return new StepUpSipReportDto(
+                report.scheduleDay(),
+                report.chartInitialAmount(),
+                report.stepUpMode().name(),
+                report.stepUpPercent(),
+                report.stepUpAmount(),
+                timeline,
+                report.scenarios().stream()
+                        .map(s -> new StepUpSipReportDto.StepUpSipScenarioDto(
+                                s.initialMonthlyAmount(),
+                                s.currentMonthlyAmount(),
+                                s.stepUpMode().name(),
+                                s.stepUpValue(),
+                                s.currentValue(),
+                                s.totalGain(),
+                                s.xirr(),
+                                s.moneyInvested(),
+                                s.projectedValue10Y(),
+                                s.stcg(),
+                                s.ltcg(),
+                                s.postTaxXirr(),
+                                s.instalmentCount()))
+                        .toList());
+    }
+
+    public StepUpSipSimulationDto toDto(StepUpSipSimulation simulation, StepUpSipConfig config) {
+        StepUpSipReport.StepUpSipScenario s = simulation.scenario();
+        return new StepUpSipSimulationDto(
+                config.scheduleDay(),
+                config.mode().name(),
+                config.stepUpPercent(),
+                config.stepUpAmount(),
+                new StepUpSipReportDto.StepUpSipScenarioDto(
+                        s.initialMonthlyAmount(),
+                        s.currentMonthlyAmount(),
+                        s.stepUpMode().name(),
+                        s.stepUpValue(),
+                        s.currentValue(),
+                        s.totalGain(),
+                        s.xirr(),
+                        s.moneyInvested(),
+                        s.projectedValue10Y(),
+                        s.stcg(),
+                        s.ltcg(),
+                        s.postTaxXirr(),
+                        s.instalmentCount()),
+                simulation.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
                         .toList());
     }
 
@@ -554,6 +621,7 @@ public class FundReportMapper {
     public FundReportInvestmentDto toDto(FundReportInvestmentSection section) {
         return new FundReportInvestmentDto(
                 toDto(section.sip()),
+                toDto(section.stepUpSip()),
                 toDto(section.lumpsum()),
                 toDto(section.tax()),
                 toDto(section.expense()));

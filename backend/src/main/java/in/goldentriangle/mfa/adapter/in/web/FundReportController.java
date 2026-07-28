@@ -8,14 +8,19 @@ import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportPerformanceDto
 import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportRiskDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.ReportSectionEnvelopeDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
 import in.goldentriangle.mfa.adapter.in.web.support.ReportSectionResponses;
 import in.goldentriangle.mfa.config.feature.ConditionalOnFeature;
 import in.goldentriangle.mfa.config.feature.FeatureKeys;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpMode;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportSectionUseCase;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportUseCase;
@@ -77,6 +82,29 @@ public class FundReportController {
         return fundReportMapper.toDto(
                 getFundReportUseCase.simulateSip(scheme, startDate, amount, day),
                 day);
+    }
+
+    @GetMapping("/fund-report/step-up-sip/simulate")
+    StepUpSipSimulationDto simulateStepUpSip(
+            @RequestParam String scheme,
+            @RequestParam(name = "initial_amount", defaultValue = "10000") int initialAmount,
+            @RequestParam(name = "schedule_day", defaultValue = "1") int scheduleDay,
+            @RequestParam(name = "step_up_mode", defaultValue = "PERCENT") String stepUpMode,
+            @RequestParam(name = "step_up_percent", defaultValue = "10") double stepUpPercent,
+            @RequestParam(name = "step_up_amount", defaultValue = "0") int stepUpAmount,
+            @RequestParam(name = "start_date", required = false) String startDate) {
+        requireScheme(scheme);
+        StepUpMode mode = parseStepUpMode(stepUpMode);
+        validateStepUpConfig(mode, stepUpPercent, stepUpAmount);
+        StepUpSipConfig config = StepUpSipCalculator.normalize(new StepUpSipConfig(
+                initialAmount,
+                SipCalculator.clampScheduleDay(scheduleDay),
+                mode,
+                stepUpPercent,
+                stepUpAmount));
+        return fundReportMapper.toDto(
+                getFundReportUseCase.simulateStepUpSip(scheme, startDate, config),
+                config);
     }
 
     @GetMapping("/fund-report/swp/simulate")
@@ -151,6 +179,23 @@ public class FundReportController {
     private static void requireScheme(String scheme) {
         if (scheme == null || scheme.isBlank()) {
             throw new IllegalArgumentException("scheme is required");
+        }
+    }
+
+    private static StepUpMode parseStepUpMode(String raw) {
+        try {
+            return StepUpMode.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("step_up_mode must be PERCENT or FIXED");
+        }
+    }
+
+    private static void validateStepUpConfig(StepUpMode mode, double stepUpPercent, int stepUpAmount) {
+        if (mode == StepUpMode.PERCENT && (stepUpPercent < 0 || stepUpPercent > 100)) {
+            throw new IllegalArgumentException("step_up_percent must be between 0 and 100");
+        }
+        if (mode == StepUpMode.FIXED && stepUpAmount <= 0) {
+            throw new IllegalArgumentException("step_up_amount must be greater than 0 for FIXED mode");
         }
     }
 }

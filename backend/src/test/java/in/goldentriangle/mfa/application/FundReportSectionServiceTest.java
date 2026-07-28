@@ -215,6 +215,7 @@ class FundReportSectionServiceTest {
                 mock(BestDaysReport.class),
                 mock(AllTimeHighsReport.class),
                 mock(SipReport.class),
+                mock(in.goldentriangle.mfa.domain.model.report.investment.StepUpSipReport.class),
                 mock(LumpsumReport.class),
                 mock(TaxReport.class),
                 mock(ExpenseReport.class),

@@ -131,14 +131,14 @@ class FundReportSectionControllerTest {
         when(featureFlagPort.allFlags()).thenReturn(Map.of("analysis.fundReport", true));
         when(getFundReportSectionUseCase.getInvestment(eq("Test Fund"), isNull()))
                 .thenReturn(new ReportSectionEnvelope<>(
-                        new FundReportInvestmentSection(null, null, null, null),
+                        new FundReportInvestmentSection(null, null, null, null, null),
                         ReportFreshness.FRESH,
                         WATERMARK,
                         COMPUTED,
                         3));
         when(fundReportMapper.toInvestmentDto(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new ReportSectionEnvelopeDto<>(
-                        new FundReportInvestmentDto(null, null, null, null),
+                        new FundReportInvestmentDto(null, null, null, null, null),
                         "FRESH",
                         WATERMARK,
                         COMPUTED,

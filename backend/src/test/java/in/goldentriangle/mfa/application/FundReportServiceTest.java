@@ -24,6 +24,7 @@ import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator
 import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
@@ -103,6 +104,7 @@ class FundReportServiceTest {
                 new ProbabilityCalculator(),
                 new RiskReportBuilder(metricsCalculator, new DrawdownCalculator(), 252),
                 new SipCalculator(new TaxCalculator()),
+                new StepUpSipCalculator(new TaxCalculator()),
                 new LumpsumCalculator(),
                 new TaxCalculator(),
                 new ExpenseCalculator(),
@@ -142,6 +144,7 @@ class FundReportServiceTest {
                 navHistoryPort,
                 engine,
                 new SipCalculator(new TaxCalculator()),
+                new StepUpSipCalculator(new TaxCalculator()),
                 new SwpCalculator(new TaxCalculator()),
                 matrixSnapshotPort,
                 reportDataCoordinator,

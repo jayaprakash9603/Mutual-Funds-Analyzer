@@ -13,6 +13,7 @@ import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator
 import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
@@ -66,6 +67,11 @@ public class ReportConfig {
     @Bean
     SipCalculator sipCalculator(TaxCalculator taxCalculator) {
         return new SipCalculator(taxCalculator);
+    }
+
+    @Bean
+    StepUpSipCalculator stepUpSipCalculator(TaxCalculator taxCalculator) {
+        return new StepUpSipCalculator(taxCalculator);
     }
 
     @Bean
@@ -125,6 +131,7 @@ public class ReportConfig {
             ProbabilityCalculator probabilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
+            StepUpSipCalculator stepUpSipCalculator,
             LumpsumCalculator lumpsumCalculator,
             TaxCalculator taxCalculator,
             ExpenseCalculator expenseCalculator,
@@ -144,6 +151,7 @@ public class ReportConfig {
                 probabilityCalculator,
                 riskReportBuilder,
                 sipCalculator,
+                stepUpSipCalculator,
                 lumpsumCalculator,
                 taxCalculator,
                 expenseCalculator,

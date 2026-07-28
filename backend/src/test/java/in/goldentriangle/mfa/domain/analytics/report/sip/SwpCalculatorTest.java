@@ -22,6 +22,13 @@ class SwpCalculatorTest {
         assertNotNull(simulation.scenario());
         assertFalse(simulation.timeline().isEmpty());
         assertTrue(simulation.scenario().totalWithdrawn() > 0);
+        assertTrue(simulation.timeline().stream().allMatch(point -> point.averageCorpus() > 0));
+    }
+
+    @Test
+    void simulateBuildsDailyTimeline() {
+        var simulation = calculator.simulate(sampleHistory(), 10_00_000, 10_000, 1);
+        assertTrue(simulation.timeline().size() >= 2);
     }
 
     private static in.goldentriangle.mfa.domain.model.report.NavHistory sampleHistory() {

@@ -33,7 +33,7 @@ public final class FundReportSectionExtractor {
 
     public static FundReportInvestmentSection investment(FundReport report) {
         return new FundReportInvestmentSection(
-                report.sip(), report.lumpsum(), report.tax(), report.expense());
+                report.sip(), report.stepUpSip(), report.lumpsum(), report.tax(), report.expense());
     }
 
     public static FundReportAssessmentSection assessment(FundReport report) {

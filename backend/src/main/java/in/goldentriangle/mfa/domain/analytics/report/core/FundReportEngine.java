@@ -10,7 +10,7 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalcula
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
-import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.ExpenseCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
@@ -41,7 +41,9 @@ import in.goldentriangle.mfa.domain.model.report.assessment.ProsConsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.RecommendationReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
+import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
@@ -64,6 +66,7 @@ public class FundReportEngine {
     private final ProbabilityCalculator probabilityCalculator;
     private final RiskReportBuilder riskReportBuilder;
     private final SipCalculator sipCalculator;
+    private final StepUpSipCalculator stepUpSipCalculator;
     private final LumpsumCalculator lumpsumCalculator;
     private final TaxCalculator taxCalculator;
     private final ExpenseCalculator expenseCalculator;
@@ -84,6 +87,7 @@ public class FundReportEngine {
             ProbabilityCalculator probabilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
+            StepUpSipCalculator stepUpSipCalculator,
             LumpsumCalculator lumpsumCalculator,
             TaxCalculator taxCalculator,
             ExpenseCalculator expenseCalculator,
@@ -102,6 +106,7 @@ public class FundReportEngine {
         this.probabilityCalculator = probabilityCalculator;
         this.riskReportBuilder = riskReportBuilder;
         this.sipCalculator = sipCalculator;
+        this.stepUpSipCalculator = stepUpSipCalculator;
         this.lumpsumCalculator = lumpsumCalculator;
         this.taxCalculator = taxCalculator;
         this.expenseCalculator = expenseCalculator;
@@ -146,6 +151,9 @@ public class FundReportEngine {
         CompletableFuture<SipReport> sipFuture = supplyAsync(
                 "sip",
                 () -> sipCalculator.compute(history));
+        CompletableFuture<StepUpSipReport> stepUpSipFuture = supplyAsync(
+                "stepUpSip",
+                () -> stepUpSipCalculator.compute(history));
         CompletableFuture<LumpsumReport> lumpsumFuture = supplyAsync(
                 "lumpsum",
                 () -> lumpsumCalculator.compute(history));
@@ -207,6 +215,7 @@ public class FundReportEngine {
                 bestDaysFuture.join(),
                 allTimeHighsFuture.join(),
                 sipFuture.join(),
+                stepUpSipFuture.join(),
                 lumpsumFuture.join(),
                 taxFuture.join(),
                 expenseFuture.join(),

@@ -21,10 +21,15 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.RecommendationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.RiskReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.RollingReturnsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.adapter.in.web.mapper.FundReportMapper;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpMode;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixMode;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
@@ -105,6 +110,32 @@ class FundReportControllerTest {
         mockMvc.perform(get("/api/fund-report/matrix").param("scheme", "Test Fund").param("mode", "LUMPSUM"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mode").value("LUMPSUM"));
+    }
+
+    @Test
+    void simulateStepUpSipReturnsSimulation() throws Exception {
+        when(featureFlagPort.allFlags()).thenReturn(Map.of("analysis.fundReport", true));
+        StepUpSipConfig config = new StepUpSipConfig(10_000, 1, StepUpMode.PERCENT, 10, 0);
+        when(getFundReportUseCase.simulateStepUpSip(eq("Test Fund"), isNull(), any(StepUpSipConfig.class)))
+                .thenReturn(mock(StepUpSipSimulation.class));
+        when(fundReportMapper.toDto(any(StepUpSipSimulation.class), any(StepUpSipConfig.class)))
+                .thenReturn(new StepUpSipSimulationDto(
+                        1,
+                        "PERCENT",
+                        10,
+                        0,
+                        new StepUpSipReportDto.StepUpSipScenarioDto(
+                                10_000, 11_000, "PERCENT", 10, 100_000, 20_000, 12, 80_000, 120_000, 0, 0, 10, 24),
+                        List.of()));
+
+        mockMvc.perform(get("/api/fund-report/step-up-sip/simulate")
+                        .param("scheme", "Test Fund")
+                        .param("initial_amount", "10000")
+                        .param("step_up_mode", "PERCENT")
+                        .param("step_up_percent", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stepUpMode").value("PERCENT"))
+                .andExpect(jsonPath("$.scenario.initialMonthlyAmount").value(10_000));
     }
 
     private static FundReportDto minimalReport(String scheme) {

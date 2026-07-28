@@ -21,9 +21,12 @@ import org.springframework.stereotype.Service;
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
 import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
+import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SwpSimulation;
 
 import java.time.Clock;
@@ -43,6 +46,7 @@ public class FundReportService implements GetFundReportUseCase {
     private final NavHistoryPort navHistoryPort;
     private final FundReportEngine fundReportEngine;
     private final SipCalculator sipCalculator;
+    private final StepUpSipCalculator stepUpSipCalculator;
     private final SwpCalculator swpCalculator;
     private final MatrixSnapshotPort matrixSnapshotPort;
     private final ReportDataCoordinator reportDataCoordinator;
@@ -58,6 +62,7 @@ public class FundReportService implements GetFundReportUseCase {
             NavHistoryPort navHistoryPort,
             FundReportEngine fundReportEngine,
             SipCalculator sipCalculator,
+            StepUpSipCalculator stepUpSipCalculator,
             SwpCalculator swpCalculator,
             MatrixSnapshotPort matrixSnapshotPort,
             ReportDataCoordinator reportDataCoordinator,
@@ -70,6 +75,7 @@ public class FundReportService implements GetFundReportUseCase {
         this.navHistoryPort = navHistoryPort;
         this.fundReportEngine = fundReportEngine;
         this.sipCalculator = sipCalculator;
+        this.stepUpSipCalculator = stepUpSipCalculator;
         this.swpCalculator = swpCalculator;
         this.matrixSnapshotPort = matrixSnapshotPort;
         this.reportDataCoordinator = reportDataCoordinator;
@@ -125,6 +131,14 @@ public class FundReportService implements GetFundReportUseCase {
         String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
         NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
         return swpCalculator.simulate(history, initialCorpus, monthlyWithdrawal, scheduleDay);
+    }
+
+    @Override
+    public StepUpSipSimulation simulateStepUpSip(String scheme, String startDate, StepUpSipConfig config) {
+        featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
+        String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
+        NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
+        return stepUpSipCalculator.simulate(history, StepUpSipCalculator.normalize(config));
     }
 
     private CachedMatrix buildMatrix(String scheme, String startDate, MatrixMode mode) {

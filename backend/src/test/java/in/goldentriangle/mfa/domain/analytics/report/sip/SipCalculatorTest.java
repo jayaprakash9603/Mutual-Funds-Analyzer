@@ -34,6 +34,12 @@ class SipCalculatorTest {
     }
 
     @Test
+    void timelineIncludesAverageCorpus() {
+        SipReport report = calculator.compute(sampleHistory());
+        assertTrue(report.timeline().stream().allMatch(point -> point.averageCorpus() > 0));
+    }
+
+    @Test
     void simulateReturnsScenarioAndTimeline() {
         var simulation = calculator.simulate(sampleHistory(), 10_000, 15);
         assertNotNull(simulation.scenario());

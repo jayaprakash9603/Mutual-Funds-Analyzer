@@ -45,12 +45,10 @@ public class SwpCalculator {
         }
 
         int day = SipCalculator.clampScheduleDay(scheduleDay);
-        List<SwpReport.SwpScenario> scenarios = new ArrayList<>();
-        for (int corpus : CORPUS_AMOUNTS) {
-            for (int withdrawal : WITHDRAWAL_AMOUNTS) {
-                scenarios.add(buildScenario(nav, corpus, withdrawal, day).scenario());
-            }
-        }
+        List<SwpReport.SwpScenario> scenarios = CORPUS_AMOUNTS.parallelStream()
+                .flatMap(corpus -> WITHDRAWAL_AMOUNTS.parallelStream()
+                        .map(withdrawal -> buildScenario(nav, corpus, withdrawal, day).scenario()))
+                .toList();
 
         ScenarioResult chart = buildScenario(nav, DEFAULT_CHART_CORPUS, DEFAULT_CHART_WITHDRAWAL, day);
         return new SwpReport(day, DEFAULT_CHART_CORPUS, DEFAULT_CHART_WITHDRAWAL, chart.timeline(), scenarios);
@@ -83,69 +81,57 @@ public class SwpCalculator {
         double longTermGain = 0;
         int withdrawalCount = 0;
 
+        List<WithdrawalTarget> withdrawalTargets = buildWithdrawalTargets(nav, end, scheduleDay);
+        int targetIndex = 0;
+
         List<SwpTimelinePoint> timeline = new ArrayList<>();
-        timeline.add(new SwpTimelinePoint(
-                ISO_DATE.format(start.date().atZone(ZoneOffset.UTC)),
-                initialCorpus,
-                0,
-                start.nav()));
+        for (NavPoint point : nav) {
+            while (targetIndex < withdrawalTargets.size()
+                    && !withdrawalTargets.get(targetIndex).date().isAfter(point.date())) {
+                WithdrawalTarget target = withdrawalTargets.get(targetIndex++);
+                Optional<NavPoint> withdrawalNav = NavLookup.nearest(nav, target.date());
+                if (withdrawalNav.isEmpty() || withdrawalNav.get().nav() <= 0) {
+                    continue;
+                }
 
-        YearMonth cursor = YearMonth.from(start.date().atZone(ZoneOffset.UTC)).plusMonths(1);
-        YearMonth endMonth = YearMonth.from(end.date().atZone(ZoneOffset.UTC));
+                NavPoint withdrawalPoint = withdrawalNav.get();
+                double navValue = withdrawalPoint.nav();
+                double corpus = units * navValue;
+                if (corpus <= 0) {
+                    targetIndex = withdrawalTargets.size();
+                    break;
+                }
 
-        while (!cursor.isAfter(endMonth)) {
-            int dom = Math.min(scheduleDay, cursor.lengthOfMonth());
-            Instant target = cursor.atDay(dom).atStartOfDay(ZoneOffset.UTC).toInstant();
-            if (target.isAfter(end.date())) {
-                break;
+                double amount = Math.min(monthlyWithdrawal, corpus);
+                double costSold = costBasis * (amount / corpus);
+                double gain = amount - costSold;
+                double heldYears = CalendarMath.yearsBetweenMillis(
+                        start.date().toEpochMilli(), withdrawalPoint.date().toEpochMilli());
+                if (heldYears >= LTCG_HOLDING_YEARS) {
+                    longTermGain += gain;
+                } else {
+                    shortTermGain += gain;
+                }
+
+                units -= amount / navValue;
+                costBasis -= costSold;
+                cumulativeWithdrawn += amount;
+                withdrawalCount++;
             }
 
-            Optional<NavPoint> point = NavLookup.nearest(nav, target);
-            if (point.isEmpty() || point.get().nav() <= 0) {
-                cursor = cursor.plusMonths(1);
-                continue;
-            }
-
-            NavPoint withdrawalPoint = point.get();
-            double navValue = withdrawalPoint.nav();
-            double corpus = units * navValue;
-            if (corpus <= 0) {
-                break;
-            }
-
-            double amount = Math.min(monthlyWithdrawal, corpus);
-            double costSold = costBasis * (amount / corpus);
-            double gain = amount - costSold;
-            double heldYears = CalendarMath.yearsBetweenMillis(
-                    start.date().toEpochMilli(), withdrawalPoint.date().toEpochMilli());
-            if (heldYears >= LTCG_HOLDING_YEARS) {
-                longTermGain += gain;
-            } else {
-                shortTermGain += gain;
-            }
-
-            units -= amount / navValue;
-            costBasis -= costSold;
-            cumulativeWithdrawn += amount;
-            withdrawalCount++;
-
+            double corpus = units * point.nav();
             timeline.add(new SwpTimelinePoint(
-                    ISO_DATE.format(withdrawalPoint.date().atZone(ZoneOffset.UTC)),
-                    units * navValue,
+                    ISO_DATE.format(point.date().atZone(ZoneOffset.UTC)),
+                    corpus,
                     cumulativeWithdrawn,
-                    navValue));
-
-            cursor = cursor.plusMonths(1);
+                    point.nav(),
+                    corpus));
         }
 
         double remainingCorpus = units * end.nav();
-        if (timeline.isEmpty() || !timeline.get(timeline.size() - 1).date()
-                .equals(ISO_DATE.format(end.date().atZone(ZoneOffset.UTC)))) {
-            timeline.add(new SwpTimelinePoint(
-                    ISO_DATE.format(end.date().atZone(ZoneOffset.UTC)),
-                    remainingCorpus,
-                    cumulativeWithdrawn,
-                    end.nav()));
+        String endDate = ISO_DATE.format(end.date().atZone(ZoneOffset.UTC));
+        if (timeline.isEmpty() || !timeline.get(timeline.size() - 1).date().equals(endDate)) {
+            timeline.add(new SwpTimelinePoint(endDate, remainingCorpus, cumulativeWithdrawn, end.nav(), remainingCorpus));
         }
 
         TaxReport withdrawalTax = taxCalculator.computeFromSplitGains(shortTermGain, longTermGain, initialCorpus);
@@ -164,7 +150,28 @@ public class SwpCalculator {
                 withdrawalTax.ltcg(),
                 postTaxRemaining);
 
-        return new ScenarioResult(scenario, timeline);
+        return new ScenarioResult(scenario, InvestmentTimelineAverage.enrichSwp(timeline));
+    }
+
+    private static List<WithdrawalTarget> buildWithdrawalTargets(
+            List<NavPoint> nav,
+            NavPoint end,
+            int scheduleDay) {
+        NavPoint start = nav.get(0);
+        YearMonth cursor = YearMonth.from(start.date().atZone(ZoneOffset.UTC)).plusMonths(1);
+        YearMonth endMonth = YearMonth.from(end.date().atZone(ZoneOffset.UTC));
+        List<WithdrawalTarget> targets = new ArrayList<>();
+
+        while (!cursor.isAfter(endMonth)) {
+            int dom = Math.min(scheduleDay, cursor.lengthOfMonth());
+            Instant target = cursor.atDay(dom).atStartOfDay(ZoneOffset.UTC).toInstant();
+            if (target.isAfter(end.date())) {
+                break;
+            }
+            targets.add(new WithdrawalTarget(target));
+            cursor = cursor.plusMonths(1);
+        }
+        return targets;
     }
 
     private static SwpReport emptyReport(int scheduleDay) {
@@ -178,6 +185,9 @@ public class SwpCalculator {
 
     private static SwpReport.SwpScenario emptyScenario(int corpus, int withdrawal) {
         return new SwpReport.SwpScenario(corpus, withdrawal, 0, 0, 0, false, 0, 0, 0);
+    }
+
+    private record WithdrawalTarget(Instant date) {
     }
 
     private record ScenarioResult(SwpReport.SwpScenario scenario, List<SwpTimelinePoint> timeline) {
