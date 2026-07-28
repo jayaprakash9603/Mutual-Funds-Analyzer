@@ -99,6 +99,11 @@ import {
 import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
 import { RareInstancesMatrixTable } from '../tables/RareInstancesMatrixTable'
+import {
+  sectionNeedsMatrix,
+  sectionNeedsMultipleMatrix,
+  sectionNeedsPeersFetch,
+} from '../../lib/nav/reportSectionRequirements'
 
 const drawdownChartConfig = {
   drawdownPercent: { label: 'Drawdown', color: CHART_COLORS.red },
@@ -121,6 +126,8 @@ type FundReportSectionsProps = {
   onPeersLoaded?: (peers: PeerComparison | null) => void
   exportRootId?: string
   exportTitle?: string
+  activeSection?: string
+  renderAll?: boolean
 }
 
 export function FundReportSections({
@@ -135,25 +142,32 @@ export function FundReportSections({
   onPeersLoaded,
   exportRootId = 'fund-report-export-root',
   exportTitle,
+  activeSection = 'overview',
+  renderAll = false,
 }: FundReportSectionsProps) {
   const [matrixMode, setMatrixMode] = useState<'LUMPSUM' | 'MULTIPLE' | 'SIP' | 'STP_6M'>('LUMPSUM')
   const schemeSelected = !!scheme
-  const matrixEnabled = schemeSelected && !isSharedView
+  const matrixActive = renderAll || sectionNeedsMatrix(activeSection)
+  const multipleMatrixActive = renderAll || sectionNeedsMultipleMatrix(activeSection)
+  const peersActive = renderAll || sectionNeedsPeersFetch(activeSection)
+  const matrixEnabled = schemeSelected && !isSharedView && matrixActive
 
   const { data: matrix, loading: matrixLoading, error: matrixError, retry: retryMatrix } =
     useFundReportMatrix(scheme || null, matrixMode, matrixEnabled)
   const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
     scheme || null,
     'MULTIPLE',
-    matrixEnabled,
+    schemeSelected && !isSharedView && multipleMatrixActive,
   )
 
   const profile = overview.data?.profile
-  const fundName = profile?.fundName ?? 'Fund'
+  const fundName = profile?.fundName ?? scheme ?? 'Fund'
   const benchmarkName = profile?.benchmarkName ?? 'Benchmark'
   const category = profile?.category ?? ''
   const dataTo = profile?.dataTo ?? ''
   const dataFrom = profile?.dataFrom ?? ''
+
+  const shouldRender = (sectionId: string) => renderAll || activeSection === sectionId
 
   const stars = useMemo(
     () => '★'.repeat(profile?.overallRatingStars ?? 0),
@@ -168,6 +182,7 @@ export function FundReportSections({
           <p className="text-xs text-muted-foreground">Fund report snapshot</p>
         </div>
       ) : null}
+      {shouldRender("overview") ? (
       <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
         <ReportGroupBoundary state={overview} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
@@ -187,7 +202,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("golden-triangle") ? (
       <SectionShell
         id="golden-triangle"
         title="Golden Triangle Score"
@@ -209,7 +226,9 @@ export function FundReportSections({
           </ReportGroupBoundary>
         </div>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("returns") ? (
       <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
@@ -222,7 +241,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("rolling") ? (
       <SectionShell
         id="rolling"
         title="Rolling Returns"
@@ -243,7 +264,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("return-patterns") ? (
       <SectionShell
         id="return-patterns"
         variant="stack"
@@ -277,7 +300,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("benchmark") ? (
       <SectionShell id="benchmark" title="Benchmark Comparison">
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) => (
@@ -310,7 +335,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("probability") ? (
       <SectionShell
         id="probability"
         title="Probability Analysis"
@@ -350,7 +377,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("risk") ? (
       <SectionShell id="risk" title="Risk Analysis">
         <ReportGroupBoundary state={risk} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
@@ -375,11 +404,15 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("portfolio") ? (
       <SectionShell id="portfolio" title="Portfolio Analysis">
         <UnavailableNotice label="Portfolio holdings and sector allocation" />
       </SectionShell>
+      ) : null}
 
+      {shouldRender("consistency") ? (
       <SectionShell
         id="consistency"
         title="Annual Drawdown vs Returns"
@@ -410,6 +443,7 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
       <SectionShell
         id="sip"
@@ -480,6 +514,7 @@ export function FundReportSections({
         </ReportGroupBoundary>
       </SectionShell>
 
+      {shouldRender("lumpsum") ? (
       <SectionShell id="lumpsum" title="Lump Sum Analysis">
         <ReportGroupBoundary state={investment} skeleton={null}>
           {(data) => (
@@ -539,7 +574,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("drawdown") ? (
       <SectionShell
         id="drawdown"
         title="Drawdown Analysis"
@@ -623,7 +660,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("bear-market") ? (
       <SectionShell
         id="bear-market"
         variant="stack"
@@ -666,7 +705,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("best-days") ? (
       <SectionShell
         id="best-days"
         variant="stack"
@@ -683,7 +724,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("all-time-highs") ? (
       <SectionShell
         id="all-time-highs"
         variant="stack"
@@ -706,7 +749,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("expense") ? (
       <SectionShell id="expense" title="Expense Analysis">
         <ReportGroupBoundary state={investment} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) =>
@@ -722,15 +767,20 @@ export function FundReportSections({
           }
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender('peers') ? (
       <PeerSection
         scheme={scheme}
         category={category}
         peersSnapshot={peersSnapshot}
         isSharedView={isSharedView}
         onPeersLoaded={onPeersLoaded}
+        enabled={peersActive}
       />
+      ) : null}
 
+      {shouldRender("quality") ? (
       <SectionShell
         id="quality"
         title="Fund Quality Score"
@@ -759,7 +809,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("insights") ? (
       <SectionShell id="insights" title="AI Insights">
         <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
           {(data) => (
@@ -797,7 +849,9 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
 
+      {shouldRender("verdict") ? (
       <SectionShell id="verdict" title="Final Recommendation">
         <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
           {(data) => (
@@ -811,6 +865,7 @@ export function FundReportSections({
           )}
         </ReportGroupBoundary>
       </SectionShell>
+      ) : null}
     </div>
   )
 }
@@ -821,18 +876,24 @@ function PeerSection({
   peersSnapshot = null,
   isSharedView = false,
   onPeersLoaded,
+  enabled = true,
 }: {
   scheme: string
   category: string
   peersSnapshot?: PeerComparison | null
   isSharedView?: boolean
   onPeersLoaded?: (peers: PeerComparison | null) => void
+  enabled?: boolean
 }) {
   const [peers, setPeers] = useState<PeerComparison | null>(isSharedView ? peersSnapshot : null)
-  const [loading, setLoading] = useState(!isSharedView)
+  const [loading, setLoading] = useState(!isSharedView && enabled)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      return
+    }
+
     if (isSharedView) {
       setPeers(peersSnapshot)
       setLoading(false)
@@ -867,7 +928,7 @@ function PeerSection({
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-  }, [scheme, category, isSharedView, peersSnapshot])
+  }, [scheme, category, isSharedView, peersSnapshot, enabled, onPeersLoaded])
 
   return (
     <SectionShell

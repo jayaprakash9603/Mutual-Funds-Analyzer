@@ -68,65 +68,78 @@ function mapLegacyToGroups(
   }
 }
 
+export type ReportGroupKey = keyof ProgressiveFundReportGroups
+
+export type UseProgressiveFundReportOptions = {
+  /** When set, only fetch these API section groups (lazy tab loading). */
+  enabledGroups?: Set<ReportGroupKey>
+}
+
 export function useProgressiveFundReport(
   scheme: string | null,
   startDate?: string,
+  options?: UseProgressiveFundReportOptions,
 ): UseProgressiveFundReportResult {
   const progressiveEnabled = useFeature('analysis.fundReportProgressive')
   const [useLegacy, setUseLegacy] = useState(false)
   const [secondaryWave, setSecondaryWave] = useState(false)
   const legacyFallbackTriggered = useRef(false)
+  const lazyGroups = options?.enabledGroups
+  const lazyMode = lazyGroups != null && lazyGroups.size > 0
+
+  const groupEnabled = (key: ReportGroupKey) =>
+    !lazyMode || lazyGroups!.has(key)
 
   useEffect(() => {
     legacyFallbackTriggered.current = false
     setUseLegacy(false)
     setSecondaryWave(false)
-  }, [scheme, startDate, progressiveEnabled])
+  }, [scheme, startDate, progressiveEnabled, lazyGroups])
 
   const progressiveActive = progressiveEnabled && !useLegacy
 
   const overview = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive,
+    enabled: progressiveActive && groupEnabled('overview'),
     fetchSection: (s, d, signal) => fetchFundReportOverview(s, { startDate: d, signal }),
   })
 
   useEffect(() => {
-    if (!progressiveActive) return
+    if (!progressiveActive || lazyMode) return
     if (overview.data && !overview.loading) {
       setSecondaryWave(true)
       return
     }
     const timer = window.setTimeout(() => setSecondaryWave(true), 120)
     return () => window.clearTimeout(timer)
-  }, [progressiveActive, overview.data, overview.loading, scheme, startDate])
+  }, [progressiveActive, lazyMode, overview.data, overview.loading, scheme, startDate])
 
   const performance = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive && secondaryWave,
+    enabled: progressiveActive && groupEnabled('performance') && (lazyMode || secondaryWave),
     fetchSection: (s, d, signal) => fetchFundReportPerformance(s, { startDate: d, signal }),
   })
 
   const risk = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive && secondaryWave,
+    enabled: progressiveActive && groupEnabled('risk') && (lazyMode || secondaryWave),
     fetchSection: (s, d, signal) => fetchFundReportRisk(s, { startDate: d, signal }),
   })
 
   const investment = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive && secondaryWave,
+    enabled: progressiveActive && groupEnabled('investment') && (lazyMode || secondaryWave),
     fetchSection: (s, d, signal) => fetchFundReportInvestment(s, { startDate: d, signal }),
   })
 
   const assessment = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive,
+    enabled: progressiveActive && groupEnabled('assessment'),
     fetchSection: (s, d, signal) => fetchFundReportAssessment(s, { startDate: d, signal }),
   })
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { FundSelector } from '@/components/dashboard/search/FundSelector'
@@ -9,7 +9,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ReportScrollProvider } from '@/features/fund-report/context/ReportScrollContext'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { FundReportToolbar } from '@/features/fund-report/components/layout/FundReportToolbar'
-import { ReportSectionNav, REPORT_SECTIONS } from '@/features/fund-report/components/layout/ReportSectionNav'
+import { ReportPageShell } from '@/features/fund-report/components/layout/ReportPageShell'
+import { ReportSectionMobileNav } from '@/features/fund-report/components/layout/ReportSectionMobileNav'
+import { ReportSectionSidebar } from '@/features/fund-report/components/layout/ReportSectionSidebar'
+import { DEFAULT_REPORT_SECTION } from '@/features/fund-report/lib/nav/reportSectionCatalog'
+import {
+  ALL_REPORT_GROUP_KEYS,
+  groupsRequiredForSections,
+} from '@/features/fund-report/lib/nav/reportSectionRequirements'
 import { exportReportElementToPdf } from '@/features/fund-report/lib/export/exportReportPdf'
 import {
   buildShareUrl,
@@ -21,11 +28,8 @@ import {
 } from '@/features/fund-report/lib/snapshot/reportSnapshot'
 import { snapshotToGroups } from '@/features/fund-report/lib/snapshot/snapshotToGroups'
 import { useProgressiveFundReport } from '@/features/fund-report/hooks/useProgressiveFundReport'
-import { useSectionNav } from '@/features/fund-report/hooks/useSectionNav'
-import { REPORT_SECTION_SCROLL_OFFSET } from '@/features/fund-report/lib/nav/reportScroll'
 import type { PeerComparison } from '@/features/fund-report/schemas'
 
-const SECTION_IDS = REPORT_SECTIONS.map((s) => s.id)
 const EXPORT_ROOT_ID = 'fund-report-export-root'
 
 export function FundReportPage() {
@@ -33,7 +37,12 @@ export function FundReportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
 
-  const [scrollOffset, setScrollOffset] = useState(REPORT_SECTION_SCROLL_OFFSET)
+  const [activeSection, setActiveSection] = useState(DEFAULT_REPORT_SECTION)
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(
+    () => new Set([DEFAULT_REPORT_SECTION]),
+  )
+  const [renderAllSections, setRenderAllSections] = useState(false)
+
   const [sharedSnapshot, setSharedSnapshot] = useState<SharedReportSnapshot | null>(null)
   const [snapshotLoading, setSnapshotLoading] = useState(hasSnapshotHash())
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
@@ -85,13 +94,35 @@ export function FundReportPage() {
     }
   }, [])
 
+  useEffect(() => {
+    setActiveSection(DEFAULT_REPORT_SECTION)
+    setVisitedSections(new Set([DEFAULT_REPORT_SECTION]))
+  }, [scheme])
+
   const isSharedView = sharedSnapshot != null
   const startDate = sharedSnapshot?.startDate ?? searchParams.get('start_date') ?? undefined
 
-  const liveReport = useProgressiveFundReport(isSharedView ? null : scheme || null, startDate)
+  const enabledGroups = useMemo(() => {
+    if (isSharedView || renderAllSections) {
+      return new Set(ALL_REPORT_GROUP_KEYS)
+    }
+    return groupsRequiredForSections(visitedSections)
+  }, [isSharedView, renderAllSections, visitedSections])
+
+  const liveReport = useProgressiveFundReport(isSharedView ? null : scheme || null, startDate, {
+    enabledGroups,
+  })
   const reportGroups = isSharedView ? snapshotToGroups(sharedSnapshot) : liveReport
 
-  const { activeSection, scrollToSection } = useSectionNav(SECTION_IDS, scrollOffset)
+  const selectSection = useCallback((sectionId: string) => {
+    setActiveSection(sectionId)
+    setVisitedSections((prev) => {
+      if (prev.has(sectionId)) return prev
+      const next = new Set(prev)
+      next.add(sectionId)
+      return next
+    })
+  }, [])
 
   const selectScheme = (next: string) => {
     if (isSharedView) return
@@ -114,12 +145,15 @@ export function FundReportPage() {
       return
     }
     setExporting(true)
+    setRenderAllSections(true)
     try {
+      await new Promise((resolve) => window.setTimeout(resolve, 400))
       await exportReportElementToPdf(root, fundLabel)
       toast.success('PDF downloaded')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'PDF export failed')
     } finally {
+      setRenderAllSections(false)
       setExporting(false)
     }
   }
@@ -158,10 +192,21 @@ export function FundReportPage() {
     )
 
   const showReport = isSharedView || !!scheme
+  const showReportShell = showReport && !snapshotLoading
 
   return (
-    <PageContainer width="wide">
-      <ReportScrollProvider offset={scrollOffset}>
+    <ReportPageShell
+      sidebarVisible={showReportShell}
+      sidebar={
+        <ReportSectionSidebar
+          activeSection={activeSection}
+          onSectionSelect={selectSection}
+          fundLabel={fundLabel}
+        />
+      }
+    >
+      <PageContainer width="wide">
+        <ReportScrollProvider offset={120}>
         <header className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Fund Report</h1>
           <p className="text-muted-foreground">
@@ -188,8 +233,12 @@ export function FundReportPage() {
           </div>
         )}
 
-        {showReport && !snapshotLoading && (
-          <>
+        {showReportShell && (
+          <div className="space-y-6">
+            <ReportSectionMobileNav
+              activeSection={activeSection}
+              onSectionSelect={selectSection}
+            />
             <FundReportToolbar
               canExport={canExport}
               exporting={exporting}
@@ -201,13 +250,23 @@ export function FundReportPage() {
               onShareLink={handleCopyShareLink}
               onCopyLink={handleCopyShareLink}
             />
-
-            <ReportSectionNav
+            <FundReportSections
+              scheme={isSharedView ? sharedSnapshot.scheme : scheme}
+              groups={reportGroups}
+              overview={reportGroups.overview}
+              performance={reportGroups.performance}
+              risk={reportGroups.risk}
+              investment={reportGroups.investment}
+              assessment={reportGroups.assessment}
+              peersSnapshot={sharedSnapshot?.peers ?? null}
+              isSharedView={isSharedView}
+              onPeersLoaded={onPeersLoaded}
+              exportRootId={EXPORT_ROOT_ID}
+              exportTitle={fundLabel}
               activeSection={activeSection}
-              onSectionSelect={scrollToSection}
-              onOffsetChange={setScrollOffset}
+              renderAll={renderAllSections || isSharedView}
             />
-          </>
+          </div>
         )}
 
         {showInitialLoading && (
@@ -237,25 +296,9 @@ export function FundReportPage() {
             Search and select a fund to generate the full report.
           </div>
         )}
-
-        {showReport && !snapshotLoading && (
-          <FundReportSections
-            scheme={isSharedView ? sharedSnapshot.scheme : scheme}
-            groups={reportGroups}
-            overview={reportGroups.overview}
-            performance={reportGroups.performance}
-            risk={reportGroups.risk}
-            investment={reportGroups.investment}
-            assessment={reportGroups.assessment}
-            peersSnapshot={sharedSnapshot?.peers ?? null}
-            isSharedView={isSharedView}
-            onPeersLoaded={onPeersLoaded}
-            exportRootId={EXPORT_ROOT_ID}
-            exportTitle={fundLabel}
-          />
-        )}
       </ReportScrollProvider>
     </PageContainer>
+    </ReportPageShell>
   )
 }
 
