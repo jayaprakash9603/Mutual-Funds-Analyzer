@@ -97,6 +97,8 @@
   --chart-gauge-track: oklch(0.92 0.01 240);
   --chart-positive: #15803d;
   --chart-negative: #b91c1c;
+  --long-term-story-ink: #1a428a;
+  --long-term-story-trend: #00a651;
 }
 
 .dark {
@@ -149,6 +151,8 @@
   --chart-gauge-track: oklch(0.3 0.02 240);
   --chart-positive: #4ade80;
   --chart-negative: #f87171;
+  --long-term-story-ink: #93c5fd;
+  --long-term-story-trend: #4ade80;
 }
 
 @layer base {

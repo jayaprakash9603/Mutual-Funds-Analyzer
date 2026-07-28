@@ -69,6 +69,7 @@ import {
 } from '../charts/BearMarketDecadeChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
+import { FundLongTermStoryChart } from '../charts/FundLongTermStoryChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
 import { AllTimeHighsChart } from '../charts/AllTimeHighsChart'
@@ -180,19 +181,29 @@ export function FundReportSections({
       <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
         <ReportGroupBoundary state={overview} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MetricTile label="Fund" value={data.profile.fundName} />
-              <MetricTile label="AMC" value={data.profile.amc || '—'} />
-              <MetricTile label="Category" value={data.profile.category || '—'} />
-              <MetricTile label="Benchmark" value={data.profile.benchmarkName} />
-              <MetricTile label="NAV" value={`₹${data.profile.latestNav.toFixed(2)}`} />
-              <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} />
-              <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} />
-              <MetricTile
-                label="Data Range"
-                value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`}
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricTile label="Fund" value={data.profile.fundName} />
+                <MetricTile label="AMC" value={data.profile.amc || '—'} />
+                <MetricTile label="Category" value={data.profile.category || '—'} />
+                <MetricTile label="Benchmark" value={data.profile.benchmarkName} />
+                <MetricTile label="NAV" value={`₹${data.profile.latestNav.toFixed(2)}`} />
+                <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} />
+                <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} />
+                <MetricTile
+                  label="Data Range"
+                  value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`}
+                />
+              </div>
+              <FundLongTermStoryChart
+                fundName={data.profile.fundName}
+                category={data.profile.category}
+                fundAgeYears={data.profile.fundAgeYears}
+                dataTo={data.profile.dataTo}
+                indexedNav={risk.data?.drawdown.indexedNav ?? []}
+                loading={risk.loading && (risk.data?.drawdown.indexedNav?.length ?? 0) === 0}
               />
-            </div>
+            </>
           )}
         </ReportGroupBoundary>
       </SectionShell>

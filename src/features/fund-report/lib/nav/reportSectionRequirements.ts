@@ -3,7 +3,7 @@ import type { ProgressiveFundReportGroups } from '../../hooks/useProgressiveFund
 export type ReportGroupKey = keyof ProgressiveFundReportGroups
 
 const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
-  overview: ['overview'],
+  overview: ['overview', 'risk'],
   'golden-triangle': ['assessment', 'risk'],
   returns: ['performance'],
   rolling: ['performance'],
