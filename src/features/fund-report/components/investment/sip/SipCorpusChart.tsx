@@ -75,6 +75,7 @@ type SipCorpusChartProps = {
   scheduleDay: number
   chartTitle?: string
   chartSubtitle?: string
+  emptyMessage?: string
 }
 
 export function SipCorpusChart({
@@ -83,6 +84,7 @@ export function SipCorpusChart({
   scheduleDay,
   chartTitle = 'SIP corpus growth',
   chartSubtitle,
+  emptyMessage = 'No SIP timeline data for this schedule.',
 }: SipCorpusChartProps) {
   const axis = useResponsiveAxis()
   const chartData = useMemo(() => {
@@ -97,9 +99,7 @@ export function SipCorpusChart({
 
   if (chartData.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No SIP timeline data for this schedule.
-      </p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
     )
   }
 

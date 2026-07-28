@@ -6,7 +6,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
+import { fetchLumpsumSimulation } from '../../../api'
 import { enrichMonthlyAverageCorpus, scaleTimeline } from '../../../lib/sipTimeline'
 import type { FundReportInvestment, SipTimelinePoint } from '../../../schemas'
 import { SipCorpusChart } from '../sip/SipCorpusChart'
@@ -15,7 +17,10 @@ import { LumpsumScenarioTable } from './LumpsumScenarioTable'
 const PRINCIPAL_PRESETS = [10_000, 50_000, 100_000, 500_000, 1_000_000] as const
 
 type LumpsumCalculatorPanelProps = {
+  scheme: string
   lumpsum: FundReportInvestment['lumpsum']
+  startDate?: string
+  isSharedView?: boolean
 }
 
 function formatPrincipalLabel(principal: number): string {
@@ -23,24 +28,65 @@ function formatPrincipalLabel(principal: number): string {
   return `₹${(principal / 1_000).toFixed(principal >= 10_000 ? 0 : 1)}k`
 }
 
-export function LumpsumCalculatorPanel({ lumpsum }: LumpsumCalculatorPanelProps) {
+export function LumpsumCalculatorPanel({
+  scheme,
+  lumpsum,
+  startDate,
+  isSharedView = false,
+}: LumpsumCalculatorPanelProps) {
   const defaultPrincipal = lumpsum.chartAmount ?? 100_000
   const [principal, setPrincipal] = useState(defaultPrincipal)
+  const [timeline, setTimeline] = useState<SipTimelinePoint[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const activeScenario = useMemo(
     () => lumpsum.scenarios.find((row) => row.principal === principal) ?? lumpsum.scenarios[0] ?? null,
     [lumpsum.scenarios, principal],
   )
 
-  const [timeline, setTimeline] = useState<SipTimelinePoint[]>(
-    enrichMonthlyAverageCorpus(lumpsum.timeline ?? []) as SipTimelinePoint[],
-  )
-
   useEffect(() => {
+    const embedded = lumpsum.timeline ?? []
     const baseAmount = lumpsum.chartAmount ?? defaultPrincipal
-    const factor = principal / baseAmount
-    setTimeline(scaleTimeline(lumpsum.timeline ?? [], factor))
-  }, [principal, lumpsum.timeline, lumpsum.chartAmount, defaultPrincipal])
+    const canScaleLocally =
+      embedded.length > 0 && principal !== defaultPrincipal && baseAmount > 0
+
+    if (canScaleLocally) {
+      setTimeline(scaleTimeline(embedded, principal / baseAmount))
+      setError(null)
+      return
+    }
+
+    if (embedded.length > 0 && principal === defaultPrincipal) {
+      setTimeline(enrichMonthlyAverageCorpus(embedded) as SipTimelinePoint[])
+      setError(null)
+      return
+    }
+
+    if (isSharedView || !scheme) {
+      setTimeline(enrichMonthlyAverageCorpus(embedded) as SipTimelinePoint[])
+      return
+    }
+
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+
+    fetchLumpsumSimulation(scheme, { principal, startDate, signal: controller.signal })
+      .then((result) => {
+        setTimeline(result.timeline)
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err instanceof Error ? err.message : 'Failed to load lump sum chart')
+        if (embedded.length > 0) {
+          setTimeline(scaleTimeline(embedded, principal / baseAmount))
+        }
+      })
+      .finally(() => setLoading(false))
+
+    return () => controller.abort()
+  }, [scheme, principal, startDate, isSharedView, lumpsum.timeline, lumpsum.chartAmount, defaultPrincipal])
 
   return (
     <div className="space-y-5">
@@ -90,13 +136,20 @@ export function LumpsumCalculatorPanel({ lumpsum }: LumpsumCalculatorPanelProps)
         </div>
       )}
 
-      <SipCorpusChart
-        timeline={timeline}
-        monthlyAmount={principal}
-        scheduleDay={1}
-        chartTitle="Lump sum corpus growth"
-        chartSubtitle={`₹${principal.toLocaleString('en-IN')} invested at fund inception`}
-      />
+      {loading ? (
+        <Skeleton className="h-[360px] w-full rounded-xl" />
+      ) : (
+        <SipCorpusChart
+          timeline={timeline}
+          monthlyAmount={principal}
+          scheduleDay={1}
+          chartTitle="Lump sum corpus growth"
+          chartSubtitle={`₹${principal.toLocaleString('en-IN')} invested at fund inception`}
+          emptyMessage="No lump sum growth data available for this fund."
+        />
+      )}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <LumpsumScenarioTable scenarios={lumpsum.scenarios} highlightPrincipal={principal} />
     </div>

@@ -7,6 +7,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportOverviewDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportPerformanceDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportRiskDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.StepUpSipSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpSimulationDto;
@@ -82,6 +83,15 @@ public class FundReportController {
         return fundReportMapper.toDto(
                 getFundReportUseCase.simulateSip(scheme, startDate, amount, day),
                 day);
+    }
+
+    @GetMapping("/fund-report/lumpsum/simulate")
+    LumpsumSimulationDto simulateLumpsum(
+            @RequestParam String scheme,
+            @RequestParam(defaultValue = "100000") int principal,
+            @RequestParam(name = "start_date", required = false) String startDate) {
+        requireScheme(scheme);
+        return fundReportMapper.toDto(getFundReportUseCase.simulateLumpsum(scheme, startDate, principal));
     }
 
     @GetMapping("/fund-report/step-up-sip/simulate")

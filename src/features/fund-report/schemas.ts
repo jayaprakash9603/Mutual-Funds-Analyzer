@@ -483,6 +483,21 @@ export const sipSimulationSchema = z.object({
 })
 export type SipSimulation = z.infer<typeof sipSimulationSchema>
 
+export const lumpsumScenarioSchema = z.object({
+  principal: z.number(),
+  currentValue: z.number(),
+  gain: z.number(),
+  cagr: z.number(),
+  moneyMultiplied: z.number(),
+})
+export type LumpsumScenario = z.infer<typeof lumpsumScenarioSchema>
+
+export const lumpsumSimulationSchema = z.object({
+  scenario: lumpsumScenarioSchema,
+  timeline: z.array(sipTimelinePointSchema),
+})
+export type LumpsumSimulation = z.infer<typeof lumpsumSimulationSchema>
+
 export const stepUpModeSchema = z.enum(['PERCENT', 'FIXED'])
 export type StepUpMode = z.infer<typeof stepUpModeSchema>
 

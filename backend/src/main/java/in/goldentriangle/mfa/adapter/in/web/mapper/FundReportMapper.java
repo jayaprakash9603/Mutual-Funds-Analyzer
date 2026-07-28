@@ -18,6 +18,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportOverviewDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportPerformanceDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.section.FundReportRiskDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.InvestorFitDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.compare.PeerComparisonDto;
@@ -54,6 +55,7 @@ import in.goldentriangle.mfa.domain.model.report.section.FundReportOverviewSecti
 import in.goldentriangle.mfa.domain.model.report.section.FundReportPerformanceSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportRiskSection;
 import in.goldentriangle.mfa.domain.model.report.assessment.InvestorFitReport;
+import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
@@ -433,6 +435,17 @@ public class FundReportMapper {
                         .map(s -> new SipReportDto.SipScenarioDto(
                                 s.monthlyAmount(), s.currentValue(), s.totalGain(), s.xirr(),
                                 s.moneyInvested(), s.projectedValue10Y(), s.stcg(), s.ltcg(), s.postTaxXirr()))
+                        .toList());
+    }
+
+    public LumpsumSimulationDto toDto(LumpsumSimulation simulation) {
+        LumpsumReport.LumpsumScenario s = simulation.scenario();
+        return new LumpsumSimulationDto(
+                new LumpsumReportDto.LumpsumScenarioDto(
+                        s.principal(), s.currentValue(), s.gain(), s.cagr(), s.moneyMultiplied()),
+                simulation.timeline().stream()
+                        .map(p -> new SipTimelinePointDto(
+                                p.date(), p.invested(), p.corpus(), p.nav(), p.averageCorpus()))
                         .toList());
     }
 

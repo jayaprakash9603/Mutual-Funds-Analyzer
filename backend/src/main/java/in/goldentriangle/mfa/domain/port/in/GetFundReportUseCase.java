@@ -1,6 +1,7 @@
 package in.goldentriangle.mfa.domain.port.in;
 
 import in.goldentriangle.mfa.domain.model.report.FundReport;
+import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
@@ -15,6 +16,8 @@ public interface GetFundReportUseCase {
     MatrixReportBundle getMatrix(String scheme, String startDate, MatrixMode mode);
 
     SipSimulation simulateSip(String scheme, String startDate, int amount, int scheduleDay);
+
+    LumpsumSimulation simulateLumpsum(String scheme, String startDate, int principal);
 
     SwpSimulation simulateSwp(
             String scheme,

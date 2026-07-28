@@ -20,10 +20,12 @@ import org.springframework.stereotype.Service;
 
 import in.goldentriangle.mfa.config.feature.FeatureFlags;
 import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
+import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.model.report.FundReport;
+import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SipSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipConfig;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipSimulation;
@@ -46,6 +48,7 @@ public class FundReportService implements GetFundReportUseCase {
     private final NavHistoryPort navHistoryPort;
     private final FundReportEngine fundReportEngine;
     private final SipCalculator sipCalculator;
+    private final LumpsumCalculator lumpsumCalculator;
     private final StepUpSipCalculator stepUpSipCalculator;
     private final SwpCalculator swpCalculator;
     private final MatrixSnapshotPort matrixSnapshotPort;
@@ -62,6 +65,7 @@ public class FundReportService implements GetFundReportUseCase {
             NavHistoryPort navHistoryPort,
             FundReportEngine fundReportEngine,
             SipCalculator sipCalculator,
+            LumpsumCalculator lumpsumCalculator,
             StepUpSipCalculator stepUpSipCalculator,
             SwpCalculator swpCalculator,
             MatrixSnapshotPort matrixSnapshotPort,
@@ -75,6 +79,7 @@ public class FundReportService implements GetFundReportUseCase {
         this.navHistoryPort = navHistoryPort;
         this.fundReportEngine = fundReportEngine;
         this.sipCalculator = sipCalculator;
+        this.lumpsumCalculator = lumpsumCalculator;
         this.stepUpSipCalculator = stepUpSipCalculator;
         this.swpCalculator = swpCalculator;
         this.matrixSnapshotPort = matrixSnapshotPort;
@@ -118,6 +123,14 @@ public class FundReportService implements GetFundReportUseCase {
         String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
         NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
         return sipCalculator.simulate(history, amount, scheduleDay);
+    }
+
+    @Override
+    public LumpsumSimulation simulateLumpsum(String scheme, String startDate, int principal) {
+        featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
+        String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
+        NavHistory history = navHistoryPort.fetch(scheme, resolvedStart);
+        return lumpsumCalculator.simulate(history, principal);
     }
 
     @Override

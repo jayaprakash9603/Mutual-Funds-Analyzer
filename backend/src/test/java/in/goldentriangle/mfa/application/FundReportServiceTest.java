@@ -144,6 +144,7 @@ class FundReportServiceTest {
                 navHistoryPort,
                 engine,
                 new SipCalculator(new TaxCalculator()),
+                new LumpsumCalculator(),
                 new StepUpSipCalculator(new TaxCalculator()),
                 new SwpCalculator(new TaxCalculator()),
                 matrixSnapshotPort,

@@ -13,6 +13,7 @@ export const API_ROUTES = {
   fundReportAssessment: '/api/fund-report/assessment',
   fundReportMatrix: '/api/fund-report/matrix',
   fundReportSipSimulate: '/api/fund-report/sip/simulate',
+  fundReportLumpsumSimulate: '/api/fund-report/lumpsum/simulate',
   fundReportSwpSimulate: '/api/fund-report/swp/simulate',
   fundReportStepUpSipSimulate: '/api/fund-report/step-up-sip/simulate',
   fundReportPeers: '/api/fund-report/peers',

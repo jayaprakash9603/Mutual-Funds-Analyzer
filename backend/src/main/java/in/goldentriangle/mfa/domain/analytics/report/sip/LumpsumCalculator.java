@@ -3,6 +3,7 @@ package in.goldentriangle.mfa.domain.analytics.report.sip;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarMath;
 import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
+import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.SipTimelinePoint;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 
@@ -42,6 +43,31 @@ public class LumpsumCalculator {
 
         List<SipTimelinePoint> timeline = buildTimeline(nav, DEFAULT_CHART_AMOUNT);
         return new LumpsumReport(DEFAULT_CHART_AMOUNT, timeline, scenarios);
+    }
+
+    public LumpsumSimulation simulate(NavHistory history, int principal) {
+        List<NavPoint> nav = history.fundNav();
+        int amount = Math.max(1, principal);
+        if (nav.size() < 2) {
+            return new LumpsumSimulation(emptyScenario(amount), List.of());
+        }
+        NavPoint start = nav.get(0);
+        NavPoint end = nav.get(nav.size() - 1);
+        double years = CalendarMath.yearsBetweenMillis(start.date().toEpochMilli(), end.date().toEpochMilli());
+        double cagr = CalendarMath.cagr(start.nav(), end.nav(), years);
+        double multiplied = CalendarMath.moneyMultiplied(start.nav(), end.nav());
+        double current = amount * multiplied;
+        LumpsumReport.LumpsumScenario scenario = new LumpsumReport.LumpsumScenario(
+                amount,
+                current,
+                current - amount,
+                cagr,
+                multiplied);
+        return new LumpsumSimulation(scenario, buildTimeline(nav, amount));
+    }
+
+    private static LumpsumReport.LumpsumScenario emptyScenario(int amount) {
+        return new LumpsumReport.LumpsumScenario(amount, 0, 0, 0, 0);
     }
 
     private List<SipTimelinePoint> buildTimeline(List<NavPoint> nav, int principal) {

@@ -20,6 +20,7 @@ import {
   fundReportSchema,
   matrixReportSchema,
   peerComparisonSchema,
+  lumpsumSimulationSchema,
   sipSimulationSchema,
   stepUpSipSimulationSchema,
   swpSimulationSchema,
@@ -35,6 +36,7 @@ import {
   type FundReportPerformanceEnvelope,
   type FundReportRisk,
   type FundReportRiskEnvelope,
+  type LumpsumSimulation,
   type MatrixReport,
   type PeerComparison,
   type SipSimulation,
@@ -201,6 +203,18 @@ export async function fetchSipSimulation(
     label: 'SIP simulation',
   })
   return sipSimulationSchema.parse(data)
+}
+
+export async function fetchLumpsumSimulation(
+  scheme: string,
+  options: { principal: number; startDate?: string; signal?: AbortSignal },
+): Promise<LumpsumSimulation> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportLumpsumSimulate, {
+    params: withStartDate({ scheme, principal: String(options.principal) }, options.startDate),
+    signal: options.signal,
+    label: 'Lump sum simulation',
+  })
+  return lumpsumSimulationSchema.parse(data)
 }
 
 export async function fetchSwpSimulation(

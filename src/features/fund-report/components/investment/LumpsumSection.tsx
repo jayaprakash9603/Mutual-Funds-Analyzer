@@ -30,7 +30,12 @@ export function LumpsumSection({
               One-time investment at fund inception. Corpus growth follows NAV from the first available
               trading day through the latest NAV.
             </p>
-            <LumpsumCalculatorPanel lumpsum={data.lumpsum} />
+            <LumpsumCalculatorPanel
+              scheme={scheme}
+              lumpsum={data.lumpsum}
+              startDate={startDate}
+              isSharedView={isSharedView}
+            />
           </>
         )}
       </ReportGroupBoundary>
