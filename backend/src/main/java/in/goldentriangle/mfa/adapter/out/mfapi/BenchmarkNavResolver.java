@@ -74,7 +74,7 @@ public class BenchmarkNavResolver {
             List<NavPoint> benchmarkNav = NavSeriesBuilder.buildNavSeries(data.benchmark());
             if (benchmarkNav.isEmpty()) {
                 log.warn("Investt benchmark series empty for {}", schemeName);
-                syncGate.markSuccess(schemeCode, UpstreamSyncSource.INVESTT);
+                syncGate.markFailure(schemeCode, UpstreamSyncSource.INVESTT, "Investt benchmark series empty");
                 return new BenchmarkSnapshot(UNAVAILABLE_LABEL, List.of());
             }
             String benchmarkName = data.benchmark().stream()

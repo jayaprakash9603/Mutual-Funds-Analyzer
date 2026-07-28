@@ -29,6 +29,8 @@ import java.util.concurrent.Executor;
 @Service
 public class ReportDataCoordinator {
 
+    private static final String BENCHMARK_UNAVAILABLE = "Benchmark unavailable";
+
     /** Bumped when drawdown report carries bear-market and recovery analytics. */
     public static final String REPORT_CACHE_PREFIX = "fund-report:v12:";
     /** Bumped when the persisted report shape changes; older snapshots are recomputed. */
@@ -125,11 +127,21 @@ public class ReportDataCoordinator {
                 && stored.isPresent()
                 && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
                 && watermarkMatches(stored.get().watermarkNavDate(), navFreshness)) {
-            return new PreparedReport(
-                    stored.get().report(),
-                    stored.get().watermarkNavDate(),
-                    stored.get().computedAt(),
-                    true);
+            if (!BENCHMARK_UNAVAILABLE.equals(stored.get().report().profile().benchmarkName())) {
+                return new PreparedReport(
+                        stored.get().report(),
+                        stored.get().watermarkNavDate(),
+                        stored.get().computedAt(),
+                        true);
+            }
+            NavHistory cachedHistory = navHistoryPort.fetch(scheme, startDate);
+            if (!benchmarkSnapshotStale(stored.get().report(), cachedHistory)) {
+                return new PreparedReport(
+                        stored.get().report(),
+                        stored.get().watermarkNavDate(),
+                        stored.get().computedAt(),
+                        true);
+            }
         }
 
         CompletableFuture<Optional<FundMetadata>> metadataFuture =
@@ -142,7 +154,8 @@ public class ReportDataCoordinator {
         if (!forceRefresh
                 && stored.isPresent()
                 && stored.get().schemaVersion() == REPORT_SCHEMA_VERSION
-                && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)) {
+                && Objects.equals(stored.get().watermarkNavDate(), lastNavDate)
+                && !benchmarkSnapshotStale(stored.get().report(), history)) {
             return new PreparedReport(
                     stored.get().report(),
                     lastNavDate,
@@ -180,6 +193,12 @@ public class ReportDataCoordinator {
 
     static boolean watermarkMatches(Instant storedWatermark, NavFreshness navFreshness) {
         return navFreshness.matchesSnapshot(storedWatermark);
+    }
+
+    private static boolean benchmarkSnapshotStale(FundReport report, NavHistory history) {
+        return BENCHMARK_UNAVAILABLE.equals(report.profile().benchmarkName())
+                && history.benchmarkName() != null
+                && !BENCHMARK_UNAVAILABLE.equals(history.benchmarkName());
     }
 
     public record PreparedReport(

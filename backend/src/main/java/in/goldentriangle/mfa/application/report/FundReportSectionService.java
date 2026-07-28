@@ -10,6 +10,7 @@ import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.ReportFreshness;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.ReportSectionGroup;
+import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportAssessmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportInvestmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportOverviewSection;
@@ -29,6 +30,8 @@ import java.util.concurrent.Executor;
 
 @Service
 public class FundReportSectionService implements GetFundReportSectionUseCase {
+
+    private static final String BENCHMARK_UNAVAILABLE = "Benchmark unavailable";
 
     private final ReportDataCoordinator reportDataCoordinator;
     private final FundReportSectionSnapshotPort sectionSnapshotPort;
@@ -96,10 +99,11 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         if (stored.isPresent() && isUsableSectionSnapshot(stored.get(), group, payloadType)) {
             T payload = FundReportSectionSnapshotMapper.readPayload(
                     stored.get().payloadJson(), payloadType, objectMapper);
-            if (isFresh(stored.get().watermarkNavDate(), navFreshness)) {
+            if (isFresh(stored.get().watermarkNavDate(), navFreshness)
+                    && !storedOverviewBenchmarkStale(group, payload, scheme, resolvedStart)) {
                 return envelope(payload, ReportFreshness.FRESH, stored.get());
             }
-            if (navFreshness.upstreamCheckDue()) {
+            if (navFreshness.upstreamCheckDue() || storedOverviewBenchmarkStale(group, payload, scheme, resolvedStart)) {
                 return reloadSectionAfterRefresh(group, scheme, resolvedStart, payloadType);
             }
             scheduleRefresh(scheme, resolvedStart);
@@ -144,6 +148,40 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         return navFreshness.matchesSnapshot(storedWatermark);
     }
 
+    private boolean storedOverviewBenchmarkStale(
+            ReportSectionGroup group,
+            FundReportSectionSnapshot stored,
+            ReportDataCoordinator.PreparedReport prepared) {
+        if (group != ReportSectionGroup.OVERVIEW) {
+            return false;
+        }
+        FundReportOverviewSection overview = FundReportSectionSnapshotMapper.readPayload(
+                stored.payloadJson(), FundReportOverviewSection.class, objectMapper);
+        return overviewBenchmarkRepairDue(overview.profile().benchmarkName(), prepared.report().profile().benchmarkName());
+    }
+
+    private <T> boolean storedOverviewBenchmarkStale(
+            ReportSectionGroup group,
+            T payload,
+            String scheme,
+            String startDate) {
+        if (group != ReportSectionGroup.OVERVIEW || !(payload instanceof FundReportOverviewSection overview)) {
+            return false;
+        }
+        if (!BENCHMARK_UNAVAILABLE.equals(overview.profile().benchmarkName())) {
+            return false;
+        }
+        NavHistory history = navHistoryPort.fetch(scheme, startDate);
+        return overviewBenchmarkRepairDue(overview.profile().benchmarkName(), history.benchmarkName());
+    }
+
+    private static boolean overviewBenchmarkRepairDue(String storedBenchmark, String currentBenchmark) {
+        if (!BENCHMARK_UNAVAILABLE.equals(storedBenchmark)) {
+            return false;
+        }
+        return currentBenchmark != null && !BENCHMARK_UNAVAILABLE.equals(currentBenchmark);
+    }
+
     private <T> T materializeSection(
             ReportSectionGroup group,
             String scheme,
@@ -170,7 +208,8 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
                     sectionSnapshotPort.find(scheme, startDate, group);
             if (existing.isPresent()
                     && isUsableSectionSnapshot(existing.get(), group, sectionPayloadType(group))
-                    && Objects.equals(existing.get().watermarkNavDate(), prepared.lastNavDate())) {
+                    && Objects.equals(existing.get().watermarkNavDate(), prepared.lastNavDate())
+                    && !storedOverviewBenchmarkStale(group, existing.get(), prepared)) {
                 continue;
             }
             Object payload = FundReportSectionExtractor.extract(group, prepared.report());
