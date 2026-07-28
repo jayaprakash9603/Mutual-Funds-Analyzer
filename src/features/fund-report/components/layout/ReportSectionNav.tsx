@@ -47,8 +47,6 @@ const SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'overview', label: 'Overview', icon: Layers },
       { id: 'golden-triangle', label: 'Score', icon: Target },
-      { id: 'quality', label: 'Quality', icon: Gauge },
-      { id: 'verdict', label: 'Verdict', icon: Scale },
     ],
   },
   {
@@ -60,8 +58,6 @@ const SECTION_GROUPS: SectionGroup[] = [
       { id: 'return-patterns', label: 'Patterns', icon: Layers2 },
       { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
       { id: 'probability', label: 'Probability', icon: Percent },
-      { id: 'sip', label: 'SIP', icon: Wallet },
-      { id: 'lumpsum', label: 'Lump Sum', icon: CircleDollarSign },
     ],
   },
   {
@@ -69,24 +65,36 @@ const SECTION_GROUPS: SectionGroup[] = [
     label: 'Risk',
     sections: [
       { id: 'risk', label: 'Risk', icon: Shield },
+      { id: 'portfolio', label: 'Portfolio', icon: PieChart },
       { id: 'consistency', label: 'Consistency', icon: Sparkles },
       { id: 'drawdown', label: 'Drawdown', icon: TrendingDown },
+      { id: 'bear-market', label: 'Bear Market', icon: CloudRain },
       { id: 'best-days', label: 'Best Days', icon: CalendarDays },
       { id: 'all-time-highs', label: 'ATH', icon: Mountain },
-      { id: 'bear-market', label: 'Bear Market', icon: CloudRain },
-      { id: 'portfolio', label: 'Portfolio', icon: PieChart },
     ],
   },
   {
-    id: 'costs',
-    label: 'Costs & Peers',
+    id: 'investment',
+    label: 'Investment',
     sections: [
+      { id: 'sip', label: 'SIP', icon: Wallet },
+      { id: 'lumpsum', label: 'Lump Sum', icon: CircleDollarSign },
       { id: 'expense', label: 'Expense', icon: CircleDollarSign },
+    ],
+  },
+  {
+    id: 'assessment',
+    label: 'Assessment',
+    sections: [
       { id: 'peers', label: 'Peers', icon: Users },
+      { id: 'quality', label: 'Quality', icon: Gauge },
       { id: 'insights', label: 'Insights', icon: Sparkles },
+      { id: 'verdict', label: 'Verdict', icon: Scale },
     ],
   },
 ]
+
+/** Tab order matches section DOM order in FundReportSections for scroll-spy accuracy. */
 
 export const REPORT_SECTIONS: ReportSection[] = SECTION_GROUPS.flatMap((group) =>
   group.sections.map(({ id, label }) => ({ id, label })),

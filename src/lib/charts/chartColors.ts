@@ -1,13 +1,13 @@
 import { COB_MODERATE, COB_STRONG, VOLATILITY_ELEVATED, VOLATILITY_HIGH } from '../constants'
 
 export const CHART_COLORS = {
-  /** Mirrors the --brand CSS variable, for SVG fills that cannot use a Tailwind class. */
-  brand: '#34d399',
-  fund: '#34d399',
+  /** Theme-aware via CSS variables — readable green/red on light and dark surfaces. */
+  brand: 'var(--brand)',
+  fund: 'var(--chart-positive)',
   benchmark: '#fb923c',
   amber: '#fbbf24',
   violet: '#a78bfa',
-  red: '#f87171',
+  red: 'var(--chart-negative)',
   blue: '#3b82f6',
   muted: '#64748b',
   track: '#1e293b',
@@ -54,10 +54,10 @@ export function signedReturnColor(value: number) {
  * Pair each fill with {@link bandTextColor} (never white-on-light-gray).
  */
 export const RETURN_BAND_COLORS = {
-  STRONG: '#15803d',
+  STRONG: 'var(--chart-positive)',
   MODERATE: '#f59e0b',
   WEAK: '#94a3b8',
-  NEGATIVE: '#dc2626',
+  NEGATIVE: 'var(--chart-negative)',
 } as const
 
 /** Dark ink on pale/amber bands; white on saturated green/red. */

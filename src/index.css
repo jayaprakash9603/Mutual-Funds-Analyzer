@@ -92,6 +92,8 @@
   --chart-marker-detail: #64748b;
   --chart-gauge-fill: var(--chart-1);
   --chart-gauge-track: oklch(0.92 0.01 240);
+  --chart-positive: #15803d;
+  --chart-negative: #b91c1c;
 }
 
 .dark {
@@ -142,6 +144,8 @@
   --chart-marker-detail: #94a3b8;
   --chart-gauge-fill: var(--chart-1);
   --chart-gauge-track: oklch(0.3 0.02 240);
+  --chart-positive: #4ade80;
+  --chart-negative: #f87171;
 }
 
 @layer base {
