@@ -28,6 +28,7 @@ public class DrawdownCalculator {
     /** Keeps API payloads reasonable while preserving major troughs in the chart. */
     private static final int MAX_SERIES_POINTS = 800;
     private static final double[] THRESHOLD_PERCENTS = {0, -5, -10, -20, -30, -40, -50};
+    private static final double[] RECOVERY_THRESHOLDS = {-30, -40, -50};
 
     public DrawdownReport compute(List<NavPoint> fundNav) {
         return compute(fundNav, List.of());
@@ -111,6 +112,8 @@ public class DrawdownCalculator {
                 .map(DrawdownReport.DrawdownEpisode::recoveryYears)
                 .orElse(0.0);
 
+        List<DrawdownReport.ThresholdRecovery> thresholdRecoveries = buildThresholdRecoveries(series);
+
         return new DrawdownReport(
                 Math.abs(maxDrawdown),
                 recoveryYears,
@@ -122,13 +125,14 @@ public class DrawdownCalculator {
                 bearMarketDecades,
                 thresholdRows,
                 phases,
-                List.copyOf(indexedSeries));
+                List.copyOf(indexedSeries),
+                thresholdRecoveries);
     }
 
     private static DrawdownReport emptyReport() {
         return new DrawdownReport(
                 0, 0, 0, 0, 0,
-                List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     private static boolean isBelowThreshold(double drawdown, double thresholdPercent) {
@@ -287,6 +291,105 @@ public class DrawdownCalculator {
             }
         }
         return phases;
+    }
+
+    List<DrawdownReport.ThresholdRecovery> buildThresholdRecoveries(List<NavPoint> series) {
+        List<DrawdownReport.ThresholdRecovery> all = new ArrayList<>();
+        for (double threshold : RECOVERY_THRESHOLDS) {
+            all.addAll(buildThresholdRecoveriesForLevel(series, threshold));
+        }
+        return List.copyOf(all);
+    }
+
+    private List<DrawdownReport.ThresholdRecovery> buildThresholdRecoveriesForLevel(
+            List<NavPoint> series,
+            double thresholdPercent) {
+        List<DrawdownReport.ThresholdRecovery> events = new ArrayList<>();
+        if (series.isEmpty()) {
+            return events;
+        }
+
+        double peakNav = series.get(0).nav();
+        boolean trackingRecovery = false;
+        double cyclePeakNav = peakNav;
+        Instant crossInstant = null;
+        double crossNav = 0;
+        int sequence = 0;
+
+        for (int i = 0; i < series.size(); i++) {
+            NavPoint point = series.get(i);
+
+            if (trackingRecovery) {
+                if (point.nav() >= cyclePeakNav) {
+                    sequence++;
+                    events.add(buildThresholdRecoveryEvent(
+                            thresholdPercent,
+                            sequence,
+                            crossInstant,
+                            crossNav,
+                            point.date(),
+                            point.nav(),
+                            true));
+                    trackingRecovery = false;
+                    peakNav = point.nav();
+                }
+                continue;
+            }
+
+            if (point.nav() > peakNav) {
+                peakNav = point.nav();
+            }
+
+            double drawdown = peakNav <= 0 ? 0 : ((point.nav() / peakNav) - 1) * 100;
+
+            if (drawdown <= thresholdPercent) {
+                trackingRecovery = true;
+                cyclePeakNav = peakNav;
+                crossInstant = point.date();
+                crossNav = point.nav();
+            }
+        }
+
+        if (trackingRecovery && crossInstant != null) {
+            NavPoint last = series.get(series.size() - 1);
+            sequence++;
+            events.add(buildThresholdRecoveryEvent(
+                    thresholdPercent,
+                    sequence,
+                    crossInstant,
+                    crossNav,
+                    last.date(),
+                    last.nav(),
+                    false));
+        }
+
+        return events;
+    }
+
+    private DrawdownReport.ThresholdRecovery buildThresholdRecoveryEvent(
+            double thresholdPercent,
+            int sequence,
+            Instant crossInstant,
+            double crossNav,
+            Instant endInstant,
+            double endNav,
+            boolean recovered) {
+        double recoveryYears = CalendarMath.yearsBetweenMillis(
+                crossInstant.toEpochMilli(), endInstant.toEpochMilli());
+        boolean usesCagr = recoveryYears >= 1.0;
+        double returnPercent = usesCagr
+                ? CalendarMath.cagr(crossNav, endNav, recoveryYears)
+                : CalendarMath.absoluteReturn(crossNav, endNav);
+        return new DrawdownReport.ThresholdRecovery(
+                thresholdPercent,
+                sequence,
+                NavDateParser.dateKey(crossInstant),
+                recovered ? NavDateParser.dateKey(endInstant) : "",
+                recoveryYears,
+                formatDurationLabel(recoveryYears),
+                returnPercent,
+                usesCagr,
+                recovered);
     }
 
     static String formatDurationLabel(double years) {

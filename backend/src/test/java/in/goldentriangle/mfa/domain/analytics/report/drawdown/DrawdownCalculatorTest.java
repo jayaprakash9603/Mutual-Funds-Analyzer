@@ -78,6 +78,27 @@ class DrawdownCalculatorTest {
     }
 
     @Test
+    void thresholdRecoveriesRecordCrossingAndRecovery() {
+        List<NavPoint> nav = List.of(
+                nav("2020-01-01", 100),
+                nav("2020-02-01", 110),
+                nav("2020-03-01", 70),
+                nav("2020-08-01", 112));
+
+        DrawdownReport report = calculator.compute(nav);
+        List<DrawdownReport.ThresholdRecovery> at30 = report.thresholdRecoveries().stream()
+                .filter(r -> r.thresholdPercent() == -30)
+                .toList();
+
+        assertEquals(1, at30.size());
+        DrawdownReport.ThresholdRecovery event = at30.get(0);
+        assertEquals("2020-03-01", event.crossDate());
+        assertTrue(event.recovered());
+        assertEquals("2020-08-01", event.recoveryDate());
+        assertFalse(event.usesCagr());
+    }
+
+    @Test
     void bearMarketDecadesOmitDecadesWithoutNavData() {
         List<NavPoint> nav = new ArrayList<>();
         for (int year = 2013; year <= 2024; year++) {

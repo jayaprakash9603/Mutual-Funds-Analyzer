@@ -10,6 +10,7 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'return-patterns': ['performance'],
   benchmark: ['performance'],
   probability: ['performance'],
+  'goal-planner': ['performance'],
   risk: ['risk'],
   portfolio: [],
   consistency: ['risk'],
@@ -56,10 +57,6 @@ export function groupsRequiredForSections(sectionIds: Iterable<string>): Set<Rep
 
 export function sectionNeedsMatrix(sectionId: string): boolean {
   return ['lumpsum', 'sip', 'step-up-sip', 'stp', 'swp'].includes(sectionId)
-}
-
-export function sectionNeedsMultipleMatrix(sectionId: string): boolean {
-  return sectionId === 'probability'
 }
 
 export function sectionNeedsPeersFetch(sectionId: string): boolean {

@@ -4,6 +4,22 @@ import type {
   FundReportRisk,
 } from './schemas'
 
+export const EMPTY_MULTIPLY_ODDS: FundReportPerformance['multiplyOdds'] = {
+  periodLabel: '',
+  holdingYears: [],
+  rows: [],
+  headline: '',
+}
+
+export const EMPTY_MISSING_BEST_QUARTER: FundReportRisk['missingBestQuarter'] = {
+  periodLabel: '',
+  series: [],
+  averageLostPercent: 0,
+  latestLostPercent: 0,
+  latestQuarterLabel: '',
+  headline: '',
+}
+
 export const EMPTY_BEST_DAYS: FundReportRisk['bestDays'] = {
   initialInvestment: 1_000_000,
   periodLabel: '',
@@ -116,6 +132,11 @@ export function withFundReportDefaults(report: Partial<FundReport> & Record<stri
     calendarYearInsights:
       (report.calendarYearInsights as FundReport['calendarYearInsights'] | undefined)
       ?? EMPTY_CALENDAR_YEAR_INSIGHTS,
+    multiplyOdds:
+      (report.multiplyOdds as FundReport['multiplyOdds'] | undefined) ?? EMPTY_MULTIPLY_ODDS,
+    missingBestQuarter:
+      (report.missingBestQuarter as FundReport['missingBestQuarter'] | undefined)
+      ?? EMPTY_MISSING_BEST_QUARTER,
   } as FundReport
 }
 
@@ -127,6 +148,7 @@ export function normalizeRiskSectionPayload(data: unknown): unknown {
   return {
     ...section,
     bestDays: section.bestDays ?? EMPTY_BEST_DAYS,
+    missingBestQuarter: section.missingBestQuarter ?? EMPTY_MISSING_BEST_QUARTER,
     allTimeHighs: normalizeAllTimeHighs(section.allTimeHighs),
   }
 }
@@ -140,6 +162,7 @@ export function normalizePerformanceSectionPayload(data: unknown): unknown {
   if (!insights || typeof insights !== 'object') {
     return {
       ...section,
+      multiplyOdds: section.multiplyOdds ?? EMPTY_MULTIPLY_ODDS,
       calendarYearInsights: EMPTY_CALENDAR_YEAR_INSIGHTS,
     }
   }
@@ -164,6 +187,7 @@ export function normalizePerformanceSectionPayload(data: unknown): unknown {
       : EMPTY_CALENDAR_YEAR_INSIGHTS.distribution
   return {
     ...section,
+    multiplyOdds: section.multiplyOdds ?? EMPTY_MULTIPLY_ODDS,
     calendarYearInsights: {
       ...EMPTY_CALENDAR_YEAR_INSIGHTS,
       ...rawInsights,

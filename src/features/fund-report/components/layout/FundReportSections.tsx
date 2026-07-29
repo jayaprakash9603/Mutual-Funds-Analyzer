@@ -1,43 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Label,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { GoldenTriangleResultCard } from '@/components/dashboard/cards/GoldenTriangleResultCard'
 import { FinalRecommendationPanel } from '@/features/fund-report/components/layout/FinalRecommendationPanel'
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  CHART_TOOLTIP_CURSOR,
-} from '@/components/ui/chart'
-import {
-  AXIS_LINE,
-  drawdownYDomain,
-  formatAxisPercentTick,
-  GRID_STROKE,
-  chartPlotMargin,
-  TICK_LINE,
-  xLabel,
-  yLabel,
-  ZERO_LINE_STROKE,
-} from '@/lib/charts/chartAxes'
-import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
-import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { formatPercent } from '@/lib/utils'
 import type { GoldenTriangleResult } from '@/api/schemas'
 import { fetchPeerComparison } from '../../api'
 import type { ProgressiveFundReportGroups } from '../../hooks/useProgressiveFundReport'
-import { useFundReportMatrix } from '../../hooks/useFundReportMatrix'
 import type { ReportSectionState } from '../../hooks/useReportSection'
 import type {
   FundReportAssessment,
@@ -67,10 +37,12 @@ import {
   BearMarketDecadeChart,
   hasDecadeHistory,
 } from '../charts/BearMarketDecadeChart'
+import { AnnotatedDrawdownChart } from '../charts/AnnotatedDrawdownChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { FundLongTermStoryChart } from '../charts/FundLongTermStoryChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
+import { MissingBestQuarterChart } from '../charts/MissingBestQuarterChart'
 import { BestDaysInCrashAnalysis } from '../charts/BestDaysInCrashAnalysis'
 import { AllTimeHighsChart } from '../charts/AllTimeHighsChart'
 import { AllTimeHighsYearTable } from '../charts/AllTimeHighsYearTable'
@@ -94,16 +66,11 @@ import {
 } from './ReportGroupBoundary'
 import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
+import { GoalPlannerSection } from '../goals/GoalPlannerSection'
 import { LumpsumSection } from '../investment/LumpsumSection'
 import { SipSection, StepUpSipSection, StpSection, SwpSection } from '../investment/InvestmentStrategySections'
-import {
-  sectionNeedsMultipleMatrix,
-  sectionNeedsPeersFetch,
-} from '../../lib/nav/reportSectionRequirements'
-
-const drawdownChartConfig = {
-  drawdownPercent: { label: 'Drawdown', color: CHART_COLORS.red },
-}
+import { fromMultiplyOdds } from '../../lib/matrix/multiplyProbability'
+import { sectionNeedsPeersFetch } from '../../lib/nav/reportSectionRequirements'
 
 function toGoldenTriangle(result: FundReportAssessment['goldenTriangle']): GoldenTriangleResult {
   return result as GoldenTriangleResult
@@ -143,17 +110,7 @@ export function FundReportSections({
   renderAll = false,
   startDate,
 }: FundReportSectionsProps) {
-  const chartAxis = useResponsiveAxis()
-  const schemeSelected = !!scheme
-  const multipleMatrixActive = renderAll || sectionNeedsMultipleMatrix(activeSection)
   const peersActive = renderAll || sectionNeedsPeersFetch(activeSection)
-
-  const { data: multipleMatrix, loading: multipleMatrixLoading } = useFundReportMatrix(
-    scheme || null,
-    'MULTIPLE',
-    schemeSelected && !isSharedView && multipleMatrixActive,
-    startDate,
-  )
 
   const profile = overview.data?.profile
   const fundName = profile?.fundName ?? scheme ?? 'Fund'
@@ -364,21 +321,17 @@ export function FundReportSections({
                 <ProbabilityBar label="Double money (7Y)" value={data.probability.doubleMoney} />
                 <ProbabilityBar label="Triple money (7Y)" value={data.probability.tripleMoney} />
               </div>
-              {isSharedView ? (
+              {data.multiplyOdds.holdingYears.length > 0 ? (
+                <MultiplyProbabilityTable
+                  table={fromMultiplyOdds(data.multiplyOdds)}
+                  fundName={fundName}
+                  benchmarkName={benchmarkName}
+                />
+              ) : (
                 <p className="text-sm text-muted-foreground">
-                  Multiply-probability matrix is not included in shared snapshots.
+                  Need at least 5 years of history to show multiply probability.
                 </p>
-              ) : multipleMatrix ? (
-                <div className={multipleMatrixLoading ? 'opacity-70 transition-opacity' : undefined}>
-                  <MultiplyProbabilityTable
-                    matrix={multipleMatrix}
-                    fundName={fundName}
-                    benchmarkName={benchmarkName}
-                  />
-                </div>
-              ) : multipleMatrixLoading ? (
-                <CardSkeleton />
-              ) : null}
+              )}
             </>
           )}
         </ReportGroupBoundary>
@@ -497,48 +450,7 @@ export function FundReportSections({
                   value={String(data.drawdown.episodes.length)}
                 />
               </div>
-              <div className={`w-full ${CHART_PANEL_CLASS}`}>
-                <ChartContainer
-                  config={drawdownChartConfig}
-                  className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
-                >
-                  <AreaChart data={data.drawdown.series} margin={chartPlotMargin({ top: 12, bottom: 8 })}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={TICK_LINE}
-                      axisLine={AXIS_LINE}
-                      tick={chartAxis.tick}
-                      minTickGap={chartAxis.xGap}
-                      height={chartAxis.xHeight}
-                    >
-                      <Label {...xLabel('Date', -2)} />
-                    </XAxis>
-                    <YAxis
-                      tickLine={TICK_LINE}
-                      axisLine={AXIS_LINE}
-                      tick={chartAxis.tick}
-                      tickFormatter={formatAxisPercentTick}
-                      width={chartAxis.yWidth}
-                      domain={drawdownYDomain(data.drawdown.series)}
-                      type="number"
-                    >
-                      {chartAxis.showYLabel ? <Label {...yLabel('Drawdown (%)')} /> : null}
-                    </YAxis>
-                    <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeOpacity={0.35} strokeWidth={1.5} />
-                    <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<ChartTooltipContent format="percent" />} />
-                    <Area
-                      type="monotone"
-                      dataKey="drawdownPercent"
-                      stroke={CHART_COLORS.red}
-                      fill={CHART_COLORS.red}
-                      fillOpacity={0.22}
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </div>
+              <AnnotatedDrawdownChart drawdown={data.drawdown} fundName={fundName} />
               <DrawdownEpisodesTable drawdown={data.drawdown} />
             </>
           )}
@@ -595,8 +507,8 @@ export function FundReportSections({
       <SectionShell
         id="best-days"
         variant="stack"
-        title="Best Trading Days"
-        description="How much return you give up by missing the fund’s strongest single-day moves, and when those days typically occur."
+        title="Best Days & Best Quarter"
+        description="Return lost from missing the best trading days or the best quarter in rolling three-year windows."
       >
         <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
           {(data) => (
@@ -604,6 +516,12 @@ export function FundReportSections({
               <SectionHeadline headline={buildBestDaysHeadline(data.bestDays, fundName)} />
               <MissingBestDaysChart bestDays={data.bestDays} fundName={fundName} />
               <BestDaysInCrashAnalysis bestDays={data.bestDays} fundName={fundName} />
+              {data.missingBestQuarter.series.length > 0 ? (
+                <MissingBestQuarterChart
+                  missingBestQuarter={data.missingBestQuarter}
+                  fundName={fundName}
+                />
+              ) : null}
             </div>
           )}
         </ReportGroupBoundary>
@@ -651,6 +569,12 @@ export function FundReportSections({
           startDate={startDate}
           isSharedView={isSharedView}
         />
+      ) : null}
+
+      {shouldRender('goal-planner') ? (
+        <ReportGroupBoundary state={performance} skeleton={<ChartSkeleton />}>
+          {(data) => <GoalPlannerSection performance={data} />}
+        </ReportGroupBoundary>
       ) : null}
 
       {shouldRender('stp') ? (

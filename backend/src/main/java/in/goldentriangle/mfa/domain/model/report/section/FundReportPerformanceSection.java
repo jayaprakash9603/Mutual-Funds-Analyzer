@@ -5,10 +5,12 @@ import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonRepo
 import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
 public record FundReportPerformanceSection(
         TrailingReturnsReport trailingReturns,
         RollingReturnsReport rollingReturns,
         CalendarYearInsightsReport calendarYearInsights,
         BenchmarkComparisonReport benchmarkComparison,
-        ProbabilityReport probability) {
+        ProbabilityReport probability,
+        MultiplyOddsReport multiplyOdds) {
 }

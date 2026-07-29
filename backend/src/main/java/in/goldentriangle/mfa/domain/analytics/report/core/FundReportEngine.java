@@ -3,11 +3,13 @@ package in.goldentriangle.mfa.domain.analytics.report.core;
 import in.goldentriangle.mfa.config.metrics.ReportComputeMetrics;
 import in.goldentriangle.mfa.domain.analytics.report.drawdown.DrawdownCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MultiplyOddsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.RollingBandCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
@@ -40,12 +42,14 @@ import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.assessment.ProsConsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.RecommendationReport;
+import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
 import in.goldentriangle.mfa.domain.model.report.investment.SipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.StepUpSipReport;
 import in.goldentriangle.mfa.domain.model.report.investment.TaxReport;
-import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.RiskReport;
 
 import java.time.Instant;
@@ -64,6 +68,8 @@ public class FundReportEngine {
     private final AllTimeHighsCalculator allTimeHighsCalculator;
     private final CalendarYearInsightsCalculator calendarYearInsightsCalculator;
     private final ProbabilityCalculator probabilityCalculator;
+    private final MultiplyOddsCalculator multiplyOddsCalculator;
+    private final MissingBestQuarterCalculator missingBestQuarterCalculator;
     private final RiskReportBuilder riskReportBuilder;
     private final SipCalculator sipCalculator;
     private final StepUpSipCalculator stepUpSipCalculator;
@@ -85,6 +91,8 @@ public class FundReportEngine {
             AllTimeHighsCalculator allTimeHighsCalculator,
             CalendarYearInsightsCalculator calendarYearInsightsCalculator,
             ProbabilityCalculator probabilityCalculator,
+            MultiplyOddsCalculator multiplyOddsCalculator,
+            MissingBestQuarterCalculator missingBestQuarterCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
             StepUpSipCalculator stepUpSipCalculator,
@@ -104,6 +112,8 @@ public class FundReportEngine {
         this.allTimeHighsCalculator = allTimeHighsCalculator;
         this.calendarYearInsightsCalculator = calendarYearInsightsCalculator;
         this.probabilityCalculator = probabilityCalculator;
+        this.multiplyOddsCalculator = multiplyOddsCalculator;
+        this.missingBestQuarterCalculator = missingBestQuarterCalculator;
         this.riskReportBuilder = riskReportBuilder;
         this.sipCalculator = sipCalculator;
         this.stepUpSipCalculator = stepUpSipCalculator;
@@ -160,6 +170,12 @@ public class FundReportEngine {
         CompletableFuture<ProbabilityReport> probabilityFuture = supplyAsync(
                 "probability",
                 () -> probabilityCalculator.compute(rollingData));
+        CompletableFuture<MultiplyOddsReport> multiplyOddsFuture = supplyAsync(
+                "multiplyOdds",
+                () -> multiplyOddsCalculator.compute(history.fundNav()));
+        CompletableFuture<MissingBestQuarterReport> missingBestQuarterFuture = supplyAsync(
+                "missingBestQuarter",
+                () -> missingBestQuarterCalculator.compute(history.fundNav()));
 
         GoldenTriangleResult goldenTriangle = goldenTriangleFuture.join();
         FundMetrics fundMetrics = goldenTriangle.metrics();
@@ -209,10 +225,12 @@ public class FundReportEngine {
                 calendarInsightsFuture.join(),
                 benchmarkFuture.join(),
                 probabilityFuture.join(),
+                multiplyOddsFuture.join(),
                 riskFuture.join(),
                 consistency,
                 drawdown,
                 bestDaysFuture.join(),
+                missingBestQuarterFuture.join(),
                 allTimeHighsFuture.join(),
                 sipFuture.join(),
                 stepUpSipFuture.join(),

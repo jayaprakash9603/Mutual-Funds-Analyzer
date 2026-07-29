@@ -21,6 +21,8 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.InvestorFitDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumSimulationDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.MultiplyOddsReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.MissingBestQuarterReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.compare.PeerComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ProbabilityDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ProsConsDto;
@@ -59,6 +61,8 @@ import in.goldentriangle.mfa.domain.model.report.section.FundReportRiskSection;
 import in.goldentriangle.mfa.domain.model.report.assessment.InvestorFitReport;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
+import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
@@ -291,7 +295,57 @@ public class FundReportMapper {
                         .toList(),
                 report.indexedNav().stream()
                         .map(p -> new DrawdownReportDto.NavIndexPointDto(p.date(), p.indexValue(), p.nav()))
+                        .toList(),
+                report.thresholdRecoveries().stream()
+                        .map(r -> new DrawdownReportDto.ThresholdRecoveryDto(
+                                r.thresholdPercent(),
+                                r.sequence(),
+                                r.crossDate(),
+                                r.recoveryDate(),
+                                r.recoveryYears(),
+                                r.recoveryDurationLabel(),
+                                r.returnPercent(),
+                                r.usesCagr(),
+                                r.recovered()))
                         .toList());
+    }
+
+    private MultiplyOddsReportDto toDto(MultiplyOddsReport report) {
+        return new MultiplyOddsReportDto(
+                report.periodLabel(),
+                report.holdingYears(),
+                report.rows().stream()
+                        .map(row -> new MultiplyOddsReportDto.MultiplyRowDto(
+                                row.multiply(),
+                                row.cells().stream()
+                                        .map(cell -> new MultiplyOddsReportDto.OddsCellDto(
+                                                cell.holdingYears(),
+                                                cell.percent(),
+                                                cell.sampleCount(),
+                                                cell.hitCount()))
+                                        .toList(),
+                                row.highlightYears(),
+                                row.calloutPercent()))
+                        .toList(),
+                report.headline());
+    }
+
+    private MissingBestQuarterReportDto toDto(MissingBestQuarterReport report) {
+        return new MissingBestQuarterReportDto(
+                report.periodLabel(),
+                report.series().stream()
+                        .map(point -> new MissingBestQuarterReportDto.QuarterPointDto(
+                                point.quarterLabel(),
+                                point.quarterEndDate(),
+                                point.fullCagrPercent(),
+                                point.exBestQuarterCagrPercent(),
+                                point.lostCagrPercent(),
+                                point.bestQuarterLabel()))
+                        .toList(),
+                report.averageLostPercent(),
+                report.latestLostPercent(),
+                report.latestQuarterLabel(),
+                report.headline());
     }
 
     private BestDaysReportDto toDto(BestDaysReport report) {
@@ -663,7 +717,8 @@ public class FundReportMapper {
                 toDto(section.rollingReturns()),
                 toDto(section.calendarYearInsights()),
                 toDto(section.benchmarkComparison()),
-                toDto(section.probability()));
+                toDto(section.probability()),
+                toDto(section.multiplyOdds()));
     }
 
     public FundReportRiskDto toDto(FundReportRiskSection section) {
@@ -672,6 +727,7 @@ public class FundReportMapper {
                 toDto(section.consistency()),
                 toDto(section.drawdown()),
                 toDto(section.bestDays()),
+                toDto(section.missingBestQuarter()),
                 toDto(section.allTimeHighs()));
     }
 

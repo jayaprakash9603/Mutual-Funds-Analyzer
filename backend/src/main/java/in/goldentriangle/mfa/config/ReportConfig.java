@@ -8,6 +8,7 @@ import in.goldentriangle.mfa.domain.analytics.report.tax.ExpenseCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MultiplyOddsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
@@ -20,6 +21,7 @@ import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
@@ -34,6 +36,16 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableConfigurationProperties(ReportProperties.class)
 public class ReportConfig {
+
+    @Bean
+    MultiplyOddsCalculator multiplyOddsCalculator() {
+        return new MultiplyOddsCalculator();
+    }
+
+    @Bean
+    MissingBestQuarterCalculator missingBestQuarterCalculator() {
+        return new MissingBestQuarterCalculator();
+    }
 
     @Bean
     TrailingReturnsCalculator trailingReturnsCalculator() {
@@ -135,6 +147,8 @@ public class ReportConfig {
             AllTimeHighsCalculator allTimeHighsCalculator,
             CalendarYearInsightsCalculator calendarYearInsightsCalculator,
             ProbabilityCalculator probabilityCalculator,
+            MultiplyOddsCalculator multiplyOddsCalculator,
+            MissingBestQuarterCalculator missingBestQuarterCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
             StepUpSipCalculator stepUpSipCalculator,
@@ -155,6 +169,8 @@ public class ReportConfig {
                 allTimeHighsCalculator,
                 calendarYearInsightsCalculator,
                 probabilityCalculator,
+                multiplyOddsCalculator,
+                missingBestQuarterCalculator,
                 riskReportBuilder,
                 sipCalculator,
                 stepUpSipCalculator,

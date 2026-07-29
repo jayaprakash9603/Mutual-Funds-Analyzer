@@ -39,6 +39,7 @@ import {
   type ContinuousPhasePoint,
 } from '../../lib/drawdown/declineRecoveryCycles'
 import { largestMarkerPerCycle } from '../../lib/drawdown/filterMarkersForMobile'
+import { firstScale, MarkerPill } from '../../lib/charts/chartAnnotations'
 
 type Phases = FundReport['drawdown']['phases']
 type IndexedNav = FundReport['drawdown']['indexedNav']
@@ -58,16 +59,6 @@ type DeclineRecoveryChartProps = {
   phases: Phases
   indexedNav: IndexedNav
   fundName: string
-}
-
-type AxisScale = {
-  scale?: (value: number) => number
-}
-
-function firstScale(map?: Record<string, AxisScale>): ((value: number) => number) | undefined {
-  if (!map) return undefined
-  const axis = Object.values(map)[0]
-  return axis?.scale
 }
 
 function CycleLabel({
@@ -131,58 +122,6 @@ function PhaseMoveTooltip({
   )
 }
 
-function MarkerPill({
-  x,
-  y,
-  marker,
-}: {
-  x: number
-  y: number
-  marker: PhaseMarker
-}) {
-  const fill = marker.tone === 'decline' ? CHART_COLORS.red : CHART_COLORS.fund
-  const labelOffset = marker.tone === 'decline' ? 24 : -18
-  const detailOffset = marker.tone === 'decline' ? 38 : -32
-  const pillWidth = Math.max(44, marker.headline.length * 7 + 14)
-
-  return (
-    <g>
-      <circle cx={x} cy={y} r={4.5} fill={fill} stroke="#ffffff" strokeWidth={1.5} />
-      <rect
-        x={x - pillWidth / 2}
-        y={y + labelOffset - 11}
-        width={pillWidth}
-        height={20}
-        rx={5}
-        fill={fill}
-        opacity={0.95}
-      />
-      <text
-        x={x}
-        y={y + labelOffset + 2}
-        fill="#ffffff"
-        textAnchor="middle"
-        fontSize={10}
-        fontWeight={700}
-        dominantBaseline="middle"
-      >
-        {marker.headline}
-      </text>
-      <text
-        x={x}
-        y={y + detailOffset}
-        fill="var(--chart-marker-detail)"
-        textAnchor="middle"
-        fontSize={9}
-        fontWeight={500}
-        dominantBaseline="middle"
-      >
-        {marker.detail}
-      </text>
-    </g>
-  )
-}
-
 function PhaseMarkers({
   markers,
   xAxisMap,
@@ -191,8 +130,8 @@ function PhaseMarkers({
   bands = [],
 }: {
   markers: PhaseMarker[]
-  xAxisMap?: Record<string, AxisScale>
-  yAxisMap?: Record<string, AxisScale>
+  xAxisMap?: Record<string, { scale?: (value: number) => number }>
+  yAxisMap?: Record<string, { scale?: (value: number) => number }>
   mobile?: boolean
   bands?: PhaseTimelineBand[]
 }) {
@@ -210,7 +149,10 @@ function PhaseMarkers({
           key={marker.id}
           x={scaleX(marker.date)}
           y={yScale(marker.value)}
-          marker={marker}
+          marker={{
+            ...marker,
+            tone: marker.tone === 'decline' ? 'decline' : 'recovery',
+          }}
         />
       ))}
     </g>
@@ -221,8 +163,8 @@ type PhaseAnnotationChartProps = {
   width?: number
   height?: number
   offset?: { top?: number; left?: number }
-  xAxisMap?: Record<string, AxisScale>
-  yAxisMap?: Record<string, AxisScale>
+  xAxisMap?: Record<string, { scale?: (value: number) => number }>
+  yAxisMap?: Record<string, { scale?: (value: number) => number }>
   annotations: PhaseAnnotation[]
   markers: PhaseMarker[]
   yLimit: number

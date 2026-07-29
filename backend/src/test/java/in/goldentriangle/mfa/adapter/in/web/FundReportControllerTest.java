@@ -172,7 +172,7 @@ class FundReportControllerTest {
                 new ProbabilityDto(0, 0, 0, 0, 0, 0),
                 emptyRisk,
                 new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "Moderate"),
-                new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+                new DrawdownReportDto(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
                 emptyBestDays,
                 emptyAllTimeHighs,
                 new SipReportDto(1, 10_000, List.of(), List.of()),

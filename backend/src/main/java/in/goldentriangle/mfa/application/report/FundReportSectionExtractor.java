@@ -23,12 +23,14 @@ public final class FundReportSectionExtractor {
                 report.rollingReturns(),
                 report.calendarYearInsights(),
                 report.benchmarkComparison(),
-                report.probability());
+                report.probability(),
+                report.multiplyOdds());
     }
 
     public static FundReportRiskSection risk(FundReport report) {
         return new FundReportRiskSection(
-                report.risk(), report.consistency(), report.drawdown(), report.bestDays(), report.allTimeHighs());
+                report.risk(), report.consistency(), report.drawdown(), report.bestDays(),
+                report.missingBestQuarter(), report.allTimeHighs());
     }
 
     public static FundReportInvestmentSection investment(FundReport report) {

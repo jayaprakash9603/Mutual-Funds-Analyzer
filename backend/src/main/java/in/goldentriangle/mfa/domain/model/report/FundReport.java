@@ -17,8 +17,10 @@ import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonRepo
 import in.goldentriangle.mfa.domain.model.report.returns.BestDaysReport;
 import in.goldentriangle.mfa.domain.model.report.returns.ConsistencyReport;
 import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
+import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
+import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 
 import java.time.Instant;
@@ -33,10 +35,12 @@ public record FundReport(
         CalendarYearInsightsReport calendarYearInsights,
         BenchmarkComparisonReport benchmarkComparison,
         ProbabilityReport probability,
+        MultiplyOddsReport multiplyOdds,
         RiskReport risk,
         ConsistencyReport consistency,
         DrawdownReport drawdown,
         BestDaysReport bestDays,
+        MissingBestQuarterReport missingBestQuarter,
         AllTimeHighsReport allTimeHighs,
         SipReport sip,
         StepUpSipReport stepUpSip,

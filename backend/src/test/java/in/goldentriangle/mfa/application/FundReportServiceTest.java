@@ -19,6 +19,7 @@ import in.goldentriangle.mfa.domain.analytics.report.core.FundReportEngine;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.MatrixCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.NavHistoryAssembler;
+import in.goldentriangle.mfa.domain.analytics.report.matrix.MultiplyOddsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.matrix.ProbabilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.QualityScoreCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.RiskReportBuilder;
@@ -31,6 +32,7 @@ import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.rule.CobRule;
@@ -103,6 +105,8 @@ class FundReportServiceTest {
                 new AllTimeHighsCalculator(),
                 new CalendarYearInsightsCalculator(),
                 new ProbabilityCalculator(),
+                new MultiplyOddsCalculator(),
+                new MissingBestQuarterCalculator(),
                 new RiskReportBuilder(metricsCalculator, new DrawdownCalculator(), 252),
                 new SipCalculator(new TaxCalculator()),
                 new StepUpSipCalculator(new TaxCalculator()),

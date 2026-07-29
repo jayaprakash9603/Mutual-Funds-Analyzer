@@ -5,6 +5,7 @@ import {
   ArrowRightLeft,
   CircleDollarSign,
   CloudRain,
+  Flag,
   Gauge,
   Layers,
   Layers2,
@@ -79,6 +80,7 @@ export const SECTION_GROUPS: SectionGroup[] = [
       { id: 'sip', label: 'SIP', icon: Repeat },
       { id: 'stp', label: 'STP', icon: ArrowRightLeft },
       { id: 'swp', label: 'SWP', icon: Wallet },
+      { id: 'goal-planner', label: 'Goals', icon: Flag },
     ],
   },
   {

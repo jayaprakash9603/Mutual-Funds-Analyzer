@@ -160,6 +160,27 @@ export const fundReportSchema = z.object({
     doubleMoney: z.number(),
     tripleMoney: z.number(),
   }),
+  multiplyOdds: z.object({
+    periodLabel: z.string(),
+    holdingYears: z.array(z.number()),
+    rows: z.array(z.object({
+      multiply: z.number(),
+      cells: z.array(z.object({
+        holdingYears: z.number(),
+        percent: z.number().nullable(),
+        sampleCount: z.number(),
+        hitCount: z.number(),
+      })),
+      highlightYears: z.array(z.number()).nullable().optional(),
+      calloutPercent: z.number().nullable().optional(),
+    })),
+    headline: z.string(),
+  }).optional().default({
+    periodLabel: '',
+    holdingYears: [],
+    rows: [],
+    headline: '',
+  }),
   risk: z.object({
     volatility: z.number(),
     standardDeviation: z.number(),
@@ -241,6 +262,17 @@ export const fundReportSchema = z.object({
       indexValue: z.number(),
       nav: z.number().optional(),
     })).optional().default([]),
+    thresholdRecoveries: z.array(z.object({
+      thresholdPercent: z.number(),
+      sequence: z.number(),
+      crossDate: z.string(),
+      recoveryDate: z.string(),
+      recoveryYears: z.number(),
+      recoveryDurationLabel: z.string(),
+      returnPercent: z.number(),
+      usesCagr: z.boolean(),
+      recovered: z.boolean(),
+    })).optional().default([]),
   }),
   bestDays: z.object({
     initialInvestment: z.number(),
@@ -279,6 +311,28 @@ export const fundReportSchema = z.object({
       exampleText: z.string(),
     }),
     headlineSummary: z.string(),
+  }),
+  missingBestQuarter: z.object({
+    periodLabel: z.string(),
+    series: z.array(z.object({
+      quarterLabel: z.string(),
+      quarterEndDate: z.string(),
+      fullCagrPercent: z.number(),
+      exBestQuarterCagrPercent: z.number(),
+      lostCagrPercent: z.number(),
+      bestQuarterLabel: z.string(),
+    })),
+    averageLostPercent: z.number(),
+    latestLostPercent: z.number(),
+    latestQuarterLabel: z.string(),
+    headline: z.string(),
+  }).optional().default({
+    periodLabel: '',
+    series: [],
+    averageLostPercent: 0,
+    latestLostPercent: 0,
+    latestQuarterLabel: '',
+    headline: '',
   }),
   allTimeHighs: z.object({
     periodLabel: z.string(),
@@ -441,6 +495,7 @@ export const fundReportPerformanceSchema = fundReportSchema.pick({
   calendarYearInsights: true,
   benchmarkComparison: true,
   probability: true,
+  multiplyOdds: true,
 })
 export type FundReportPerformance = z.infer<typeof fundReportPerformanceSchema>
 
@@ -449,6 +504,7 @@ export const fundReportRiskSchema = fundReportSchema.pick({
   consistency: true,
   drawdown: true,
   bestDays: true,
+  missingBestQuarter: true,
   allTimeHighs: true,
 })
 export type FundReportRisk = z.infer<typeof fundReportRiskSchema>
@@ -649,12 +705,14 @@ export function splitFundReport(report: FundReport): {
       calendarYearInsights: normalized.calendarYearInsights,
       benchmarkComparison: normalized.benchmarkComparison,
       probability: normalized.probability,
+      multiplyOdds: normalized.multiplyOdds,
     },
     risk: {
       risk: normalized.risk,
       consistency: normalized.consistency,
       drawdown: normalized.drawdown,
       bestDays: normalized.bestDays,
+      missingBestQuarter: normalized.missingBestQuarter,
       allTimeHighs: normalized.allTimeHighs,
     },
     investment: {

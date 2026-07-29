@@ -6,22 +6,20 @@ import {
   fiStickyLabelCell,
   FI_TABLE,
 } from '@/components/fundsindia/tableStyles'
-import type { MatrixReport } from '../../schemas'
-import { buildMultiplyProbability, isCellHighlighted } from '../../lib/matrix/multiplyProbability'
+import type { MultiplyProbabilityTable } from '../../lib/matrix/multiplyProbability'
+import { isCellHighlighted } from '../../lib/matrix/multiplyProbability'
 import { buildMultiplyHeadline, shortFundName } from '../../lib/headlines/sectionHeadlines'
-import { trimMatrixToCalculatedValues } from '../../lib/matrix/matrixTableUtils'
 import { SectionHeadline } from '../layout/StatHeadline'
 
 export function MultiplyProbabilityTable({
-  matrix,
+  table,
   fundName,
   benchmarkName,
 }: {
-  matrix: MatrixReport
+  table: MultiplyProbabilityTable
   fundName: string
   benchmarkName?: string
 }) {
-  const table = buildMultiplyProbability(trimMatrixToCalculatedValues(matrix), benchmarkName)
   if (table.holdingYears.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -30,9 +28,7 @@ export function MultiplyProbabilityTable({
     )
   }
 
-  const title = benchmarkName
-    ? `${fundName} vs ${benchmarkName}`
-    : fundName
+  const title = benchmarkName ? `${fundName} vs ${benchmarkName}` : fundName
 
   return (
     <div className="space-y-4">
@@ -44,6 +40,9 @@ export function MultiplyProbabilityTable({
             <tr>
               <th colSpan={table.holdingYears.length + 1} className={fiMultiplyHeaderCell('text-left text-sm normal-case')}>
                 {title} — % times multiplied over years
+                {table.periodLabel ? (
+                  <span className="mt-1 block text-xs font-normal opacity-80">{table.periodLabel}</span>
+                ) : null}
               </th>
             </tr>
             <tr>
@@ -64,6 +63,11 @@ export function MultiplyProbabilityTable({
                   return (
                     <td
                       key={cell.holdingYears}
+                      title={
+                        cell.sampleCount != null
+                          ? `${cell.hitCount ?? 0} of ${cell.sampleCount} rolling windows`
+                          : undefined
+                      }
                       className={cn(
                         fiBodyCell('font-medium'),
                         highlighted && 'ring-2 ring-inset ring-sky-400/90 ring-offset-1',

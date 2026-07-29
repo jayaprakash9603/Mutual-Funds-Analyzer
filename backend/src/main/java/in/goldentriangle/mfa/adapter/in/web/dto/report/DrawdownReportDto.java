@@ -13,7 +13,8 @@ public record DrawdownReportDto(
         List<BearMarketDecadeDto> bearMarketDecades,
         List<DrawdownThresholdRowDto> thresholdRows,
         List<DrawdownPhaseDto> phases,
-        List<NavIndexPointDto> indexedNav) {
+        List<NavIndexPointDto> indexedNav,
+        List<ThresholdRecoveryDto> thresholdRecoveries) {
 
     public record DrawdownPointDto(String date, double drawdownPercent) {
     }
@@ -53,5 +54,17 @@ public record DrawdownReportDto(
     }
 
     public record NavIndexPointDto(String date, double indexValue, double nav) {
+    }
+
+    public record ThresholdRecoveryDto(
+            double thresholdPercent,
+            int sequence,
+            String crossDate,
+            String recoveryDate,
+            double recoveryYears,
+            String recoveryDurationLabel,
+            double returnPercent,
+            boolean usesCagr,
+            boolean recovered) {
     }
 }
