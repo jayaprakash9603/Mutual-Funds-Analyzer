@@ -270,12 +270,14 @@ export function FundReportSections({
       <SectionShell
         id="benchmark"
         title="Benchmark Comparison"
-        description="Fund vs benchmark cumulative growth and rolling-window returns."
+        description="Fund vs benchmark key parameters, rolling returns, and cumulative growth."
       >
         {scheme ? (
           <div className="mb-6">
             <FundBenchmarkAnalysisCharts
               scheme={scheme}
+              fundName={fundName}
+              benchmarkName={benchmarkName}
               startDate={startDate}
               offlineView={isSharedView}
             />
