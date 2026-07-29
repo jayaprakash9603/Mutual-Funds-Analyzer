@@ -39,9 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 @Service
@@ -69,10 +67,8 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
     private final MetricsCalculator metricsCalculator;
     private final ObjectMapper objectMapper;
     private final Executor upstreamExecutor;
-    private final Executor computeExecutor;
     private final SingleFlightCoordinator singleFlightCoordinator;
     private final Clock clock;
-    private final Set<String> refreshingKeys = ConcurrentHashMap.newKeySet();
 
     public PeerComparisonService(
             RollingReturnsPort rollingReturnsPort,
@@ -85,7 +81,6 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             Clock clock,
             ObjectMapper objectMapper,
             @Qualifier("upstreamExecutor") Executor upstreamExecutor,
-            @Qualifier("computeExecutor") Executor computeExecutor,
             SingleFlightCoordinator singleFlightCoordinator) {
         this.rollingReturnsPort = rollingReturnsPort;
         this.peerDiscoveryService = peerDiscoveryService;
@@ -95,7 +90,6 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
         this.upstreamProperties = upstreamProperties;
         this.objectMapper = objectMapper;
         this.upstreamExecutor = upstreamExecutor;
-        this.computeExecutor = computeExecutor;
         this.singleFlightCoordinator = singleFlightCoordinator;
         this.clock = clock;
         this.metricsCalculator = new MetricsCalculator(
@@ -114,25 +108,25 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
     }
 
     private PeerComparisonReport loadComparison(String scheme, String category, String startDate) {
-        Optional<Instant> liveWatermark = latestRollingWatermark(scheme, startDate);
         Optional<PeerComparisonSnapshot> stored =
                 peerComparisonSnapshotPort.find(scheme, category, startDate);
 
         if (stored.isPresent() && stored.get().schemaVersion() == PEER_SCHEMA_VERSION) {
-            PeerComparisonReport report = PeerSnapshotMapper.readComparisonReport(stored.get(), objectMapper);
-            if (isFresh(stored.get().watermarkNavDate(), liveWatermark)) {
-                return report;
-            }
-            scheduleRefresh(scheme, category, startDate);
+            List<String> peerNames =
+                    PeerSnapshotMapper.readPeerSchemes(stored.get().peerSchemesJson(), objectMapper);
+            PeerComparisonReport report = buildComparisonReport(scheme, category, startDate, peerNames);
+            persistComparison(scheme, category, startDate, peerNames, report);
             return report;
         }
 
         return materializeComparison(scheme, category, startDate);
     }
 
-    private PeerComparisonReport materializeComparison(String scheme, String category, String startDate) {
-        List<String> peerNames = peerDiscoveryService.findPeers(scheme, category);
-
+    private PeerComparisonReport buildComparisonReport(
+            String scheme,
+            String category,
+            String startDate,
+            List<String> peerNames) {
         List<String> schemes = new ArrayList<>(peerNames.size() + 1);
         schemes.add(scheme);
         schemes.addAll(peerNames);
@@ -151,9 +145,12 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
         List<String> highlights = buildHighlights(rows);
         PeerComparisonReport.LongRunAnalysis longRunAnalysis = buildLongRunAnalysis(rows, category, startDate);
-        PeerComparisonReport report =
-                new PeerComparisonReport(rows, highlights, Period.Labels.FIVE_YEAR, longRunAnalysis);
+        return new PeerComparisonReport(rows, highlights, Period.Labels.FIVE_YEAR, longRunAnalysis);
+    }
 
+    private PeerComparisonReport materializeComparison(String scheme, String category, String startDate) {
+        List<String> peerNames = peerDiscoveryService.findPeers(scheme, category);
+        PeerComparisonReport report = buildComparisonReport(scheme, category, startDate, peerNames);
         persistComparison(scheme, category, startDate, peerNames, report);
         return report;
     }
@@ -356,7 +353,7 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
             String startDate,
             List<String> peerNames,
             PeerComparisonReport report) {
-        Instant watermark = latestRollingWatermark(scheme, startDate).orElse(null);
+        Instant watermark = comparisonWatermark(scheme, peerNames, startDate);
         Optional<PeerComparisonSnapshot> existing =
                 peerComparisonSnapshotPort.find(scheme, category, startDate);
 
@@ -372,21 +369,18 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
                 existing.map(PeerComparisonSnapshot::version).orElse(0L)));
     }
 
-    private void scheduleRefresh(String scheme, String category, String startDate) {
-        String key = refreshKey(scheme, category, startDate);
-        if (!refreshingKeys.add(key)) {
-            return;
-        }
-        computeExecutor.execute(() -> {
-            try {
-                singleFlightCoordinator.run(key, () -> {
-                    materializeComparison(scheme, category, startDate);
-                    return null;
-                });
-            } finally {
-                refreshingKeys.remove(key);
+    private Instant comparisonWatermark(String scheme, List<String> peerNames, String startDate) {
+        Instant watermark = latestRollingWatermark(scheme, startDate).orElse(null);
+        for (String peerName : peerNames) {
+            Optional<Instant> peerWatermark = latestRollingWatermark(peerName, startDate);
+            if (peerWatermark.isEmpty()) {
+                continue;
             }
-        });
+            if (watermark == null || peerWatermark.get().isAfter(watermark)) {
+                watermark = peerWatermark.get();
+            }
+        }
+        return watermark;
     }
 
     private static boolean isFresh(Instant storedWatermark, Optional<Instant> liveWatermark) {
@@ -439,10 +433,6 @@ public class PeerComparisonService implements GetPeerComparisonUseCase {
 
     private static String comparisonKey(String scheme, String category, String startDate) {
         return "peer-comparison:" + scheme + ":" + category + ":" + startDate;
-    }
-
-    private static String refreshKey(String scheme, String category, String startDate) {
-        return "peer-refresh:" + scheme + ":" + category + ":" + startDate;
     }
 
     private static Double minOrNull(List<Double> values) {

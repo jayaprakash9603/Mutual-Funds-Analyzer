@@ -40,6 +40,7 @@ import {
 import { AnnotatedDrawdownChart } from '../charts/AnnotatedDrawdownChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
+import { FundBenchmarkAnalysisCharts } from '../charts/FundBenchmarkAnalysisCharts'
 import { FundLongTermStoryChart } from '../charts/FundLongTermStoryChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { MissingBestQuarterChart } from '../charts/MissingBestQuarterChart'
@@ -266,7 +267,20 @@ export function FundReportSections({
       ) : null}
 
       {shouldRender("benchmark") ? (
-      <SectionShell id="benchmark" title="Benchmark Comparison">
+      <SectionShell
+        id="benchmark"
+        title="Benchmark Comparison"
+        description="Fund vs benchmark cumulative growth and rolling-window returns."
+      >
+        {scheme ? (
+          <div className="mb-6">
+            <FundBenchmarkAnalysisCharts
+              scheme={scheme}
+              startDate={startDate}
+              offlineView={isSharedView}
+            />
+          </div>
+        ) : null}
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) => (
             <>
@@ -589,6 +603,7 @@ export function FundReportSections({
       <PeerSection
         scheme={scheme}
         category={category}
+        navAsOf={dataTo}
         peersSnapshot={peersSnapshot}
         isSharedView={isSharedView}
         onPeersLoaded={onPeersLoaded}
@@ -681,6 +696,7 @@ export function FundReportSections({
 function PeerSection({
   scheme,
   category,
+  navAsOf,
   peersSnapshot = null,
   isSharedView = false,
   onPeersLoaded,
@@ -688,6 +704,7 @@ function PeerSection({
 }: {
   scheme: string
   category: string
+  navAsOf?: string
   peersSnapshot?: PeerComparison | null
   isSharedView?: boolean
   onPeersLoaded?: (peers: PeerComparison | null) => void
@@ -736,7 +753,7 @@ function PeerSection({
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-  }, [scheme, category, isSharedView, peersSnapshot, enabled, onPeersLoaded])
+  }, [scheme, category, navAsOf, isSharedView, peersSnapshot, enabled, onPeersLoaded])
 
   return (
     <SectionShell
