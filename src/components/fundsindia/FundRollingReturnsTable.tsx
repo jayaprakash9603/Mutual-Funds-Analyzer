@@ -30,15 +30,27 @@ export function FundRollingReturnsTable({
   )
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
-      <div className="border-b border-brand/30 bg-brand px-6 py-3">
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+      <div className="border-b border-brand/30 bg-brand px-4 py-3 sm:px-6">
         <h2 className="text-lg font-bold uppercase tracking-wide text-white">Key Parameters</h2>
-        <p className="mt-1 truncate text-sm font-medium text-white/90" title={fundName}>
-          {fundName}
-        </p>
+      </div>
+      <div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/8 px-3 py-2">
+          <span
+            className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-background"
+            style={{ backgroundColor: FUND_COLOR }}
+            aria-hidden="true"
+          />
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Fund</p>
+            <p className="break-words text-sm font-medium leading-snug text-emerald-800 dark:text-emerald-300" title={fundName}>
+              {fundName}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="border-b border-border/60 bg-muted/20 px-6 py-2">
+      <div className="border-b border-border/60 px-4 py-2 sm:px-6">
         <p className="text-sm text-muted-foreground">
           Fund rolling returns from daily NAV (mfapi.in)
           {dataTo ? ` · data to ${dataTo.slice(0, 10)}` : ''}
@@ -84,7 +96,7 @@ export function FundRollingReturnsTable({
           <tbody>
             {MATRIX_PERIODS.map((periodLabel, index) => {
               const row = periodByLabel.get(periodLabel)
-              const stripe = index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/90 dark:bg-muted/25'
+              const stripe = index % 2 === 0 ? 'bg-card' : 'bg-muted/20'
 
               if (!row) {
                 return (
@@ -98,18 +110,17 @@ export function FundRollingReturnsTable({
               }
 
               return (
-                <tr key={periodLabel} className={stripe}>
-                  <td className={cn(YEAR_CELL, stripe)}>{periodLabel}</td>
+                <tr key={periodLabel} className={cn(stripe, 'border-b-2 border-border')}>
+                  <td className={cn(YEAR_CELL, stripe, 'text-foreground')}>{periodLabel}</td>
                   <td className={cn(SCHEME_CELL, stripe)}>
-                    <div className="flex min-w-0 items-center gap-2">
+                    <div className="flex min-w-0 items-start gap-2.5">
                       <span
-                        className="h-2 w-2 shrink-0 rounded-full"
+                        className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-background"
                         style={{ backgroundColor: FUND_COLOR }}
                         aria-hidden="true"
                       />
                       <p
-                        className="text-sm leading-snug"
-                        style={{ color: FUND_COLOR }}
+                        className="break-words text-sm font-medium leading-snug text-emerald-800 dark:text-emerald-300"
                         title={fundName}
                       >
                         {fundName}

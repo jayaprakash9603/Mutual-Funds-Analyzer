@@ -282,31 +282,20 @@ export function FundReportSections({
       <SectionShell
         id="benchmark"
         title="Benchmark Comparison"
+        variant="stack"
         description="Fund vs benchmark key parameters, rolling returns, and cumulative growth."
       >
-        {scheme ? (
-          <div className="mb-6">
-            <FundBenchmarkAnalysisCharts
-              scheme={scheme}
-              fundName={fundName}
-              benchmarkName={benchmarkName}
-              startDate={startDate}
-              offlineView={isSharedView}
-            />
-          </div>
-        ) : null}
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) => (
-            <>
+            <div className="space-y-4 rounded-xl border border-border/70 bg-card px-4 py-4 sm:px-5 sm:py-5">
               <SectionHeadline
-                className="mb-4"
                 headline={buildBenchmarkHeadline(
                   data.benchmarkComparison,
                   fundName,
                   benchmarkName,
                 )}
               />
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <MetricTile
                   label="Fund Return"
                   value={formatPercent(data.benchmarkComparison.fundTotalReturn)}
@@ -321,10 +310,19 @@ export function FundReportSections({
                   metricKey="cob"
                 />
               </div>
-              <p className="mt-3 text-sm">{data.benchmarkComparison.explanation}</p>
-            </>
+              <p className="text-sm text-muted-foreground">{data.benchmarkComparison.explanation}</p>
+            </div>
           )}
         </ReportGroupBoundary>
+        {scheme ? (
+          <FundBenchmarkAnalysisCharts
+            scheme={scheme}
+            fundName={fundName}
+            benchmarkName={benchmarkName}
+            startDate={startDate}
+            offlineView={isSharedView}
+          />
+        ) : null}
       </SectionShell>
       ) : null}
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import {
   CartesianGrid,
   Label,
@@ -61,6 +61,8 @@ interface RollingReturnsPanelProps {
   input: AnalysisInput
   fundName: string
   benchmarkName: string
+  embedded?: boolean
+  headerAddon?: React.ReactNode
 }
 
 function RollingReturnTooltip({
@@ -126,6 +128,8 @@ export function RollingReturnsPanel({
   input,
   fundName,
   benchmarkName,
+  embedded = false,
+  headerAddon,
 }: RollingReturnsPanelProps) {
   const analysis = useMemo(() => getDetailedRollingReturnData(input), [input])
 
@@ -153,6 +157,8 @@ export function RollingReturnsPanel({
       displayFundName={displayFundName}
       displayBenchName={displayBenchName}
       period={input.period}
+      embedded={embedded}
+      headerAddon={headerAddon}
     />
   )
 }
@@ -163,12 +169,16 @@ function RollingReturnsChart({
   displayFundName,
   displayBenchName,
   period,
+  embedded = false,
+  headerAddon,
 }: {
   analysis: ReturnType<typeof getDetailedRollingReturnData>
   chartData: Array<RollingReturnChartPoint & { index: number }>
   displayFundName: string
   displayBenchName: string
   period: string
+  embedded?: boolean
+  headerAddon?: ReactNode
 }) {
   const axis = useResponsiveAxis()
 
@@ -193,12 +203,24 @@ function RollingReturnsChart({
   const xGap = axis.xGap
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card/40 shadow-sm">
-      <div className={CHART_HEADER_CLASS}>
-        <h2 className="text-xl font-semibold tracking-tight">Rolling Returns</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {period} rolling return comparison — hover chart for details
-        </p>
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm',
+        !embedded && 'border-border/60 bg-card/40',
+      )}
+    >
+      <div className={cn(CHART_HEADER_CLASS, embedded && 'border-b border-border/60')}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight sm:text-xl">
+              {embedded ? 'Rolling return chart' : 'Rolling Returns'}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {period} rolling return comparison — hover chart for details
+            </p>
+          </div>
+          {headerAddon}
+        </div>
       </div>
 
       <div className="px-4 py-6 sm:px-6">

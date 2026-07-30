@@ -60,31 +60,13 @@ export function FundBenchmarkAnalysisCharts({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <FundIndexMatrixTable
         data={matrixData}
         loading={matrixLoading}
         error={matrixError}
         consistencyScore={result?.metrics.consistencyScore}
       />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Rolling return detail for the selected window — same views as the fund analysis dashboard.
-        </p>
-        <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
-          <SelectTrigger className="w-[140px]" aria-label="Rolling window">
-            <SelectValue placeholder="Period" />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODS.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       {analysisError ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-6 text-sm text-destructive">
@@ -97,14 +79,29 @@ export function FundBenchmarkAnalysisCharts({
           input={chartInput}
           fundName={resolvedFundName}
           benchmarkName={resolvedBenchmarkName}
+          embedded
+          headerAddon={
+            <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
+              <SelectTrigger className="w-full sm:w-[140px]" aria-label="Rolling window">
+                <SelectValue placeholder="Period" />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
         />
       ) : analysisLoading ? (
-        <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-12 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border/70 bg-card px-4 py-12 text-center text-sm text-muted-foreground">
           Loading rolling return comparison…
         </div>
       ) : null}
 
-      <BenchmarkComparisonCharts input={chartInput} loading={analysisLoading} />
+      <BenchmarkComparisonCharts input={chartInput} loading={analysisLoading} embedded />
     </div>
   )
 }

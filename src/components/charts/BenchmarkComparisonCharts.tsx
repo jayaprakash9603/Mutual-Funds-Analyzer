@@ -43,9 +43,14 @@ const BENCHMARK_FILL_OPACITY = 0.15
 type BenchmarkComparisonChartsProps = {
   input: AnalysisInput | null
   loading?: boolean
+  embedded?: boolean
 }
 
-export function BenchmarkComparisonCharts({ input, loading = false }: BenchmarkComparisonChartsProps) {
+export function BenchmarkComparisonCharts({
+  input,
+  loading = false,
+  embedded = false,
+}: BenchmarkComparisonChartsProps) {
   const axis = useResponsiveAxis()
 
   const returnsAreaData = useMemo(() => {
@@ -59,7 +64,12 @@ export function BenchmarkComparisonCharts({ input, loading = false }: BenchmarkC
   const returnsEmpty = !chartsLoading && returnsAreaData.length === 0
 
   return (
-    <ChartShell guide={CHART_GUIDES.returnsArea} loading={chartsLoading} empty={returnsEmpty}>
+    <ChartShell
+      guide={CHART_GUIDES.returnsArea}
+      loading={chartsLoading}
+      empty={returnsEmpty}
+      variant={embedded ? 'flat' : 'card'}
+    >
       <ChartContainer config={lineConfig} className={chartHeightForGuide(CHART_GUIDES.returnsArea)}>
         <AreaChart data={returnsAreaData} margin={MARGIN_X}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
