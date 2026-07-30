@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { APP_TABLE } from '@/lib/ui/appTableStyles'
 
 type TableProps = React.ComponentProps<'table'> & {
   scroll?: boolean
@@ -8,12 +9,12 @@ type TableProps = React.ComponentProps<'table'> & {
 function Table({ className, scroll = false, ...props }: TableProps) {
   if (scroll) {
     return (
-      <div className="relative w-full overflow-x-auto">
-        <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+      <div className="scrollbar-thin relative w-full overflow-x-auto overscroll-x-contain">
+        <table className={cn(APP_TABLE, className)} {...props} />
       </div>
     )
   }
-  return <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+  return <table className={cn(APP_TABLE, className)} {...props} />
 }
 
 type TableHeadProps = React.ComponentProps<'th'> & {
@@ -45,7 +46,7 @@ function TableHead({ className, nowrap = false, ...props }: TableHeadProps) {
   return (
     <th
       className={cn(
-        'h-11 px-3 text-center align-middle text-xs font-semibold uppercase tracking-wide',
+        'h-9 px-1.5 text-center align-middle text-[10px] font-semibold uppercase tracking-wide sm:h-11 sm:px-2.5 sm:text-[11px] md:px-3 md:text-xs',
         nowrap && 'whitespace-nowrap',
         className,
       )}
@@ -58,7 +59,7 @@ function TableCell({ className, nowrap = false, ...props }: TableCellProps) {
   return (
     <td
       className={cn(
-        'px-3 py-3 align-middle text-center tabular-nums',
+        'px-1.5 py-2 align-middle text-center tabular-nums sm:px-2.5 sm:py-2.5 md:px-3 md:py-3',
         nowrap && 'whitespace-nowrap',
         className,
       )}

@@ -62,7 +62,7 @@ export function MetricTile({
   value: string
   hint?: string
   metricKey?: string
-  size?: 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg'
   valueVariant?: 'text' | 'numeric'
 }) {
   return (

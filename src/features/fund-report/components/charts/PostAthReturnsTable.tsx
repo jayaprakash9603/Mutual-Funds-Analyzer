@@ -1,3 +1,5 @@
+import { ScrollTable } from '@/components/ui/scroll-table'
+import { APP_TABLE_MIN_WIDTH, APP_TABLE_SHELL, appTableBodyCell, appTableHeadCell } from '@/lib/ui/appTableStyles'
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReportRisk } from '../../schemas'
 
@@ -59,17 +61,17 @@ export function PostAthReturnsTable({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="min-w-[640px] w-full border-collapse text-sm">
+      <ScrollTable minWidth={APP_TABLE_MIN_WIDTH.md} className={APP_TABLE_SHELL}>
+        <table className="w-full border-collapse text-[11px] leading-snug sm:text-xs md:text-sm">
           <thead>
             <tr className="bg-muted/60">
-              <th className="border border-border px-3 py-2 text-left font-semibold">
+              <th className={appTableHeadCell()}>
                 Performance post all-time highs
               </th>
               {horizons.map((horizon) => (
                 <th
                   key={horizon.years}
-                  className="border border-border px-3 py-2 text-right font-semibold"
+                  className={appTableHeadCell('text-right')}
                 >
                   {horizon.label} returns
                 </th>
@@ -78,11 +80,11 @@ export function PostAthReturnsTable({
           </thead>
           <tbody>
             <tr>
-              <td className="border border-border px-3 py-2 font-semibold">Average returns (CAGR)</td>
+              <td className={appTableBodyCell('font-semibold')}>Average returns (CAGR)</td>
               {horizons.map((horizon) => (
                 <td
                   key={`avg-${horizon.years}`}
-                  className="border border-border px-3 py-2 text-right font-mono tabular-nums font-semibold"
+                  className={appTableBodyCell('text-right font-mono font-semibold')}
                 >
                   {horizon.sampleCount > 0
                     ? formatPercent(horizon.averageCagrPercent, 0)
@@ -90,14 +92,14 @@ export function PostAthReturnsTable({
                 </td>
               ))}
             </tr>
-            <tr className="bg-muted/30 text-xs text-muted-foreground">
-              <td className="border border-border px-3 py-2 font-medium" colSpan={horizons.length + 1}>
+            <tr className="bg-muted/30 text-[10px] text-muted-foreground sm:text-xs">
+              <td className={appTableBodyCell('font-medium')} colSpan={horizons.length + 1}>
                 % of times
               </td>
             </tr>
             {THRESHOLD_ORDER.map((label) => (
               <tr key={label}>
-                <td className="border border-border px-3 py-2">{label}</td>
+                <td className={appTableBodyCell()}>{label}</td>
                 {horizons.map((horizon) => {
                   const threshold = horizon.thresholds.find((row) => row.label === label)
                   const emphasize = threshold ? highlightCell(label, horizon.years) : false
@@ -105,7 +107,7 @@ export function PostAthReturnsTable({
                     <td
                       key={`${label}-${horizon.years}`}
                       className={cn(
-                        'border border-border px-3 py-2 text-right font-mono tabular-nums',
+                        appTableBodyCell('text-right font-mono'),
                         emphasize && 'font-semibold text-emerald-700 dark:text-emerald-400',
                       )}
                     >
@@ -119,7 +121,7 @@ export function PostAthReturnsTable({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollTable>
 
       <p className="text-xs text-muted-foreground">
         Horizons with insufficient history show —. Requires at least 1, 3, or 5 years of subsequent NAV

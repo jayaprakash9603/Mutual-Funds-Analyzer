@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
+import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchSipSimulation } from '../../../api'
 import { enrichMonthlyAverageCorpus, findScenarioForAmount, scaleTimeline } from '../../../lib/sipTimeline'
 import type { FundReportInvestment, SipScenario, SipTimelinePoint } from '../../../schemas'
@@ -131,7 +132,7 @@ export function SipCalculatorPanel({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/70 bg-card/40 p-4">
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/70 bg-card/40 p-3 sm:gap-3 sm:rounded-xl sm:p-4">
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground" htmlFor="sip-amount">
             Monthly amount
@@ -173,26 +174,30 @@ export function SipCalculatorPanel({
       </div>
 
       {summary && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <InvestmentSummaryMetrics>
           <MetricTile
+            size="sm"
             label="Total invested"
             value={`₹${summary.scenario.moneyInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Current value"
             value={`₹${summary.scenario.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="XIRR"
             value={`${summary.scenario.xirr.toFixed(1)}%`}
             hint={`Post-tax ${(summary.scenario.postTaxXirr ?? 0).toFixed(1)}%`}
           />
           <MetricTile
+            size="sm"
             label="Tax if redeemed today"
             value={`−₹${summary.totalTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={`10Y projection ₹${summary.scenario.projectedValue10Y.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
-        </div>
+        </InvestmentSummaryMetrics>
       )}
 
       {loading ? (

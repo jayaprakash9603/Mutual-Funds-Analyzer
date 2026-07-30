@@ -1,4 +1,6 @@
 import type { FundReportRisk } from '../../schemas'
+import { ScrollTable } from '@/components/ui/scroll-table'
+import { appTableBodyCell, appTableHeadCell } from '@/lib/ui/appTableStyles'
 import { formatPercent } from '@/lib/utils'
 import { ReportInsightCard } from '../layout/ReportInsightCard'
 
@@ -40,52 +42,54 @@ export function BestDaysInCrashAnalysis({ bestDays, fundName }: BestDaysInCrashA
               </p>
             </div>
 
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[220px] border-collapse text-xs">
+            <ScrollTable minWidth={220} className="mt-3">
+              <table className="w-full border-collapse text-[10px] leading-snug sm:text-[11px] md:text-xs">
                 <thead>
                   <tr className="bg-emerald-700 text-white">
-                    <th className="border border-border/40 px-2 py-1.5 text-left font-medium">Best day</th>
-                    <th className="border border-border/40 px-2 py-1.5 text-left font-medium">Date</th>
-                    <th className="border border-border/40 px-2 py-1.5 text-right font-medium">Return</th>
+                    <th className={appTableHeadCell('border-border/40 bg-emerald-700 text-white')}>Best day</th>
+                    <th className={appTableHeadCell('border-border/40 bg-emerald-700 text-white')}>Date</th>
+                    <th className={appTableHeadCell('border-border/40 bg-emerald-700 text-right text-white')}>Return</th>
                   </tr>
                 </thead>
                 <tbody>
                   {period.bestDays.map((day) => (
                     <tr key={`${period.periodLabel}-${day.rank}`}>
-                      <td className="border border-border px-2 py-1.5 tabular-nums">{day.rank}</td>
-                      <td className="border border-border px-2 py-1.5">{day.date}</td>
-                      <td className="border border-border px-2 py-1.5 text-right font-mono tabular-nums">
+                      <td className={appTableBodyCell('tabular-nums')}>{day.rank}</td>
+                      <td className={appTableBodyCell()}>{day.date}</td>
+                      <td className={appTableBodyCell('text-right font-mono')}>
                         {formatPercent(day.returnPercent, 1)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollTable>
           </div>
         ))}
 
         {bestDays.topDaysCumulative.length > 0 ? (
           <div className="self-start rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 lg:col-span-2 xl:col-span-1">
             <h4 className="mb-2 text-sm font-semibold">Cumulative impact of best days</h4>
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-emerald-700 text-white">
-                  <th className="border border-border/40 px-3 py-2 text-left font-medium">Best days</th>
-                  <th className="border border-border/40 px-3 py-2 text-right font-medium">Returns</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bestDays.topDaysCumulative.map((row) => (
-                  <tr key={row.topCount}>
-                    <td className="border border-border px-3 py-2">Top {row.topCount} best days</td>
-                    <td className="border border-border px-3 py-2 text-right font-mono tabular-nums">
-                      {formatPercent(row.cumulativeReturnPercent, 1)}
-                    </td>
+            <ScrollTable minWidth={220}>
+              <table className="w-full border-collapse text-[11px] leading-snug sm:text-xs">
+                <thead>
+                  <tr className="bg-emerald-700 text-white">
+                    <th className={appTableHeadCell('border-border/40 bg-emerald-700 text-white')}>Best days</th>
+                    <th className={appTableHeadCell('border-border/40 bg-emerald-700 text-right text-white')}>Returns</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bestDays.topDaysCumulative.map((row) => (
+                    <tr key={row.topCount}>
+                      <td className={appTableBodyCell()}>Top {row.topCount} best days</td>
+                      <td className={appTableBodyCell('text-right font-mono')}>
+                        {formatPercent(row.cumulativeReturnPercent, 1)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollTable>
           </div>
         ) : null}
       </div>

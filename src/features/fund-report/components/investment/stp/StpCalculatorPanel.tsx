@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FundSearchDropdown } from '@/components/dashboard/search/FundSearchDropdown'
 import { useFundSearch } from '@/hooks/useFundSearch'
 import { MetricTile } from '../../layout/SectionShell'
+import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchStpSimulation } from '../../../api'
 import type { StpScenario, StpTimelinePoint } from '../../../schemas'
 import { StpCorpusChart } from './StpCorpusChart'
@@ -242,28 +243,32 @@ export function StpCalculatorPanel({
       </div>
 
       {activeScenario && sourceScheme && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <InvestmentSummaryMetrics>
           <MetricTile
+            size="sm"
             label="Transferred to target"
             value={`₹${activeScenario.totalTransferred.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={`${activeScenario.transferCount} instalments`}
           />
           <MetricTile
+            size="sm"
             label="Source remaining"
             value={`₹${activeScenario.sourceRemaining.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint="Parked balance at latest NAV"
           />
           <MetricTile
+            size="sm"
             label="Target value"
             value={`₹${activeScenario.targetValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint="Deployed balance at latest NAV"
           />
           <MetricTile
+            size="sm"
             label="Total portfolio"
             value={`₹${activeScenario.totalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={`CAGR ${activeScenario.xirr.toFixed(1)}% · Gain ₹${activeScenario.totalGain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
-        </div>
+        </InvestmentSummaryMetrics>
       )}
 
       {!sourceScheme && (

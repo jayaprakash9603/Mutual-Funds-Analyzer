@@ -1,4 +1,5 @@
 import { ScrollTable } from '@/components/ui/scroll-table'
+import { APP_TABLE_SHELL } from '@/lib/ui/appTableStyles'
 import { formatPercent } from '@/lib/utils'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { fiBodyCell, fiHeaderCell, fiStickyLabelCell, FI_GRID, FI_TABLE } from '@/components/fundsindia/tableStyles'
@@ -35,7 +36,7 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
         </h4>
       </div>
 
-      <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={720} className={APP_TABLE_SHELL}>
         <table className={FI_TABLE}>
           <thead>
             <tr>
@@ -68,7 +69,7 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
                   <td className={fiBodyCell()}>
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.5 text-xs font-medium',
+                        'rounded-full px-1.5 py-0.5 text-[10px] font-medium sm:px-2 sm:text-xs',
                         ongoing
                           ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
                           : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',

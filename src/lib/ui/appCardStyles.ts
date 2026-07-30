@@ -19,9 +19,22 @@ export const appMetricGridWide = cn(
   'grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
 )
 
+/** Metric tiles inside section panels (SIP, STP, etc.) — 2-up on phone, 4 on desktop. */
+export const appMetricGridNested = cn(
+  'grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 lg:grid-cols-4',
+)
+
+/** Wider nested grids (step-up SIP with 6 summary tiles). */
+export const appMetricGridNestedWide = cn(
+  'grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6',
+)
+
+/** Fixed 2-column grid for metric tiles inside insight/panel cards (2×2 layout). */
+export const appMetricGridPair = cn('grid grid-cols-2 gap-2 sm:gap-3')
+
 export function appMetricCardClasses(size: 'sm' | 'md' | 'lg' = 'md') {
   const padding = {
-    sm: 'p-2 sm:p-2.5',
+    sm: 'p-2 sm:p-2.5 md:p-3',
     md: 'p-2.5 sm:p-3 md:p-4',
     lg: 'p-3 sm:p-4 md:p-5',
   }[size]
@@ -41,14 +54,14 @@ export function appMetricValueClasses(
   size: 'sm' | 'md' | 'lg' = 'md',
 ) {
   const textSize = {
-    sm: 'text-xs sm:text-sm',
-    md: 'text-sm sm:text-base md:text-lg',
-    lg: 'text-base sm:text-lg md:text-2xl',
+    sm: 'text-[11px] leading-tight sm:text-xs md:text-sm',
+    md: 'text-xs leading-tight sm:text-sm md:text-base lg:text-lg',
+    lg: 'text-sm leading-tight sm:text-base md:text-lg lg:text-2xl',
   }[size]
 
   const font =
     variant === 'numeric'
-      ? 'font-mono tabular-nums'
+      ? 'break-all font-mono tabular-nums sm:break-normal'
       : 'break-words font-medium leading-snug'
 
   return cn('font-semibold tracking-tight text-foreground', textSize, font)
@@ -56,7 +69,7 @@ export function appMetricValueClasses(
 
 export function appMetricHintClasses(size: 'sm' | 'md' | 'lg' = 'md') {
   return cn(
-    'mt-0.5 text-muted-foreground sm:mt-1',
+    'mt-0.5 break-words leading-snug text-muted-foreground sm:mt-1',
     size === 'lg' ? 'text-[11px] sm:text-sm' : 'text-[10px] sm:text-xs',
   )
 }

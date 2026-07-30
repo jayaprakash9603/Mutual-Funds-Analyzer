@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
+import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchLumpsumSimulation } from '../../../api'
 import { enrichMonthlyAverageCorpus, scaleTimeline } from '../../../lib/sipTimeline'
 import type { FundReportInvestment, SipTimelinePoint } from '../../../schemas'
@@ -114,26 +115,30 @@ export function LumpsumCalculatorPanel({
       </div>
 
       {activeScenario && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <InvestmentSummaryMetrics>
           <MetricTile
+            size="sm"
             label="Principal invested"
             value={`₹${activeScenario.principal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Current value"
             value={`₹${activeScenario.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="CAGR"
             value={`${activeScenario.cagr.toFixed(1)}%`}
             hint={`Gain ₹${activeScenario.gain.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Money multiplied"
             value={`${activeScenario.moneyMultiplied.toFixed(2)}x`}
             hint="Since inception"
           />
-        </div>
+        </InvestmentSummaryMetrics>
       )}
 
       {loading ? (

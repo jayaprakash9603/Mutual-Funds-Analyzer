@@ -127,64 +127,66 @@ export function RiskAnalysisPanel({ risk, assessment, fundName }: RiskAnalysisPa
         </ReportInsightCard>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <ReportInsightCard
           title="Risk-adjusted returns"
           subtitle="Reward earned per unit of risk"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <MetricTile label="Sharpe" value={metrics.sharpeRatio.toFixed(2)} metricKey="sharpe" />
-            <MetricTile label="Sortino" value={metrics.sortinoRatio.toFixed(2)} metricKey="sortino" />
-            <MetricTile label="Treynor" value={metrics.treynorRatio.toFixed(2)} metricKey="treynor" />
-            <MetricTile label="Calmar" value={metrics.calmarRatio.toFixed(2)} metricKey="calmar" />
-          </div>
+          <AppMetricGrid variant="pair">
+            <MetricTile size="sm" label="Sharpe" value={metrics.sharpeRatio.toFixed(2)} metricKey="sharpe" />
+            <MetricTile size="sm" label="Sortino" value={metrics.sortinoRatio.toFixed(2)} metricKey="sortino" />
+            <MetricTile size="sm" label="Treynor" value={metrics.treynorRatio.toFixed(2)} metricKey="treynor" />
+            <MetricTile size="sm" label="Calmar" value={metrics.calmarRatio.toFixed(2)} metricKey="calmar" />
+          </AppMetricGrid>
         </ReportInsightCard>
 
         <ReportInsightCard
           title="Market sensitivity"
           subtitle="Movement relative to the benchmark"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <MetricTile label="Alpha" value={formatPercent(metrics.alpha)} metricKey="alpha" />
+          <AppMetricGrid variant="pair">
+            <MetricTile size="sm" label="Alpha" value={formatPercent(metrics.alpha)} metricKey="alpha" />
             <MetricTile
+              size="sm"
               label="Info Ratio"
               value={metrics.informationRatio.toFixed(2)}
               metricKey="informationRatio"
             />
             <MetricTile
+              size="sm"
               label="Tracking Error"
               value={formatPercent(metrics.trackingError)}
               metricKey="trackingError"
             />
-            <MetricTile
-              label="R-squared"
-              value={metrics.rSquared.toFixed(2)}
-            />
-          </div>
+            <MetricTile size="sm" label="R-squared" value={metrics.rSquared.toFixed(2)} />
+          </AppMetricGrid>
         </ReportInsightCard>
 
         <ReportInsightCard
           title="Stress and downside"
           subtitle="Worst-case moves and drawdown depth"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <AppMetricGrid variant="pair">
             <MetricTile
+              size="sm"
               label="Downside capture"
               value={formatPercent(metrics.downsideCapture)}
               metricKey="downsideCapture"
             />
             <MetricTile
+              size="sm"
               label="Upside capture"
               value={formatPercent(metrics.upsideCapture)}
               metricKey="upsideCapture"
             />
-            <MetricTile label="Ulcer index" value={metrics.ulcerIndex.toFixed(2)} metricKey="ulcerIndex" />
+            <MetricTile size="sm" label="Ulcer index" value={metrics.ulcerIndex.toFixed(2)} metricKey="ulcerIndex" />
             <MetricTile
+              size="sm"
               label="VaR (95%)"
               value={formatPercent(metrics.valueAtRisk95)}
               metricKey="valueAtRisk95"
             />
-          </div>
+          </AppMetricGrid>
         </ReportInsightCard>
       </div>
     </div>

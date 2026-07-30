@@ -1,5 +1,6 @@
 import { ScrollTable } from '@/components/ui/scroll-table'
 import { fiBodyCell, fiMultiplyHeaderCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import { APP_TABLE_MIN_WIDTH, APP_TABLE_SHELL } from '@/lib/ui/appTableStyles'
 import { formatPercent } from '@/lib/utils'
 import type { FundReportRisk } from '../../schemas'
 
@@ -15,7 +16,7 @@ export function ThresholdRecoveryTable({
   }
 
   return (
-    <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+    <ScrollTable minWidth={APP_TABLE_MIN_WIDTH.lg} className={APP_TABLE_SHELL}>
       <table className={FI_TABLE}>
         <thead>
           <tr>

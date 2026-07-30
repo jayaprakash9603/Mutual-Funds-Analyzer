@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { APP_TABLE_SCROLL_INNER } from '@/lib/ui/appTableStyles'
 import { cn } from '@/lib/utils'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 
@@ -14,7 +15,7 @@ export function ScrollTable({
   children,
   minWidth,
   className,
-  hint = 'Swipe to see more',
+  hint = 'Swipe sideways to see all columns',
 }: ScrollTableProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [overflows, setOverflows] = useState(false)
@@ -49,9 +50,12 @@ export function ScrollTable({
       <div
         ref={scrollerRef}
         onScroll={updateScrollState}
-        className="scrollbar-thin w-full overflow-x-auto"
+        className="scrollbar-thin w-full overflow-x-auto overscroll-x-contain"
       >
-        <div className="w-full" style={minWidth == null ? undefined : { minWidth }}>
+        <div
+          className={cn('w-full', APP_TABLE_SCROLL_INNER)}
+          style={minWidth == null ? undefined : { minWidth }}
+        >
           {children}
         </div>
       </div>
@@ -59,12 +63,12 @@ export function ScrollTable({
       {overflows && !atEnd ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background via-background/80 to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background via-background/80 to-transparent sm:w-10"
         />
       ) : null}
 
       {isSmall && overflows ? (
-        <p className="mt-1.5 text-center text-[11px] text-muted-foreground sm:hidden">{hint}</p>
+        <p className="mt-1 px-1 text-center text-[10px] text-muted-foreground sm:hidden">{hint}</p>
       ) : null}
     </div>
   )

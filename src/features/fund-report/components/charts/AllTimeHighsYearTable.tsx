@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import { ScrollTable } from '@/components/ui/scroll-table'
+import { APP_TABLE_SHELL, appTableBodyCell, appTableHeadCell } from '@/lib/ui/appTableStyles'
 import { cn } from '@/lib/utils'
 import type { FundReportRisk } from '../../schemas'
 
@@ -44,12 +46,12 @@ export function AllTimeHighsYearTable({ allTimeHighs, fundName }: AllTimeHighsYe
 
       <div className="grid gap-4 xl:grid-cols-3">
         {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full min-w-[240px] border-collapse text-sm">
+          <ScrollTable key={columnIndex} minWidth={220} className={APP_TABLE_SHELL}>
+            <table className="w-full border-collapse text-[11px] leading-snug sm:text-xs md:text-sm">
               <thead>
                 <tr className="bg-muted/60">
-                  <th className="border border-border px-3 py-2 text-left font-semibold">Calendar Year</th>
-                  <th className="border border-border px-3 py-2 text-right font-semibold">Max NAV</th>
+                  <th className={appTableHeadCell()}>Calendar Year</th>
+                  <th className={appTableHeadCell('text-right')}>Max NAV</th>
                 </tr>
               </thead>
               <tbody>
@@ -58,15 +60,15 @@ export function AllTimeHighsYearTable({ allTimeHighs, fundName }: AllTimeHighsYe
                     key={row.year}
                     className={cn(row.allTimeHighYear && 'bg-emerald-100/90 dark:bg-emerald-950/40')}
                   >
-                    <td className="border border-border px-3 py-2">{row.yearLabel}</td>
-                    <td className="border border-border px-3 py-2 text-right font-mono tabular-nums">
+                    <td className={appTableBodyCell()}>{row.yearLabel}</td>
+                    <td className={appTableBodyCell('text-right font-mono')}>
                       {row.maxNav.toFixed(2)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollTable>
         ))}
       </div>
 

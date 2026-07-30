@@ -2,7 +2,17 @@ import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import type { FundIndexComparison } from '@/api/schemas'
 import { CHART_COLORS, outperformanceColor } from '@/lib/charts/chartColors'
-import { fiHeaderCell, fiSubHeaderCell, FI_GRID } from '@/components/fundsindia/tableStyles'
+import { fiHeaderCell, fiSubHeaderCell, fiMatrixDataCell, fiMatrixSchemeCell, fiMatrixYearCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import { ScrollTable } from '@/components/ui/scroll-table'
+import {
+  APP_TABLE_MIN_WIDTH,
+  APP_TABLE_SHELL,
+  APP_TABLE_SHELL_FOOTER,
+  APP_TABLE_SHELL_HEADER,
+  APP_TABLE_SHELL_META,
+  APP_TABLE_SHELL_SUBTITLE,
+  APP_TABLE_SHELL_TITLE,
+} from '@/lib/ui/appTableStyles'
 import { MATRIX_PERIODS } from '@/lib/constants'
 import { cn, formatPercent } from '@/lib/utils'
 
@@ -10,13 +20,6 @@ const FUND_COLOR = CHART_COLORS.fund
 const BENCHMARK_COLOR = CHART_COLORS.benchmark
 const DATA_COLUMNS = 4
 const TOTAL_COLUMNS = 8
-
-const DATA_CELL = cn('border px-3 py-2.5 text-center tabular-nums', FI_GRID)
-const YEAR_CELL = cn(
-  'sticky left-0 z-10 min-w-[96px] border-r px-3 py-2.5 align-middle text-center font-bold text-foreground',
-  FI_GRID,
-)
-const SCHEME_CELL = cn('min-w-[240px] max-w-[320px] border-r px-3 py-2.5 align-middle text-left', FI_GRID)
 
 interface FundIndexMatrixTableProps {
   data: FundIndexComparison | null
@@ -36,10 +39,10 @@ export function FundIndexMatrixTable({
   const benchmarkLabel = data?.benchmarkName
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
-      <div className="border-b border-brand/30 bg-brand px-4 py-3 sm:px-6">
-        <h2 className="text-lg font-bold uppercase tracking-wide text-white">Key Parameters</h2>
-        <p className="mt-1 text-sm text-white/85">Rolling return stats by holding period</p>
+    <div className={APP_TABLE_SHELL}>
+      <div className={APP_TABLE_SHELL_HEADER}>
+        <h2 className={APP_TABLE_SHELL_TITLE}>Key Parameters</h2>
+        <p className={APP_TABLE_SHELL_SUBTITLE}>Rolling return stats by holding period</p>
       </div>
 
       {fundLabel || benchmarkLabel ? (
@@ -49,7 +52,7 @@ export function FundIndexMatrixTable({
         </div>
       ) : null}
 
-      <div className="border-b border-border/60 px-4 py-2 sm:px-6">
+      <div className={APP_TABLE_SHELL_META}>
         <p className="text-sm text-muted-foreground">
           Fund vs index rolling return comparison
           {computedAt ? ` · updated ${format(new Date(computedAt), 'dd MMM yyyy')}` : ''}
@@ -73,8 +76,8 @@ export function FundIndexMatrixTable({
       )}
 
       {!loading && !error && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] border-collapse text-sm">
+        <ScrollTable minWidth={APP_TABLE_MIN_WIDTH.matrix}>
+          <table className={FI_TABLE}>
             <thead>
               <tr>
                 <th
@@ -116,7 +119,7 @@ export function FundIndexMatrixTable({
                   const missing = data?.missingPeriods.includes(period)
                   return [
                     <tr key={`${period}-missing`} className="border-b-2 border-border bg-muted/20">
-                      <td colSpan={TOTAL_COLUMNS} className={cn(DATA_CELL, 'text-left text-muted-foreground')}>
+                      <td colSpan={TOTAL_COLUMNS} className={cn(fiMatrixDataCell(), 'text-left text-muted-foreground')}>
                         {period} — {missing ? 'insufficient history' : 'loading...'}
                       </td>
                     </tr>,
@@ -130,28 +133,28 @@ export function FundIndexMatrixTable({
 
                 return [
                   <tr key={`${period}-fund`} className={stripe}>
-                    <td rowSpan={2} className={cn(YEAR_CELL, stripe, 'border-b-2 border-border')}>
+                    <td rowSpan={2} className={cn(fiMatrixYearCell(), stripe, 'border-b-2 border-border')}>
                       {period}
                     </td>
-                    <td className={cn(SCHEME_CELL, stripe, 'border-b border-dashed border-border/70')}>
+                    <td className={cn(fiMatrixSchemeCell(), stripe, 'border-b border-dashed border-border/70')}>
                       <SeriesName name={row.fundName} variant="fund" />
                     </td>
-                    <td className={cn(DATA_CELL, 'border-b border-dashed border-border/70 font-semibold')} style={{ color: avgColor }}>
+                    <td className={cn(fiMatrixDataCell(), 'border-b border-dashed border-border/70 font-semibold')} style={{ color: avgColor }}>
                       {formatPercent(row.fund.avg)}
                     </td>
-                    <td className={cn(DATA_CELL, 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
+                    <td className={cn(fiMatrixDataCell(), 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
                       {formatPercent(row.fund.max)}
                     </td>
-                    <td className={cn(DATA_CELL, 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
+                    <td className={cn(fiMatrixDataCell(), 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
                       {formatPercent(row.fund.min)}
                     </td>
-                    <td className={cn(DATA_CELL, 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
+                    <td className={cn(fiMatrixDataCell(), 'border-b border-dashed border-border/70 font-medium')} style={{ color: FUND_COLOR }}>
                       {formatPercent(row.fund.stdDev)}
                     </td>
-                    <td rowSpan={2} className={cn(DATA_CELL, 'align-middle text-base font-bold text-brand', !isLastPeriod && 'border-b-2 border-border')}>
+                    <td rowSpan={2} className={cn(fiMatrixDataCell(), 'align-middle text-sm font-bold text-brand sm:text-base', !isLastPeriod && 'border-b-2 border-border')}>
                       {formatPercent(row.cob)}
                     </td>
-                    <td rowSpan={2} className={cn(DATA_CELL, 'align-middle text-base font-bold text-foreground', !isLastPeriod && 'border-b-2 border-border')}>
+                    <td rowSpan={2} className={cn(fiMatrixDataCell(), 'align-middle text-sm font-bold text-foreground sm:text-base', !isLastPeriod && 'border-b-2 border-border')}>
                       {row.fund.count.toLocaleString()}
                     </td>
                   </tr>,
@@ -160,19 +163,19 @@ export function FundIndexMatrixTable({
                     className={cn(stripe, !isLastPeriod && 'border-b-2 border-border')}
                     aria-label={`${period} ${benchmarkName}`}
                   >
-                    <td className={cn(SCHEME_CELL, stripe)}>
+                    <td className={cn(fiMatrixSchemeCell(), stripe)}>
                       <SeriesName name={benchmarkName} variant="benchmark" />
                     </td>
-                    <td className={DATA_CELL} style={{ color: BENCHMARK_COLOR }}>
+                    <td className={fiMatrixDataCell()} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.avg)}
                     </td>
-                    <td className={DATA_CELL} style={{ color: BENCHMARK_COLOR }}>
+                    <td className={fiMatrixDataCell()} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.max)}
                     </td>
-                    <td className={DATA_CELL} style={{ color: BENCHMARK_COLOR }}>
+                    <td className={fiMatrixDataCell()} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.min)}
                     </td>
-                    <td className={DATA_CELL} style={{ color: BENCHMARK_COLOR }}>
+                    <td className={fiMatrixDataCell()} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.stdDev)}
                     </td>
                   </tr>,
@@ -180,11 +183,11 @@ export function FundIndexMatrixTable({
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollTable>
       )}
 
       {consistencyScore != null && !loading && !error && (
-        <div className="border-t border-border/60 px-4 py-3 text-sm text-muted-foreground sm:px-6">
+        <div className={APP_TABLE_SHELL_FOOTER}>
           Consistency score:{' '}
           <strong className="font-semibold text-brand">{consistencyScore.toFixed(0)}/100</strong>
         </div>
@@ -222,7 +225,7 @@ function SeriesLabel({ name, variant }: { name: string; variant: 'fund' | 'bench
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {variant === 'fund' ? 'Fund' : 'Benchmark'}
         </p>
-        <p className={cn('text-sm font-medium leading-snug break-words', seriesTextClass(variant))} title={name}>
+        <p className={cn('text-xs font-medium leading-snug break-words sm:text-sm', seriesTextClass(variant))} title={name}>
           {name}
         </p>
       </div>
@@ -238,7 +241,7 @@ function SeriesName({ name, variant }: { name: string; variant: 'fund' | 'benchm
         style={{ backgroundColor: seriesDotColor(variant) }}
         aria-hidden="true"
       />
-      <p className={cn('text-sm font-medium leading-snug break-words', seriesTextClass(variant))} title={name}>
+      <p className={cn('text-xs font-medium leading-snug break-words sm:text-sm', seriesTextClass(variant))} title={name}>
         {name}
       </p>
     </div>

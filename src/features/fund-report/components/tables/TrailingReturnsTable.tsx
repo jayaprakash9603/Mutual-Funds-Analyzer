@@ -1,5 +1,14 @@
-import { fiBodyCell, fiHeaderCell, fiSubHeaderCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import {
+  fiBodyCell,
+  fiHeaderCell,
+  fiSubHeaderCell,
+  fiStickyLabelCell,
+  FI_TABLE,
+} from '@/components/fundsindia/tableStyles'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { CHART_COLORS, signedReturnColor } from '@/lib/charts/chartColors'
+import { APP_TABLE_MIN_WIDTH } from '@/lib/ui/appTableStyles'
+import { AppTableShell } from '@/components/ui/AppTableShell'
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReport } from '../../schemas'
 
@@ -12,29 +21,20 @@ interface TrailingReturnsTableProps {
 
 export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTableProps) {
   if (periods.length === 0) {
-    return <p className="text-sm text-muted-foreground">No trailing return periods available.</p>
+    return <p className="text-xs text-muted-foreground sm:text-sm">No trailing return periods available.</p>
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
-      <div className="border-b border-brand/30 bg-brand px-6 py-3">
-        <h2 className="text-lg font-bold uppercase tracking-wide text-white">Returns Dashboard</h2>
-        <p className="mt-1 truncate text-sm text-white/90" title={fundName}>
-          {fundName}
-        </p>
-      </div>
-
-      <div className="border-b border-border/60 bg-muted/20 px-6 py-2">
-        <p className="text-sm text-muted-foreground">
-          Absolute return, CAGR, growth of ₹10,000, and money multiplier by holding period.
-        </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className={cn(FI_TABLE, 'min-w-[720px]')}>
+    <AppTableShell
+      title="Returns Dashboard"
+      subtitle={fundName}
+      meta="Absolute return, CAGR, growth of ₹10,000, and money multiplier by holding period."
+    >
+      <ScrollTable minWidth={APP_TABLE_MIN_WIDTH.md}>
+        <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th rowSpan={2} className={cn(fiHeaderCell('sticky left-0 z-20 text-left'), 'min-w-[140px]')}>
+              <th rowSpan={2} className={cn(fiHeaderCell(fiStickyLabelCell('z-20 normal-case text-left')))}>
                 Period
               </th>
               <th colSpan={4} className={fiHeaderCell()}>
@@ -52,11 +52,9 @@ export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTable
             {periods.map((period, index) => (
               <tr
                 key={period.label}
-                className={cn(
-                  index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20',
-                )}
+                className={cn(index % 2 === 0 ? 'bg-card' : 'bg-muted/20')}
               >
-                <td className={cn(fiBodyCell('sticky left-0 z-10 bg-inherit text-left font-semibold'))}>
+                <td className={fiBodyCell(fiStickyLabelCell('bg-inherit font-semibold'))}>
                   {period.label}
                 </td>
                 <td
@@ -86,7 +84,7 @@ export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTable
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </ScrollTable>
+    </AppTableShell>
   )
 }

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
+import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchStepUpSipSimulation } from '../../../api'
 import { enrichMonthlyAverageCorpus } from '../../../lib/sipTimeline'
 import type {
@@ -274,36 +275,42 @@ export function StepUpSipCalculatorPanel({
       </div>
 
       {summary && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <InvestmentSummaryMetrics wide>
           <MetricTile
+            size="sm"
             label="Total invested"
             value={`₹${summary.scenario.moneyInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Current value"
             value={`₹${summary.scenario.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="XIRR"
             value={`${summary.scenario.xirr.toFixed(1)}%`}
             hint={`Post-tax ${(summary.scenario.postTaxXirr ?? 0).toFixed(1)}%`}
           />
           <MetricTile
+            size="sm"
             label="Tax if redeemed today"
             value={`−₹${summary.totalTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={`10Y projection ₹${summary.scenario.projectedValue10Y.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Current monthly SIP"
             value={`₹${summary.scenario.currentMonthlyAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint="After step-ups"
           />
           <MetricTile
+            size="sm"
             label="Total instalments"
             value={String(summary.scenario.instalmentCount)}
             hint={chartSubtitle}
           />
-        </div>
+        </InvestmentSummaryMetrics>
       )}
 
       {loading ? (

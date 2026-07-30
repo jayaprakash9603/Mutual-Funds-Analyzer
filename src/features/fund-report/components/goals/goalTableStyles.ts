@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils'
 
-export const GOAL_TABLE_SHELL =
-  'rounded-xl border border-border/70 bg-card shadow-sm dark:border-border dark:bg-card'
+import { appPanelSurface } from '@/lib/ui/appCardStyles'
+
+export const GOAL_TABLE_SHELL = appPanelSurface
 
 export function goalRowStripe(rowIndex: number): string {
   return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/35 dark:bg-muted/20'

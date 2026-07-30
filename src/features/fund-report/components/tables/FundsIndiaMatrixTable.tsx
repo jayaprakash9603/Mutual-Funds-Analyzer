@@ -1,5 +1,6 @@
 import { ScrollTable } from '@/components/ui/scroll-table'
 import { fiBodyCell, fiHeaderCell, fiStickyLabelCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
+import { APP_TABLE_MIN_WIDTH, APP_TABLE_SHELL } from '@/lib/ui/appTableStyles'
 import { cn } from '@/lib/utils'
 import type { MatrixReport } from '../../schemas'
 import {
@@ -19,7 +20,7 @@ interface FundsIndiaMatrixTableProps {
   className?: string
 }
 
-const matrixLabelCell = 'w-px whitespace-nowrap px-2 py-2'
+const matrixLabelCell = 'w-px whitespace-nowrap px-1 py-1.5 sm:px-2 sm:py-2'
 
 export function FundsIndiaMatrixTable({
   data,
@@ -35,8 +36,8 @@ export function FundsIndiaMatrixTable({
 
   return (
     <ScrollTable
-      minWidth={960}
-      className={cn('rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card', className)}
+      minWidth={APP_TABLE_MIN_WIDTH.xl}
+      className={cn(APP_TABLE_SHELL, className)}
     >
       <table className={FI_TABLE}>
         <tbody>

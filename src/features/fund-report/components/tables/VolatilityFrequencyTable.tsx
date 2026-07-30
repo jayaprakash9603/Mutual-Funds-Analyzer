@@ -53,11 +53,11 @@ export function VolatilityFrequencyTable({
               <td className={fiBodyCell()}>{formatPercent(period.typicalSwingPercent, 2)}</td>
               <td className={fiBodyCell()}>
                 {formatPercent(period.bestReturnPercent, 1)}
-                <span className="block text-xs text-muted-foreground">{period.bestReturnDate}</span>
+                <span className="block text-[10px] text-muted-foreground sm:text-xs">{period.bestReturnDate}</span>
               </td>
               <td className={fiBodyCell()}>
                 {formatPercent(period.worstReturnPercent, 1)}
-                <span className="block text-xs text-muted-foreground">{period.worstReturnDate}</span>
+                <span className="block text-[10px] text-muted-foreground sm:text-xs">{period.worstReturnDate}</span>
               </td>
               <td className={fiBodyCell()}>{formatPercent(period.positivePeriodsPercent, 0)}</td>
             </tr>

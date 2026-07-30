@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricTile } from '../../layout/SectionShell'
+import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchSwpSimulation } from '../../../api'
 import type { SwpScenario, SwpTimelinePoint } from '../../../schemas'
 import { SwpCorpusChart } from './SwpCorpusChart'
@@ -133,27 +134,31 @@ export function SwpCalculatorPanel({ scheme, startDate, isSharedView = false }: 
       </div>
 
       {activeScenario && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <InvestmentSummaryMetrics>
           <MetricTile
+            size="sm"
             label="Total withdrawn"
             value={`₹${activeScenario.totalWithdrawn.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={`${activeScenario.withdrawalCount} instalments`}
           />
           <MetricTile
+            size="sm"
             label="Remaining corpus"
             value={`₹${activeScenario.remainingCorpus.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint={activeScenario.depleted ? 'Corpus depleted' : 'At latest NAV'}
           />
           <MetricTile
+            size="sm"
             label="Tax on withdrawals"
             value={`−₹${totalTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           />
           <MetricTile
+            size="sm"
             label="Post-tax remaining"
             value={`₹${activeScenario.postTaxRemaining.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
             hint="If remaining corpus redeemed today"
           />
-        </div>
+        </InvestmentSummaryMetrics>
       )}
 
       {loading ? (
