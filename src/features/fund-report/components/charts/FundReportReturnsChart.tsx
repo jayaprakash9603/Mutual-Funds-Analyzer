@@ -18,7 +18,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CHART_HEADER_CLASS, CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
-import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
+import {
+  CHART_TOOLTIP_CURSOR,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
 import {
   getDetailedRollingReturnData,
@@ -329,12 +335,9 @@ export function FundReportReturnsChart({
                     <Label value="Indexed NAV" angle={-90} position="insideLeft" style={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
                   ) : null}
                 </YAxis>
-                <Tooltip
-                  formatter={(value) => [
-                    typeof value === 'number' ? value.toFixed(2) : String(value ?? ''),
-                    'Indexed NAV',
-                  ]}
-                  labelFormatter={(label) => String(label)}
+                <ChartTooltip
+                  cursor={CHART_TOOLTIP_CURSOR}
+                  content={<ChartTooltipContent format="number" />}
                 />
                 <Line
                   type="monotone"

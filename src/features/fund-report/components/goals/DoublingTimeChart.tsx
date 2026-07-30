@@ -1,6 +1,11 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Label, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartContainer } from '@/components/ui/chart'
+import { Bar, BarChart, CartesianGrid, Label, XAxis, YAxis } from 'recharts'
+import {
+  CHART_TOOLTIP_CURSOR,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { AXIS_LINE, GRID_STROKE, chartPlotMargin, TICK_LINE, xLabel, yLabel } from '@/lib/charts/chartAxes'
@@ -28,11 +33,17 @@ export function DoublingTimeChart() {
           <YAxis tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick} width={axis.yWidth}>
             {axis.showYLabel ? <Label {...yLabel('Years')} /> : null}
           </YAxis>
-          <Tooltip
-            formatter={(value) => [
-              `${typeof value === 'number' ? value.toFixed(1) : '—'} yrs`,
-              'Years to double',
-            ]}
+          <ChartTooltip
+            cursor={CHART_TOOLTIP_CURSOR}
+            content={
+              <ChartTooltipContent
+                format="number"
+                labelFormatter={(_, payload) => {
+                  const cagr = payload?.[0]?.payload?.cagrPercent
+                  return cagr != null ? `${cagr}% CAGR` : 'Annual return'
+                }}
+              />
+            }
           />
           <Bar dataKey="yearsToDouble" fill={CHART_COLORS.fund} radius={[2, 2, 0, 0]} isAnimationActive={false} />
         </BarChart>

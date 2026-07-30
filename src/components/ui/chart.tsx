@@ -50,6 +50,9 @@ const ChartContainer = React.forwardRef<
           '[&_.recharts-cartesian-axis-tick_text]:fill-[var(--chart-axis)]',
           '[&_.recharts-cartesian-grid_line]:stroke-[var(--chart-grid-stroke)]',
           '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[var(--chart-tooltip-cursor)]',
+          '[&_.recharts-default-tooltip]:!border [&_.recharts-default-tooltip]:!border-border [&_.recharts-default-tooltip]:!bg-popover [&_.recharts-default-tooltip]:!text-popover-foreground',
+          '[&_.recharts-default-tooltip_.recharts-tooltip-label]:!text-foreground',
+          '[&_.recharts-default-tooltip_.recharts-tooltip-item]:!text-popover-foreground',
           className,
         )}
         {...props}
