@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { appMetricGrid } from '@/lib/ui/appCardStyles'
 import type { ReportSectionState } from '../../hooks/useReportSection'
 
 type ReportGroupBoundaryProps<T> = {
@@ -14,7 +15,7 @@ export function ReportGroupBoundary<T>({ state, skeleton, children }: ReportGrou
 
   if (error && !data) {
     return (
-      <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
+      <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs sm:p-4 sm:text-sm">
         <p>{error}</p>
         <Button type="button" variant="outline" size="sm" onClick={retry}>
           Retry
@@ -36,9 +37,9 @@ export function ReportGroupBoundary<T>({ state, skeleton, children }: ReportGrou
 
 export function MetricGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={appMetricGrid}>
       {Array.from({ length: count }, (_, index) => (
-        <Skeleton key={index} className="h-24 w-full rounded-lg" />
+        <Skeleton key={index} className="h-[4.5rem] w-full rounded-lg sm:h-24 sm:rounded-xl" />
       ))}
     </div>
   )
@@ -56,9 +57,9 @@ export function TableSkeleton({ rows = 4 }: { rows?: number }) {
 }
 
 export function ChartSkeleton() {
-  return <Skeleton className="h-[320px] w-full rounded-xl sm:h-[380px] lg:h-[420px]" />
+  return <Skeleton className="h-[280px] w-full rounded-lg sm:h-[380px] sm:rounded-xl lg:h-[420px]" />
 }
 
 export function CardSkeleton() {
-  return <Skeleton className="h-48 w-full rounded-xl" />
+  return <Skeleton className="h-40 w-full rounded-lg sm:h-48 sm:rounded-xl" />
 }

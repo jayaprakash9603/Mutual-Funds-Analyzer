@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
+import { AppMetricGrid } from '@/components/ui/AppMetricGrid'
 import { StatCard } from '@/components/dashboard/cards/StatCard'
 import { GoldenTriangleResultCard } from '@/components/dashboard/cards/GoldenTriangleResultCard'
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
@@ -60,7 +61,7 @@ function AnalysisSkeleton() {
       <Skeleton className="h-[560px] w-full rounded-xl" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         {STAT_SKELETON_KEYS.map((key) => (
-          <Skeleton key={key} className="h-24 rounded-xl" />
+          <Skeleton key={key} className="h-[4.5rem] rounded-lg sm:h-24 sm:rounded-xl" />
         ))}
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
@@ -184,7 +185,7 @@ export function DashboardPage() {
           </FeatureGate>
 
           <FeatureGate name="ui.statCards">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            <AppMetricGrid variant="wide">
               {statCards.map((card, i) => (
                 <StatCard
                   key={card.label}
@@ -196,7 +197,7 @@ export function DashboardPage() {
                   index={i}
                 />
               ))}
-            </div>
+            </AppMetricGrid>
           </FeatureGate>
 
           <div className="grid gap-6 lg:grid-cols-3">

@@ -1,4 +1,6 @@
+import { AppMetricGrid } from '@/components/ui/AppMetricGrid'
 import { Progress } from '@/components/ui/progress'
+import { appMetricCardClasses } from '@/lib/ui/appCardStyles'
 import { cn, formatPercent } from '@/lib/utils'
 import type { FundReportAssessment, FundReportRisk } from '../../schemas'
 import { buildRiskHeadline } from '../../lib/headlines/sectionHeadlines'
@@ -51,8 +53,8 @@ function ScoreBar({
 
 function QualityComponentRow({ name, score }: { name: string; score: number }) {
   return (
-    <li className="rounded-lg border border-border/60 bg-background/60 px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2 text-sm">
+    <li className={appMetricCardClasses('sm')}>
+      <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
         <span className="min-w-0 truncate">{name}</span>
         <span className="shrink-0 font-mono tabular-nums text-muted-foreground">{score}/100</span>
       </div>
@@ -71,7 +73,7 @@ export function RiskAnalysisPanel({ risk, assessment, fundName }: RiskAnalysisPa
     <div className="space-y-6">
       <SectionHeadline headline={buildRiskHeadline(risk, qualityScore, fundName)} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <AppMetricGrid>
         <MetricTile
           label="Volatility"
           value={formatPercent(metrics.volatility)}
@@ -85,8 +87,8 @@ export function RiskAnalysisPanel({ risk, assessment, fundName }: RiskAnalysisPa
           metricKey="maxDrawdown"
           size="lg"
         />
-        <MetricTile label="Risk Level" value={metrics.riskLevel} size="lg" />
-      </div>
+        <MetricTile label="Risk Level" value={metrics.riskLevel} size="lg" valueVariant="text" />
+      </AppMetricGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ReportInsightCard

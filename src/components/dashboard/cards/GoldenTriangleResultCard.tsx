@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { Check, X, Triangle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AppMetricGrid } from '@/components/ui/AppMetricGrid'
 import { Badge } from '@/components/ui/badge'
 import type { GoldenTriangleResult } from '@/lib/analytics/types'
+import { appMetricCardClasses } from '@/lib/ui/appCardStyles'
 import { cn } from '@/lib/utils'
 
 interface GoldenTriangleResultCardProps {
@@ -18,51 +20,52 @@ export function GoldenTriangleResultCard({ result }: GoldenTriangleResultCardPro
     >
       <Card
         className={cn(
-          'glass border-2',
+          'border-2',
           result.passed ? 'border-emerald-500/50 shadow-emerald-500/10' : 'border-red-500/40 shadow-red-500/10',
         )}
       >
-        <CardHeader className="flex flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <CardHeader className="flex flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <div
               className={cn(
-                'flex h-12 w-12 items-center justify-center rounded-xl',
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:h-12 sm:w-12 sm:rounded-xl',
                 result.passed ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500',
               )}
             >
-              <Triangle className="h-6 w-6" aria-hidden="true" />
+              <Triangle className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
             </div>
-            <div>
+            <div className="min-w-0">
               <CardTitle>Golden Triangle Result</CardTitle>
-              <p className="text-sm text-muted-foreground">{result.fundName}</p>
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">{result.fundName}</p>
             </div>
           </div>
-          <Badge variant={result.passed ? 'success' : 'danger'} className="text-sm px-3 py-1">
+          <Badge variant={result.passed ? 'success' : 'danger'} className="shrink-0 px-2 py-0.5 text-xs sm:px-3 sm:py-1 sm:text-sm">
             {result.passed ? 'Passed' : 'Failed'}
           </Badge>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+        <CardContent className="space-y-3 sm:space-y-4">
+          <AppMetricGrid variant="compact">
             {result.rules.map((rule) => (
               <div
                 key={rule.id}
                 className={cn(
-                  'flex items-start gap-3 rounded-xl border p-4',
+                  appMetricCardClasses('md'),
+                  'flex items-start gap-2.5 sm:gap-3',
                   rule.passed
                     ? 'border-emerald-500/30 bg-emerald-500/5'
                     : 'border-red-500/30 bg-red-500/5',
                 )}
               >
                 {rule.passed ? (
-                  <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500 sm:h-5 sm:w-5" aria-hidden="true" />
                 ) : (
-                  <X className="mt-0.5 h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
+                  <X className="mt-0.5 h-4 w-4 shrink-0 text-red-500 sm:h-5 sm:w-5" aria-hidden="true" />
                 )}
-                <div>
-                  <p className="font-medium">{rule.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{rule.description}</p>
-                  <p className="mt-2 font-mono text-sm tabular-nums">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium sm:text-base">{rule.label}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{rule.description}</p>
+                  <p className="mt-1.5 font-mono text-xs tabular-nums sm:mt-2 sm:text-sm">
                     {rule.id === 'cob'
                       ? `${rule.fundValue.toFixed(1)}% vs ${rule.benchmarkValue}%`
                       : `${rule.fundValue.toFixed(2)} vs ${rule.benchmarkValue.toFixed(2)}`}
@@ -70,27 +73,27 @@ export function GoldenTriangleResultCard({ result }: GoldenTriangleResultCardPro
                 </div>
               </div>
             ))}
-          </div>
+          </AppMetricGrid>
 
-          <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/30 py-6 text-center">
+          <div className="flex flex-col items-center gap-2 rounded-lg bg-muted/30 py-4 text-center sm:rounded-xl sm:py-6">
             {result.passed ? (
               <>
-                <p className="text-lg font-semibold text-emerald-500" aria-label="Golden Triangle Passed, five stars">
+                <p className="text-base font-semibold text-emerald-500 sm:text-lg" aria-label="Golden Triangle Passed, five stars">
                   Golden Triangle Passed
                 </p>
                 <div className="flex gap-1 text-amber-400" aria-hidden="true">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className="text-xl">★</span>
+                    <span key={i} className="text-lg sm:text-xl">★</span>
                   ))}
                 </div>
               </>
             ) : (
               <>
-                <X className="h-10 w-10 text-red-500" aria-hidden="true" />
-                <p className="text-lg font-semibold text-red-500">Golden Triangle Failed</p>
+                <X className="h-8 w-8 text-red-500 sm:h-10 sm:w-10" aria-hidden="true" />
+                <p className="text-base font-semibold text-red-500 sm:text-lg">Golden Triangle Failed</p>
               </>
             )}
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground sm:text-sm">
               Score: {result.passCount}/3 — {result.overallRating}
             </p>
           </div>

@@ -22,34 +22,34 @@ export function InsightsPanel({ result, insights }: InsightsPanelProps) {
   const rating = INSIGHT_RATINGS[result.overallRating as keyof typeof INSIGHT_RATINGS] ?? result.overallRating
 
   return (
-    <Card className="glass">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" aria-hidden="true" />
           <CardTitle>AI Insights</CardTitle>
         </div>
-        <Badge variant={ratingVariant(rating)}>
+        <Badge variant={ratingVariant(rating)} className="shrink-0 text-[10px] sm:text-xs">
           {rating}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2 sm:space-y-3">
         {insights.map((insight, i) => (
           <motion.p
             key={`${i}-${insight}`}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * STAGGER_SECONDS }}
-            className="text-sm leading-relaxed text-muted-foreground"
+            className="text-xs leading-relaxed text-muted-foreground sm:text-sm"
           >
             {insight}
           </motion.p>
         ))}
 
-        <div className="mt-4 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 p-4">
-          <ShieldAlert className="h-5 w-5 text-secondary" aria-hidden="true" />
-          <div>
-            <p className="text-sm font-medium">Risk Level: {result.metrics.riskLevel}</p>
-            <p className="text-xs text-muted-foreground">
+        <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/20 p-3 sm:mt-4 sm:gap-3 sm:rounded-xl sm:p-4">
+          <ShieldAlert className="h-4 w-4 shrink-0 text-secondary sm:h-5 sm:w-5" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-xs font-medium sm:text-sm">Risk Level: {result.metrics.riskLevel}</p>
+            <p className="text-[10px] text-muted-foreground sm:text-xs">
               Volatility {result.metrics.fundVolatility.toFixed(2)}% | Max Drawdown {result.metrics.maxDrawdown.toFixed(2)}%
             </p>
           </div>

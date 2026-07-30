@@ -247,7 +247,7 @@
   }
 
   .glass {
-    @apply bg-card border border-border/60 shadow-sm;
+    @apply rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm sm:rounded-xl;
   }
 
   .scrollbar-thin {

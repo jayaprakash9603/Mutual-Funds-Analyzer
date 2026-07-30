@@ -1,22 +1,25 @@
 import { motion } from 'framer-motion'
 import { Progress } from '@/components/ui/progress'
+import { appMetricCardClasses } from '@/lib/ui/appCardStyles'
 import { cn } from '@/lib/utils'
 
 export function ProbabilityBar({ label, value, explanation }: { label: string; value: number; explanation?: string }) {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span>{label}</span>
+    <div className={appMetricCardClasses('md')}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="min-w-0 text-xs leading-snug text-foreground sm:text-sm">{label}</span>
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="font-mono font-medium"
+          className="shrink-0 font-mono text-xs font-semibold tabular-nums sm:text-sm"
         >
           {value.toFixed(0)}%
         </motion.span>
       </div>
-      <Progress value={Math.min(100, Math.max(0, value))} />
-      {explanation && <p className="text-xs text-muted-foreground">{explanation}</p>}
+      <Progress value={Math.min(100, Math.max(0, value))} className="mt-2 h-1.5 sm:h-2" />
+      {explanation ? (
+        <p className="mt-1.5 text-[10px] text-muted-foreground sm:text-xs">{explanation}</p>
+      ) : null}
     </div>
   )
 }

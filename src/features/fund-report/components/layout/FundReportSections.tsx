@@ -3,7 +3,9 @@ import { GoldenTriangleResultCard } from '@/components/dashboard/cards/GoldenTri
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
-import { formatPercent } from '@/lib/utils'
+import { AppMetricGrid } from '@/components/ui/AppMetricGrid'
+import { formatPercent, cn } from '@/lib/utils'
+import { appHighlightCard } from '@/lib/ui/appCardStyles'
 import type { GoldenTriangleResult } from '@/api/schemas'
 import { fetchPeerComparison } from '../../api'
 import type { ProgressiveFundReportGroups } from '../../hooks/useProgressiveFundReport'
@@ -142,9 +144,9 @@ export function FundReportSections({
   return (
     <div id={exportRootId} className="space-y-6">
       {exportTitle ? (
-        <div className="rounded-xl border border-border/70 bg-card px-4 py-3">
-          <h2 className="text-lg font-semibold text-foreground">{exportTitle}</h2>
-          <p className="text-xs text-muted-foreground">Fund report snapshot</p>
+        <div className={appHighlightCard}>
+          <h2 className="text-base font-semibold text-foreground sm:text-lg">{exportTitle}</h2>
+          <p className="text-[10px] text-muted-foreground sm:text-xs">Fund report snapshot</p>
         </div>
       ) : null}
       {shouldRender("overview") ? (
@@ -152,19 +154,20 @@ export function FundReportSections({
         <ReportGroupBoundary state={overview} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
             <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricTile label="Fund" value={data.profile.fundName} />
-                <MetricTile label="AMC" value={data.profile.amc || '—'} />
-                <MetricTile label="Category" value={data.profile.category || '—'} />
-                <MetricTile label="Benchmark" value={data.profile.benchmarkName} />
+              <AppMetricGrid>
+                <MetricTile label="Fund" value={data.profile.fundName} valueVariant="text" />
+                <MetricTile label="AMC" value={data.profile.amc || '—'} valueVariant="text" />
+                <MetricTile label="Category" value={data.profile.category || '—'} valueVariant="text" />
+                <MetricTile label="Benchmark" value={data.profile.benchmarkName} valueVariant="text" />
                 <MetricTile label="NAV" value={`₹${data.profile.latestNav.toFixed(2)}`} />
-                <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} />
-                <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} />
+                <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} valueVariant="text" />
+                <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} valueVariant="text" />
                 <MetricTile
                   label="Data Range"
                   value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`}
+                  valueVariant="text"
                 />
-              </div>
+              </AppMetricGrid>
               <FundLongTermStoryChart
                 fundName={data.profile.fundName}
                 category={data.profile.category}
@@ -287,7 +290,7 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={performance} skeleton={<MetricGridSkeleton count={3} />}>
           {(data) => (
-            <div className="space-y-4 rounded-xl border border-border/70 bg-card px-4 py-4 sm:px-5 sm:py-5">
+            <div className={cn(appHighlightCard, 'space-y-3 sm:space-y-4')}>
               <SectionHeadline
                 headline={buildBenchmarkHeadline(
                   data.benchmarkComparison,
@@ -295,7 +298,7 @@ export function FundReportSections({
                   benchmarkName,
                 )}
               />
-              <div className="grid gap-3 sm:grid-cols-3">
+              <AppMetricGrid variant="compact">
                 <MetricTile
                   label="Fund Return"
                   value={formatPercent(data.benchmarkComparison.fundTotalReturn)}
@@ -309,8 +312,8 @@ export function FundReportSections({
                   value={`${data.benchmarkComparison.winningPercent.toFixed(0)}%`}
                   metricKey="cob"
                 />
-              </div>
-              <p className="text-sm text-muted-foreground">{data.benchmarkComparison.explanation}</p>
+              </AppMetricGrid>
+              <p className="text-xs text-muted-foreground sm:text-sm">{data.benchmarkComparison.explanation}</p>
             </div>
           )}
         </ReportGroupBoundary>
@@ -339,14 +342,14 @@ export function FundReportSections({
                 className="mb-5"
                 headline={buildProbabilityHeadline(data.probability, fundName)}
               />
-              <div className="mb-6 grid gap-4 md:grid-cols-2">
+              <AppMetricGrid className="mb-6 lg:grid-cols-2">
                 <ProbabilityBar label="Positive return" value={data.probability.positiveReturn} />
                 <ProbabilityBar label="Beat inflation (~7%)" value={data.probability.beatInflation} />
                 <ProbabilityBar label="Beat benchmark" value={data.probability.beatBenchmark} />
                 <ProbabilityBar label="&gt;10% CAGR" value={data.probability.above10Cagr} />
                 <ProbabilityBar label="Double money (7Y)" value={data.probability.doubleMoney} />
                 <ProbabilityBar label="Triple money (7Y)" value={data.probability.tripleMoney} />
-              </div>
+              </AppMetricGrid>
               {data.multiplyOdds.holdingYears.length > 0 ? (
                 <MultiplyProbabilityTable
                   table={fromMultiplyOdds(data.multiplyOdds)}
@@ -401,7 +404,7 @@ export function FundReportSections({
               <>
                 <SectionHeadline headline={buildVolatilityHeadline(data.volatility, fundName)} />
                 {daily ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <AppMetricGrid>
                     <MetricTile
                       label="Annualised volatility"
                       value={formatPercent(daily.annualisedVolatilityPercent, 1)}
@@ -422,7 +425,7 @@ export function FundReportSections({
                       value={formatPercent(daily.bestReturnPercent, 1)}
                       metricKey="bestDay"
                     />
-                  </div>
+                  </AppMetricGrid>
                 ) : null}
 
                 <div className="grid gap-3">
@@ -533,7 +536,7 @@ export function FundReportSections({
                 className="mb-4"
                 headline={buildDrawdownHeadline(data.drawdown, fundName)}
               />
-              <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+              <AppMetricGrid variant="wide" className="mb-4">
                 <MetricTile
                   label="Biggest crash"
                   value={formatPercent(-data.drawdown.biggestCrash)}
@@ -556,7 +559,7 @@ export function FundReportSections({
                   label="Episodes (≥10%)"
                   value={String(data.drawdown.episodes.length)}
                 />
-              </div>
+              </AppMetricGrid>
               <AnnotatedDrawdownChart drawdown={data.drawdown} fundName={fundName} />
               <DrawdownEpisodesTable drawdown={data.drawdown} />
             </>

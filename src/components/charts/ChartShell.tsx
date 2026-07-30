@@ -3,6 +3,7 @@ import { Info, Lightbulb } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { appPanelSurface } from '@/lib/ui/appCardStyles'
 import { CHART_HEIGHT, CHART_HEIGHT_COMPACT, CHART_HEIGHT_WIDE } from '@/lib/charts/chartAxes'
 import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
 import { cn } from '@/lib/utils'
@@ -92,7 +93,7 @@ export function ChartShell({ guide, children, loading, empty, footer, variant = 
     return (
       <div
         className={cn(
-          'overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm',
+          appPanelSurface,
           guide.wide && 'lg:col-span-2',
         )}
       >
@@ -106,7 +107,7 @@ export function ChartShell({ guide, children, loading, empty, footer, variant = 
   return (
     <Card
       className={cn(
-        'glass flex h-full flex-col overflow-hidden',
+        'flex h-full flex-col overflow-hidden',
         guide.wide && 'lg:col-span-2',
       )}
     >

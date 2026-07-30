@@ -32,8 +32,8 @@ const TONE_RULE: Record<HeadlineTone, string> = {
 }
 
 const SIZE_TEXT: Record<'md' | 'lg', string> = {
-  md: 'text-[1.0625rem] sm:text-xl lg:text-[1.375rem]',
-  lg: 'text-lg sm:text-2xl lg:text-[1.75rem]',
+  md: 'text-sm sm:text-lg md:text-xl lg:text-[1.375rem]',
+  lg: 'text-base sm:text-xl md:text-2xl lg:text-[1.75rem]',
 }
 
 function normalize(part: HeadlinePart): HeadlineSegment {
@@ -58,7 +58,7 @@ export function StatHeadline({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border/50 border-l-4 bg-[var(--headline-surface)] px-4 py-3.5 sm:px-6 sm:py-5',
+        'rounded-lg border border-border/50 border-l-4 bg-[var(--headline-surface)] px-3 py-2.5 sm:rounded-xl sm:px-5 sm:py-4 md:px-6 md:py-5',
         TONE_RULE[leadTone],
         className,
       )}
@@ -93,7 +93,7 @@ export function StatHeadline({
       {note ? (
         <p
           className={cn(
-            'mt-3 border-t border-dashed border-[var(--headline-rule)] pt-2.5 text-sm font-semibold leading-relaxed sm:text-base',
+            'mt-2 border-t border-dashed border-[var(--headline-rule)] pt-2 text-xs font-semibold leading-relaxed sm:mt-3 sm:pt-2.5 sm:text-sm md:text-base',
             TONE_TEXT[noteTone],
             align === 'center' && 'text-center',
           )}
