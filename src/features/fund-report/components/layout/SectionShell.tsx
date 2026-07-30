@@ -37,7 +37,7 @@ export function SectionShell({
 
   return (
     <section id={id} style={scrollStyle}>
-      <Card className="glass glass-hover">
+      <Card className="glass">
         <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}

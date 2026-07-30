@@ -28,7 +28,7 @@ export function ChartShell({ guide, children, loading, empty, footer }: ChartShe
   return (
     <Card
       className={cn(
-        'glass glass-hover flex h-full flex-col overflow-hidden transition-shadow duration-200',
+        'glass flex h-full flex-col overflow-hidden',
         guide.wide && 'lg:col-span-2',
       )}
     >

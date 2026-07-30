@@ -18,7 +18,7 @@ export function StatCard({ label, value, display, suffix = '', format = 'decimal
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
     >
-      <Card className="glass-hover">
+      <Card className="glass">
         <CardContent className="p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
           <div className="mt-2 text-2xl font-semibold">

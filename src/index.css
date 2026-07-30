@@ -247,11 +247,7 @@
   }
 
   .glass {
-    @apply bg-card/70 backdrop-blur-xl border border-border/60 shadow-xl;
-  }
-
-  .glass-hover {
-    @apply transition-all duration-200 hover:bg-card/85 hover:shadow-2xl hover:-translate-y-0.5;
+    @apply bg-card border border-border/60 shadow-sm;
   }
 
   .scrollbar-thin {
