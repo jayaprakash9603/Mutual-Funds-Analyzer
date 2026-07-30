@@ -22,6 +22,7 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsight
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.risk.VolatilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
 import in.goldentriangle.mfa.domain.analytics.GoldenTriangleEvaluator;
@@ -45,6 +46,11 @@ public class ReportConfig {
     @Bean
     MissingBestQuarterCalculator missingBestQuarterCalculator() {
         return new MissingBestQuarterCalculator();
+    }
+
+    @Bean
+    VolatilityCalculator volatilityCalculator() {
+        return new VolatilityCalculator();
     }
 
     @Bean
@@ -149,6 +155,7 @@ public class ReportConfig {
             ProbabilityCalculator probabilityCalculator,
             MultiplyOddsCalculator multiplyOddsCalculator,
             MissingBestQuarterCalculator missingBestQuarterCalculator,
+            VolatilityCalculator volatilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
             StepUpSipCalculator stepUpSipCalculator,
@@ -171,6 +178,7 @@ public class ReportConfig {
                 probabilityCalculator,
                 multiplyOddsCalculator,
                 missingBestQuarterCalculator,
+                volatilityCalculator,
                 riskReportBuilder,
                 sipCalculator,
                 stepUpSipCalculator,

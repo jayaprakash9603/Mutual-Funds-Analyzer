@@ -23,6 +23,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.LumpsumReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MatrixReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MultiplyOddsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MissingBestQuarterReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.VolatilityReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.compare.PeerComparisonDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ProbabilityDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ProsConsDto;
@@ -63,6 +64,7 @@ import in.goldentriangle.mfa.domain.model.report.investment.LumpsumSimulation;
 import in.goldentriangle.mfa.domain.model.report.investment.LumpsumReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterReport;
+import in.goldentriangle.mfa.domain.model.report.risk.VolatilityReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixReportBundle;
 import in.goldentriangle.mfa.domain.model.report.matrix.MatrixRecoveryAnalysis;
@@ -345,6 +347,50 @@ public class FundReportMapper {
                 report.averageLostPercent(),
                 report.latestLostPercent(),
                 report.latestQuarterLabel(),
+                report.headline());
+    }
+
+    private VolatilityReportDto toDto(VolatilityReport report) {
+        return new VolatilityReportDto(
+                report.periodLabel(),
+                report.benchmarkAvailable(),
+                report.periods().stream()
+                        .map(p -> new VolatilityReportDto.PeriodVolatilityDto(
+                                p.frequency(),
+                                p.observations(),
+                                p.stdDevPercent(),
+                                p.annualisedVolatilityPercent(),
+                                p.averageReturnPercent(),
+                                p.typicalSwingPercent(),
+                                p.bestReturnPercent(),
+                                p.bestReturnDate(),
+                                p.worstReturnPercent(),
+                                p.worstReturnDate(),
+                                p.positivePeriodsPercent(),
+                                p.negativePeriodsPercent(),
+                                p.benchmarkAnnualisedVolatilityPercent(),
+                                p.benchmarkBestReturnPercent(),
+                                p.benchmarkWorstReturnPercent()))
+                        .toList(),
+                report.rollingSeries().stream()
+                        .map(p -> new VolatilityReportDto.RollingVolatilityPointDto(
+                                p.date(), p.fundVolatilityPercent(), p.benchmarkVolatilityPercent()))
+                        .toList(),
+                new VolatilityReportDto.RollingVolatilitySummaryDto(
+                        report.rollingSummary().windowDays(),
+                        report.rollingSummary().currentPercent(),
+                        report.rollingSummary().averagePercent(),
+                        report.rollingSummary().maxPercent(),
+                        report.rollingSummary().maxDate(),
+                        report.rollingSummary().minPercent(),
+                        report.rollingSummary().minDate(),
+                        report.rollingSummary().benchmarkAveragePercent(),
+                        report.rollingSummary().timeAboveBenchmarkPercent()),
+                report.dailyDistribution().stream()
+                        .map(b -> new VolatilityReportDto.ReturnBucketDto(
+                                b.label(), b.lowerPercent(), b.upperPercent(), b.count(), b.sharePercent()))
+                        .toList(),
+                report.volatilityBand(),
                 report.headline());
     }
 
@@ -728,6 +774,7 @@ public class FundReportMapper {
                 toDto(section.drawdown()),
                 toDto(section.bestDays()),
                 toDto(section.missingBestQuarter()),
+                toDto(section.volatility()),
                 toDto(section.allTimeHighs()));
     }
 

@@ -10,6 +10,7 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsight
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.risk.VolatilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.LumpsumCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
@@ -43,6 +44,7 @@ import in.goldentriangle.mfa.domain.model.report.assessment.ProsConsReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.QualityScoreReport;
 import in.goldentriangle.mfa.domain.model.report.assessment.RecommendationReport;
 import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterReport;
+import in.goldentriangle.mfa.domain.model.report.risk.VolatilityReport;
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SipCalculator;
@@ -70,6 +72,7 @@ public class FundReportEngine {
     private final ProbabilityCalculator probabilityCalculator;
     private final MultiplyOddsCalculator multiplyOddsCalculator;
     private final MissingBestQuarterCalculator missingBestQuarterCalculator;
+    private final VolatilityCalculator volatilityCalculator;
     private final RiskReportBuilder riskReportBuilder;
     private final SipCalculator sipCalculator;
     private final StepUpSipCalculator stepUpSipCalculator;
@@ -93,6 +96,7 @@ public class FundReportEngine {
             ProbabilityCalculator probabilityCalculator,
             MultiplyOddsCalculator multiplyOddsCalculator,
             MissingBestQuarterCalculator missingBestQuarterCalculator,
+            VolatilityCalculator volatilityCalculator,
             RiskReportBuilder riskReportBuilder,
             SipCalculator sipCalculator,
             StepUpSipCalculator stepUpSipCalculator,
@@ -114,6 +118,7 @@ public class FundReportEngine {
         this.probabilityCalculator = probabilityCalculator;
         this.multiplyOddsCalculator = multiplyOddsCalculator;
         this.missingBestQuarterCalculator = missingBestQuarterCalculator;
+        this.volatilityCalculator = volatilityCalculator;
         this.riskReportBuilder = riskReportBuilder;
         this.sipCalculator = sipCalculator;
         this.stepUpSipCalculator = stepUpSipCalculator;
@@ -176,6 +181,9 @@ public class FundReportEngine {
         CompletableFuture<MissingBestQuarterReport> missingBestQuarterFuture = supplyAsync(
                 "missingBestQuarter",
                 () -> missingBestQuarterCalculator.compute(history.fundNav()));
+        CompletableFuture<VolatilityReport> volatilityFuture = supplyAsync(
+                "volatility",
+                () -> volatilityCalculator.compute(history.fundNav(), history.benchmarkNav()));
 
         GoldenTriangleResult goldenTriangle = goldenTriangleFuture.join();
         FundMetrics fundMetrics = goldenTriangle.metrics();
@@ -231,6 +239,7 @@ public class FundReportEngine {
                 drawdown,
                 bestDaysFuture.join(),
                 missingBestQuarterFuture.join(),
+                volatilityFuture.join(),
                 allTimeHighsFuture.join(),
                 sipFuture.join(),
                 stepUpSipFuture.join(),

@@ -21,6 +21,7 @@ import in.goldentriangle.mfa.domain.model.report.returns.MissingBestQuarterRepor
 import in.goldentriangle.mfa.domain.model.report.returns.RollingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.TrailingReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.matrix.MultiplyOddsReport;
+import in.goldentriangle.mfa.domain.model.report.risk.VolatilityReport;
 import in.goldentriangle.mfa.domain.model.GoldenTriangleResult;
 
 import java.time.Instant;
@@ -41,6 +42,7 @@ public record FundReport(
         DrawdownReport drawdown,
         BestDaysReport bestDays,
         MissingBestQuarterReport missingBestQuarter,
+        VolatilityReport volatility,
         AllTimeHighsReport allTimeHighs,
         SipReport sip,
         StepUpSipReport stepUpSip,

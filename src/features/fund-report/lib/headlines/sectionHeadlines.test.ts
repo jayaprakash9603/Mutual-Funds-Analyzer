@@ -3,6 +3,7 @@ import {
   buildBenchmarkHeadline,
   buildIntraYearDeclineHeadline,
   buildRollingReturnsHeadline,
+  buildVolatilityHeadline,
   shortFundName,
 } from '@/features/fund-report/lib/headlines/sectionHeadlines'
 import type { HeadlinePart } from '@/features/fund-report/lib/headlines/types'
@@ -213,5 +214,54 @@ describe('buildIntraYearDeclineHeadline', () => {
         'Demo Fund',
       ),
     ).toBeNull()
+  })
+})
+
+describe('buildVolatilityHeadline', () => {
+  it('highlights annualised volatility and typical daily swing', () => {
+    const headline = buildVolatilityHeadline(
+      {
+        periodLabel: '',
+        benchmarkAvailable: false,
+        periods: [
+          {
+            frequency: 'Daily',
+            observations: 100,
+            stdDevPercent: 1,
+            annualisedVolatilityPercent: 18.5,
+            averageReturnPercent: 0.1,
+            typicalSwingPercent: 0.8,
+            bestReturnPercent: 5,
+            bestReturnDate: '1 Jan 2020',
+            worstReturnPercent: -6,
+            worstReturnDate: '23 Mar 2020',
+            positivePeriodsPercent: 55,
+            negativePeriodsPercent: 45,
+            benchmarkAnnualisedVolatilityPercent: 0,
+            benchmarkBestReturnPercent: 0,
+            benchmarkWorstReturnPercent: 0,
+          },
+        ],
+        rollingSeries: [],
+        rollingSummary: {
+          windowDays: 252,
+          currentPercent: 0,
+          averagePercent: 0,
+          maxPercent: 0,
+          maxDate: '',
+          minPercent: 0,
+          minDate: '',
+          benchmarkAveragePercent: 0,
+          timeAboveBenchmarkPercent: 0,
+        },
+        dailyDistribution: [],
+        volatilityBand: 'High',
+        headline: '',
+      },
+      'Demo Fund - Direct - Growth',
+    )
+
+    expect(flatten(headline!.parts)).toContain('18.5%')
+    expect(accentText(headline!.parts)).toContain('0.80%')
   })
 })

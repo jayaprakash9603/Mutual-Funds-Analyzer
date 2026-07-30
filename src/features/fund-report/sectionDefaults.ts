@@ -20,6 +20,27 @@ export const EMPTY_MISSING_BEST_QUARTER: FundReportRisk['missingBestQuarter'] = 
   headline: '',
 }
 
+export const EMPTY_VOLATILITY: FundReportRisk['volatility'] = {
+  periodLabel: '',
+  benchmarkAvailable: false,
+  periods: [],
+  rollingSeries: [],
+  rollingSummary: {
+    windowDays: 252,
+    currentPercent: 0,
+    averagePercent: 0,
+    maxPercent: 0,
+    maxDate: '',
+    minPercent: 0,
+    minDate: '',
+    benchmarkAveragePercent: 0,
+    timeAboveBenchmarkPercent: 0,
+  },
+  dailyDistribution: [],
+  volatilityBand: '',
+  headline: '',
+}
+
 export const EMPTY_BEST_DAYS: FundReportRisk['bestDays'] = {
   initialInvestment: 1_000_000,
   periodLabel: '',
@@ -137,6 +158,8 @@ export function withFundReportDefaults(report: Partial<FundReport> & Record<stri
     missingBestQuarter:
       (report.missingBestQuarter as FundReport['missingBestQuarter'] | undefined)
       ?? EMPTY_MISSING_BEST_QUARTER,
+    volatility:
+      (report.volatility as FundReport['volatility'] | undefined) ?? EMPTY_VOLATILITY,
   } as FundReport
 }
 
@@ -149,6 +172,7 @@ export function normalizeRiskSectionPayload(data: unknown): unknown {
     ...section,
     bestDays: section.bestDays ?? EMPTY_BEST_DAYS,
     missingBestQuarter: section.missingBestQuarter ?? EMPTY_MISSING_BEST_QUARTER,
+    volatility: section.volatility ?? EMPTY_VOLATILITY,
     allTimeHighs: normalizeAllTimeHighs(section.allTimeHighs),
   }
 }

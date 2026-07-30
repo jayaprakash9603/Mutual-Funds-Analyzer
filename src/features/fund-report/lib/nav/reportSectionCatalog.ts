@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   BarChart3,
   CalendarDays,
+  Activity,
   ArrowRightLeft,
   CircleDollarSign,
   CloudRain,
@@ -64,6 +65,7 @@ export const SECTION_GROUPS: SectionGroup[] = [
     label: 'Risk',
     sections: [
       { id: 'risk', label: 'Risk', icon: Shield },
+      { id: 'volatility', label: 'Volatility', icon: Activity },
       { id: 'portfolio', label: 'Portfolio', icon: PieChart },
       { id: 'consistency', label: 'Consistency', icon: Sparkles },
       { id: 'drawdown', label: 'Drawdown', icon: TrendingDown },

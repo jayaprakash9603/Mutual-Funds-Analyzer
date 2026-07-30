@@ -439,3 +439,23 @@ export function buildBenchmarkHeadline(
     ],
   }
 }
+
+export function buildVolatilityHeadline(
+  volatility: Risk['volatility'],
+  fundName: string,
+): Headline | null {
+  const daily = volatility.periods.find((period) => period.frequency === 'Daily')
+  if (!daily || daily.observations === 0) return null
+
+  return {
+    parts: [
+      `${shortFundName(fundName)} shows `,
+      accent(volatility.volatilityBand.toLowerCase()),
+      ' volatility at ',
+      accentMark(pct(daily.annualisedVolatilityPercent, 1)),
+      ' with a typical daily swing of ',
+      accent(pct(daily.typicalSwingPercent, 2)),
+    ],
+    note: volatility.headline || undefined,
+  }
+}

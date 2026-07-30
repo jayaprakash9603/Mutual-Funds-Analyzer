@@ -32,6 +32,7 @@ import {
   buildRollingReturnsHeadline,
   buildSortedReturnsHeadline,
   buildTrailingReturnsHeadline,
+  buildVolatilityHeadline,
 } from '../../lib/headlines/sectionHeadlines'
 import {
   BearMarketDecadeChart,
@@ -51,6 +52,9 @@ import { AthDeclineOutlookChart } from '../charts/AthDeclineOutlookChart'
 import { PostAthReturnsTable } from '../charts/PostAthReturnsTable'
 import { AnnualReturnDistributionChart } from '../charts/AnnualReturnDistributionChart'
 import { RollingHorizonProbabilityCharts } from '../charts/RollingHorizonProbabilityCharts'
+import { ReturnDistributionHistogram } from '../charts/ReturnDistributionHistogram'
+import { RollingVolatilityChart } from '../charts/RollingVolatilityChart'
+import { VolatilitySwingChart } from '../charts/VolatilitySwingChart'
 import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart'
 import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
 import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
@@ -70,6 +74,14 @@ import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
 import { GoalPlannerSection } from '../goals/GoalPlannerSection'
 import { LumpsumSection } from '../investment/LumpsumSection'
 import { SipSection, StepUpSipSection, StpSection, SwpSection } from '../investment/InvestmentStrategySections'
+import { VolatilityFrequencyTable } from '../tables/VolatilityFrequencyTable'
+import {
+  describeFluctuation,
+  describeTrend,
+  describeVsBenchmark,
+  describeWorstMove,
+  getDailyPeriod,
+} from '../../lib/volatility/volatilityInsights'
 import { fromMultiplyOdds } from '../../lib/matrix/multiplyProbability'
 import { sectionNeedsPeersFetch } from '../../lib/nav/reportSectionRequirements'
 
@@ -377,6 +389,91 @@ export function FundReportSections({
               <MetricTile label="Risk Level" value={data.risk.riskLevel} />
             </div>
           )}
+        </ReportGroupBoundary>
+      </SectionShell>
+      ) : null}
+
+      {shouldRender("volatility") ? (
+      <SectionShell
+        id="volatility"
+        title="Volatility"
+        variant="stack"
+        description="How much this fund's value swings from day to day, week to week, and month to month."
+      >
+        <ReportGroupBoundary state={risk} skeleton={<ChartSkeleton />}>
+          {(data) => {
+            const daily = getDailyPeriod(data.volatility)
+            return (
+              <>
+                <SectionHeadline headline={buildVolatilityHeadline(data.volatility, fundName)} />
+                {daily ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetricTile
+                      label="Annualised volatility"
+                      value={formatPercent(daily.annualisedVolatilityPercent, 1)}
+                      metricKey="volatility"
+                    />
+                    <MetricTile
+                      label="Typical daily swing"
+                      value={formatPercent(daily.typicalSwingPercent, 2)}
+                      metricKey="typicalSwing"
+                    />
+                    <MetricTile
+                      label="Worst day"
+                      value={formatPercent(daily.worstReturnPercent, 1)}
+                      metricKey="worstDay"
+                    />
+                    <MetricTile
+                      label="Best day"
+                      value={formatPercent(daily.bestReturnPercent, 1)}
+                      metricKey="bestDay"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="grid gap-3">
+                  {describeFluctuation(data.volatility) ? (
+                    <p className="text-sm text-muted-foreground">{describeFluctuation(data.volatility)}</p>
+                  ) : null}
+                  {describeWorstMove(data.volatility) ? (
+                    <p className="text-sm text-muted-foreground">{describeWorstMove(data.volatility)}</p>
+                  ) : null}
+                  {describeVsBenchmark(data.volatility) ? (
+                    <p className="text-sm text-muted-foreground">{describeVsBenchmark(data.volatility)}</p>
+                  ) : null}
+                  {describeTrend(data.volatility) ? (
+                    <p className="text-sm text-muted-foreground">{describeTrend(data.volatility)}</p>
+                  ) : null}
+                </div>
+
+                <ReportInsightCard
+                  title="Is the ride getting bumpier?"
+                  subtitle="Rolling 1-year annualised volatility over time"
+                >
+                  <RollingVolatilityChart
+                    volatility={data.volatility}
+                    fundName={fundName}
+                    benchmarkName={overview.data?.profile.benchmarkName}
+                  />
+                </ReportInsightCard>
+
+                <ReportInsightCard title="Volatility by time frame">
+                  <VolatilityFrequencyTable
+                    volatility={data.volatility}
+                    benchmarkName={overview.data?.profile.benchmarkName || 'Benchmark'}
+                  />
+                </ReportInsightCard>
+
+                <ReportInsightCard title="Biggest single moves">
+                  <VolatilitySwingChart volatility={data.volatility} />
+                </ReportInsightCard>
+
+                <ReportInsightCard title="How often do big swings happen?">
+                  <ReturnDistributionHistogram volatility={data.volatility} />
+                </ReportInsightCard>
+              </>
+            )
+          }}
         </ReportGroupBoundary>
       </SectionShell>
       ) : null}

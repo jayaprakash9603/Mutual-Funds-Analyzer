@@ -5,6 +5,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.BestDaysReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.ConsistencyDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.DrawdownReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.MissingBestQuarterReportDto;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.VolatilityReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.RiskReportDto;
 public record FundReportRiskDto(
         RiskReportDto risk,
@@ -12,5 +13,6 @@ public record FundReportRiskDto(
         DrawdownReportDto drawdown,
         BestDaysReportDto bestDays,
         MissingBestQuarterReportDto missingBestQuarter,
+        VolatilityReportDto volatility,
         AllTimeHighsReportDto allTimeHighs) {
 }

@@ -15,6 +15,12 @@ export const METRIC_DICTIONARY: Record<string, string> = {
   ulcerIndex: 'Measures depth and duration of drawdowns — lower is smoother.',
   calmar: 'Return divided by max drawdown — reward for pain taken.',
   valueAtRisk95: 'Worst daily loss in the bottom 5% of days.',
+  rollingVolatility: 'Annualised volatility over a rolling 1-year window of daily returns.',
+  typicalSwing: 'Average absolute move per period — how far price typically swings up or down.',
+  weeklyVolatility: 'Annualised volatility based on week-to-week returns.',
+  monthlyVolatility: 'Annualised volatility based on month-to-month returns.',
+  worstDay: 'Largest single-period loss in the analysis window.',
+  bestDay: 'Largest single-period gain in the analysis window.',
 }
 
 export function explainMetric(key: string) {
