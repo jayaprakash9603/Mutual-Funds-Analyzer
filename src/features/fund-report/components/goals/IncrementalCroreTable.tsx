@@ -2,12 +2,13 @@ import { useMemo } from 'react'
 import { ScrollTable } from '@/components/ui/scroll-table'
 import { fiBodyCell, fiMultiplyHeaderCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { buildIncrementalCroreJourney } from '../../lib/goals/incrementalCrore'
+import { GOAL_TABLE_SHELL, goalRowStripe } from './goalTableStyles'
 
 export function IncrementalCroreTable({ cagrPercent }: { cagrPercent: number }) {
   const rows = useMemo(() => buildIncrementalCroreJourney(cagrPercent), [cagrPercent])
 
   return (
-    <ScrollTable minWidth={520} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+    <ScrollTable minWidth={520} className={GOAL_TABLE_SHELL}>
       <table className={FI_TABLE}>
         <thead>
           <tr>
@@ -17,8 +18,8 @@ export function IncrementalCroreTable({ cagrPercent }: { cagrPercent: number }) 
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.fromLabel}>
+          {rows.map((row, rowIndex) => (
+            <tr key={row.fromLabel} className={goalRowStripe(rowIndex)}>
               <td className={fiBodyCell()}>
                 {row.fromLabel} → {row.toLabel}
               </td>

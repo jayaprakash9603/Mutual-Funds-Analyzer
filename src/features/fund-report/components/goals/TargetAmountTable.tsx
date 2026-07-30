@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { ScrollTable } from '@/components/ui/scroll-table'
 import { fiBodyCell, fiMultiplyHeaderCell, fiStickyLabelCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { buildTargetAmountGrid } from '../../lib/goals/targetAmountPlanner'
+import { GOAL_TABLE_SHELL, goalRowStripe, goalStickyLabelBg } from './goalTableStyles'
+import { cn } from '@/lib/utils'
 
 function formatRupees(value: number): string {
   if (value >= 1_00_00_000) return `₹${(value / 1_00_00_000).toFixed(value % 1_00_00_000 === 0 ? 0 : 1)}Cr`
@@ -22,7 +24,7 @@ export function TargetAmountTable({
   )
 
   return (
-    <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+    <ScrollTable minWidth={720} className={GOAL_TABLE_SHELL}>
       <table className={FI_TABLE}>
         <thead>
           <tr>
@@ -38,8 +40,10 @@ export function TargetAmountTable({
         </thead>
         <tbody>
           {grid.sipAmounts.map((sip, rowIndex) => (
-            <tr key={sip}>
-              <td className={fiBodyCell(fiStickyLabelCell('font-semibold'))}>{formatRupees(sip)}/mo</td>
+            <tr key={sip} className={goalRowStripe(rowIndex)}>
+              <td className={cn(fiBodyCell(fiStickyLabelCell('font-semibold')), goalStickyLabelBg(rowIndex))}>
+                {formatRupees(sip)}/mo
+              </td>
               {grid.rows[rowIndex]?.map((cell, cellIndex) => (
                 <td key={`${sip}-${grid.targetAmounts[cellIndex]}`} className={fiBodyCell()}>
                   {cell.duration}

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 export function ProbabilityBar({ label, value, explanation }: { label: string; value: number; explanation?: string }) {
   return (
@@ -20,18 +21,35 @@ export function ProbabilityBar({ label, value, explanation }: { label: string; v
   )
 }
 
-export function VerdictBadge({ verdict, confidence }: { verdict: string; confidence: number }) {
+export function VerdictBadge({
+  verdict,
+  confidence,
+  variant = 'default',
+}: {
+  verdict: string
+  confidence: number
+  variant?: 'default' | 'inline'
+}) {
   const tone =
     verdict === 'Strong Buy' || verdict === 'Buy'
-      ? 'bg-primary/15 text-primary border-primary/30'
+      ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200'
       : verdict === 'Avoid'
-        ? 'bg-destructive/15 text-destructive border-destructive/30'
-        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+        ? 'border-destructive/35 bg-destructive/10 text-destructive'
+        : 'border-amber-500/35 bg-amber-500/10 text-amber-800 dark:text-amber-200'
+
+  if (variant === 'inline') {
+    return (
+      <div className={cn('inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-full border px-4 py-2', tone)}>
+        <span className="text-base font-bold tracking-tight sm:text-lg">{verdict}</span>
+        <span className="text-sm font-medium opacity-80">{confidence}% confidence</span>
+      </div>
+    )
+  }
 
   return (
-    <div className={`inline-flex flex-col items-center rounded-xl border px-6 py-4 ${tone}`}>
-      <span className="text-2xl font-bold">{verdict}</span>
-      <span className="text-sm opacity-80">{confidence}% confidence</span>
+    <div className={cn('inline-flex flex-col items-center rounded-xl border px-6 py-4', tone)}>
+      <span className="text-2xl font-bold tracking-tight">{verdict}</span>
+      <span className="text-sm font-medium opacity-80">{confidence}% confidence</span>
     </div>
   )
 }

@@ -2,12 +2,14 @@ import { useMemo } from 'react'
 import { ScrollTable } from '@/components/ui/scroll-table'
 import { fiBodyCell, fiMultiplyHeaderCell, fiStickyLabelCell, FI_TABLE } from '@/components/fundsindia/tableStyles'
 import { buildSavingsRateGrid } from '../../lib/goals/savingsRate'
+import { cn } from '@/lib/utils'
+import { GOAL_TABLE_SHELL, goalRowStripe, goalStickyLabelBg } from './goalTableStyles'
 
 export function SavingsRateTable({ cagrPercent }: { cagrPercent: number }) {
   const grid = useMemo(() => buildSavingsRateGrid(5, cagrPercent), [cagrPercent])
 
   return (
-    <ScrollTable minWidth={960} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+    <ScrollTable minWidth={960} className={GOAL_TABLE_SHELL}>
       <table className={FI_TABLE}>
         <thead>
           <tr>
@@ -21,8 +23,8 @@ export function SavingsRateTable({ cagrPercent }: { cagrPercent: number }) {
         </thead>
         <tbody>
           {grid.rows.map((row, rowIndex) => (
-            <tr key={grid.savingsRatesPercent[rowIndex]}>
-              <td className={fiBodyCell(fiStickyLabelCell('font-semibold'))}>
+            <tr key={grid.savingsRatesPercent[rowIndex]} className={goalRowStripe(rowIndex)}>
+              <td className={cn(fiBodyCell(fiStickyLabelCell('font-semibold')), goalStickyLabelBg(rowIndex))}>
                 {grid.savingsRatesPercent[rowIndex]}%
               </td>
               {row.map((cell) => (

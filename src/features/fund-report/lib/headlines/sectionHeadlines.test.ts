@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildBenchmarkHeadline,
   buildIntraYearDeclineHeadline,
+  buildRiskHeadline,
   buildRollingReturnsHeadline,
   buildVolatilityHeadline,
   shortFundName,
@@ -263,5 +264,48 @@ describe('buildVolatilityHeadline', () => {
 
     expect(flatten(headline!.parts)).toContain('18.5%')
     expect(accentText(headline!.parts)).toContain('0.80%')
+  })
+})
+
+describe('buildRiskHeadline', () => {
+  it('combines risk metrics with quality score context', () => {
+    const headline = buildRiskHeadline(
+      {
+        risk: {
+          volatility: 13.24,
+          standardDeviation: 13.24,
+          sharpeRatio: 1.13,
+          sortinoRatio: 1.39,
+          treynorRatio: 0.2,
+          beta: 0.6,
+          alpha: 8.09,
+          rSquared: 0.8,
+          maxDrawdown: -31.2,
+          recoveryTimeYears: 2.5,
+          downsideCapture: 70,
+          upsideCapture: 90,
+          informationRatio: 0.35,
+          trackingError: 4.2,
+          ulcerIndex: 5.1,
+          calmarRatio: 0.8,
+          valueAtRisk95: -2.1,
+          riskLevel: 'Medium',
+        },
+      } as FundReportRisk,
+      {
+        score: 94,
+        components: [
+          { name: 'Sharpe', score: 73, weight: 0.12 },
+          { name: 'Standard Deviation', score: 84, weight: 0.13 },
+          { name: 'Beta Risk Level', score: 100, weight: 0.12 },
+        ],
+      },
+      'Parag Parikh Flexi Cap Fund - Direct Plan - Growth',
+    )
+
+    expect(headline).not.toBeNull()
+    expect(flatten(headline!.parts)).toContain('94/100')
+    expect(accentText(headline!.parts)).toContain('1.13 Sharpe')
+    expect(headline!.note).toContain('Medium')
   })
 })

@@ -7,7 +7,6 @@ import {
   CircleDollarSign,
   CloudRain,
   Flag,
-  Gauge,
   Layers,
   Layers2,
   LineChart,
@@ -15,7 +14,6 @@ import {
   Percent,
   PieChart,
   Repeat,
-  Scale,
   Shield,
   Sparkles,
   Target,
@@ -90,9 +88,7 @@ export const SECTION_GROUPS: SectionGroup[] = [
     label: 'Assessment',
     sections: [
       { id: 'peers', label: 'Peers', icon: Users },
-      { id: 'quality', label: 'Quality', icon: Gauge },
       { id: 'insights', label: 'Insights', icon: Sparkles },
-      { id: 'verdict', label: 'Verdict', icon: Scale },
     ],
   },
 ]

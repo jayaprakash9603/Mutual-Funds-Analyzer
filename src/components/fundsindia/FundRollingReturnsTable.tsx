@@ -9,9 +9,10 @@ type RollingReturns = FundReport['rollingReturns']
 const FUND_COLOR = CHART_COLORS.fund
 const DATA_CELL = cn('border px-3 py-2.5 text-center tabular-nums', FI_GRID)
 const YEAR_CELL = cn(
-  'sticky left-0 z-10 min-w-[220px] border-r px-3 py-2.5 align-top',
+  'sticky left-0 z-10 min-w-[96px] border-r px-3 py-2.5 align-middle text-center font-bold',
   FI_GRID,
 )
+const SCHEME_CELL = cn('min-w-[220px] border-r px-3 py-2.5 align-middle text-left', FI_GRID)
 
 interface FundRollingReturnsTableProps {
   rollingReturns: RollingReturns
@@ -45,17 +46,23 @@ export function FundRollingReturnsTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[880px] border-collapse text-sm">
+        <table className="w-full min-w-[960px] border-collapse text-sm">
           <thead>
             <tr>
               <th
                 rowSpan={2}
                 className={cn(
-                  'sticky left-0 z-20 min-w-[220px] border-r border-white/25 text-left',
+                  'sticky left-0 z-20 min-w-[96px] border-r border-white/25',
                   fiHeaderCell(),
                 )}
               >
                 Year
+              </th>
+              <th
+                rowSpan={2}
+                className={cn('min-w-[220px] border-r border-white/25 text-left', fiHeaderCell())}
+              >
+                Fund
               </th>
               <th colSpan={4} className={cn('border border-white/20', fiHeaderCell())}>
                 Key Parameters
@@ -82,8 +89,8 @@ export function FundRollingReturnsTable({
               if (!row) {
                 return (
                   <tr key={periodLabel} className={stripe}>
-                    <td className={cn(YEAR_CELL, stripe, 'font-bold')}>{periodLabel}</td>
-                    <td colSpan={6} className={cn(DATA_CELL, 'text-left text-muted-foreground')}>
+                    <td className={cn(YEAR_CELL, stripe)}>{periodLabel}</td>
+                    <td colSpan={7} className={cn(DATA_CELL, 'text-left text-muted-foreground')}>
                       Insufficient NAV history for this window
                     </td>
                   </tr>
@@ -92,16 +99,16 @@ export function FundRollingReturnsTable({
 
               return (
                 <tr key={periodLabel} className={stripe}>
-                  <td className={cn(YEAR_CELL, stripe)}>
-                    <div className="text-sm font-bold text-foreground">{periodLabel}</div>
-                    <div className="mt-2 flex min-w-0 items-start gap-2">
+                  <td className={cn(YEAR_CELL, stripe)}>{periodLabel}</td>
+                  <td className={cn(SCHEME_CELL, stripe)}>
+                    <div className="flex min-w-0 items-center gap-2">
                       <span
-                        className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                        className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: FUND_COLOR }}
                         aria-hidden="true"
                       />
                       <p
-                        className="truncate text-xs leading-snug"
+                        className="text-sm leading-snug"
                         style={{ color: FUND_COLOR }}
                         title={fundName}
                       >

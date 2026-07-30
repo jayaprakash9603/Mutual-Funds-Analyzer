@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { GoldenTriangleResultCard } from '@/components/dashboard/cards/GoldenTriangleResultCard'
-import { FinalRecommendationPanel } from '@/features/fund-report/components/layout/FinalRecommendationPanel'
 import { InsightsPanel } from '@/components/dashboard/widgets/InsightsPanel'
 import { FundRollingReturnsTable } from '@/components/fundsindia/FundRollingReturnsTable'
 import { Badge } from '@/components/ui/badge'
@@ -61,7 +60,7 @@ import { DrawdownEpisodesTable } from '../tables/DrawdownEpisodesTable'
 import { DrawdownThresholdTable } from '../tables/DrawdownThresholdTable'
 import { MultiplyProbabilityTable } from '../tables/MultiplyProbabilityTable'
 import { PeerComparisonTable } from '../tables/PeerComparisonTable'
-import { GaugeMeter, ProbabilityBar } from '../charts/ReportVisuals'
+import { ProbabilityBar } from '../charts/ReportVisuals'
 import {
   CardSkeleton,
   ChartSkeleton,
@@ -70,6 +69,7 @@ import {
   TableSkeleton,
 } from './ReportGroupBoundary'
 import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
+import { RiskAnalysisPanel } from './RiskAnalysisPanel'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
 import { GoalPlannerSection } from '../goals/GoalPlannerSection'
 import { LumpsumSection } from '../investment/LumpsumSection'
@@ -367,27 +367,23 @@ export function FundReportSections({
       ) : null}
 
       {shouldRender("risk") ? (
-      <SectionShell id="risk" title="Risk Analysis">
-        <ReportGroupBoundary state={risk} skeleton={<MetricGridSkeleton count={8} />}>
-          {(data) => (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricTile label="Volatility" value={formatPercent(data.risk.volatility)} metricKey="volatility" />
-              <MetricTile label="Sharpe" value={data.risk.sharpeRatio.toFixed(2)} metricKey="sharpe" />
-              <MetricTile label="Sortino" value={data.risk.sortinoRatio.toFixed(2)} metricKey="sortino" />
-              <MetricTile label="Beta" value={data.risk.beta.toFixed(2)} metricKey="beta" />
-              <MetricTile label="Alpha" value={formatPercent(data.risk.alpha)} metricKey="alpha" />
-              <MetricTile
-                label="Max Drawdown"
-                value={formatPercent(data.risk.maxDrawdown)}
-                metricKey="maxDrawdown"
-              />
-              <MetricTile
-                label="Info Ratio"
-                value={data.risk.informationRatio.toFixed(2)}
-                metricKey="informationRatio"
-              />
-              <MetricTile label="Risk Level" value={data.risk.riskLevel} />
-            </div>
+      <SectionShell
+        id="risk"
+        title="Risk Analysis"
+        variant="stack"
+        description="Core risk metrics, quality scores, and the final buy/hold verdict — everything you need to judge how this fund handles stress."
+      >
+        <ReportGroupBoundary state={risk} skeleton={<MetricGridSkeleton count={4} />}>
+          {(riskData) => (
+            <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
+              {(assessmentData) => (
+                <RiskAnalysisPanel
+                  risk={riskData}
+                  assessment={assessmentData}
+                  fundName={fundName}
+                />
+              )}
+            </ReportGroupBoundary>
           )}
         </ReportGroupBoundary>
       </SectionShell>
@@ -710,37 +706,6 @@ export function FundReportSections({
       />
       ) : null}
 
-      {shouldRender("quality") ? (
-      <SectionShell
-        id="quality"
-        title="Fund Quality Score"
-        description="Scored from known NAV metrics only — Standard Deviation and Beta Risk Level replace expense and diversification when those are unavailable."
-      >
-        <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
-          {(data) => (
-            <div className="flex w-full flex-col items-center gap-8 lg:flex-row lg:items-stretch lg:gap-10">
-              <div className="flex shrink-0 flex-col items-center justify-center lg:w-56">
-                <GaugeMeter score={data.qualityScore.score} label="Overall Quality" />
-              </div>
-              <div className="grid w-full flex-1 gap-3 sm:grid-cols-2">
-                {data.qualityScore.components
-                  .filter((c) => c.name !== 'Expense Ratio' && c.name !== 'Diversification')
-                  .map((c) => (
-                    <div
-                      key={c.name}
-                      className="flex items-center justify-between rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground"
-                    >
-                      <span>{c.name}</span>
-                      <span className="font-mono text-base font-medium text-foreground">{c.score}/100</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </ReportGroupBoundary>
-      </SectionShell>
-      ) : null}
-
       {shouldRender("insights") ? (
       <SectionShell id="insights" title="AI Insights">
         <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
@@ -777,14 +742,6 @@ export function FundReportSections({
               </div>
             </>
           )}
-        </ReportGroupBoundary>
-      </SectionShell>
-      ) : null}
-
-      {shouldRender("verdict") ? (
-      <SectionShell id="verdict" title="Final Recommendation">
-        <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
-          {(data) => <FinalRecommendationPanel assessment={data} />}
         </ReportGroupBoundary>
       </SectionShell>
       ) : null}

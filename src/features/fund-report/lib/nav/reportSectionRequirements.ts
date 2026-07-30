@@ -11,7 +11,7 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   benchmark: ['performance'],
   probability: ['performance'],
   'goal-planner': ['performance'],
-  risk: ['risk'],
+  risk: ['risk', 'assessment'],
   volatility: ['risk'],
   portfolio: [],
   consistency: ['risk'],
@@ -24,9 +24,7 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   stp: ['investment'],
   swp: ['investment'],
   peers: [],
-  quality: ['assessment'],
   insights: ['assessment'],
-  verdict: ['assessment'],
 }
 
 export const ALL_REPORT_GROUP_KEYS: ReportGroupKey[] = [

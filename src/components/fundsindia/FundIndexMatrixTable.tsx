@@ -9,13 +9,14 @@ import { cn, formatPercent } from '@/lib/utils'
 const FUND_COLOR = CHART_COLORS.fund
 const BENCHMARK_COLOR = CHART_COLORS.benchmark
 const DATA_COLUMNS = 4
-const TOTAL_COLUMNS = 7
+const TOTAL_COLUMNS = 8
 
 const DATA_CELL = cn('border px-3 py-2.5 text-center tabular-nums', FI_GRID)
 const YEAR_CELL = cn(
-  'sticky left-0 z-10 min-w-[240px] border-r px-3 py-2.5 align-top',
+  'sticky left-0 z-10 min-w-[96px] border-r px-3 py-2.5 align-middle text-center font-bold',
   FI_GRID,
 )
+const SCHEME_CELL = cn('min-w-[220px] border-r px-3 py-2.5 align-middle text-left', FI_GRID)
 
 interface FundIndexMatrixTableProps {
   data: FundIndexComparison | null
@@ -80,17 +81,23 @@ export function FundIndexMatrixTable({
 
       {!loading && !error && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead>
               <tr>
                 <th
                   rowSpan={2}
                   className={cn(
-                    'sticky left-0 z-20 min-w-[240px] border-r border-white/25 text-left',
+                    'sticky left-0 z-20 min-w-[96px] border-r border-white/25',
                     fiHeaderCell(),
                   )}
                 >
                   Year
+                </th>
+                <th
+                  rowSpan={2}
+                  className={cn('min-w-[220px] border-r border-white/25 text-left', fiHeaderCell())}
+                >
+                  Fund / Index
                 </th>
                 <th colSpan={DATA_COLUMNS} className={cn('border border-white/20', fiHeaderCell())}>
                   Key Parameters
@@ -130,11 +137,10 @@ export function FundIndexMatrixTable({
                 return [
                   <tr key={`${period}-fund`} className={stripe}>
                     <td rowSpan={2} className={cn(YEAR_CELL, stripe)}>
-                      <div className="text-sm font-bold text-foreground">{period}</div>
-                      <div className="mt-3 space-y-2.5">
-                        <SeriesName name={row.fundName} color={FUND_COLOR} />
-                        <SeriesName name={benchmarkName} color={BENCHMARK_COLOR} />
-                      </div>
+                      {period}
+                    </td>
+                    <td className={cn(SCHEME_CELL, stripe)}>
+                      <SeriesName name={row.fundName} color={FUND_COLOR} />
                     </td>
                     <td className={cn(DATA_CELL, 'font-semibold')} style={{ color: avgColor }}>
                       {formatPercent(row.fund.avg)}
@@ -156,6 +162,9 @@ export function FundIndexMatrixTable({
                     </td>
                   </tr>,
                   <tr key={`${period}-index`} className={stripe} aria-label={`${period} ${benchmarkName}`}>
+                    <td className={cn(SCHEME_CELL, stripe)}>
+                      <SeriesName name={benchmarkName} color={BENCHMARK_COLOR} />
+                    </td>
                     <td className={DATA_CELL} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.avg)}
                     </td>
@@ -188,13 +197,13 @@ export function FundIndexMatrixTable({
 
 function SeriesName({ name, color }: { name: string; color: string }) {
   return (
-    <div className="flex min-w-0 items-start gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <span
-        className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+        className="h-2 w-2 shrink-0 rounded-full"
         style={{ backgroundColor: color }}
         aria-hidden="true"
       />
-      <p className="truncate text-xs leading-snug" style={{ color }} title={name}>
+      <p className="text-sm leading-snug" style={{ color }} title={name}>
         {name}
       </p>
     </div>

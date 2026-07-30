@@ -10,6 +10,14 @@ import type { MultiplyProbabilityTable } from '../../lib/matrix/multiplyProbabil
 import { isCellHighlighted } from '../../lib/matrix/multiplyProbability'
 import { buildMultiplyHeadline, shortFundName } from '../../lib/headlines/sectionHeadlines'
 import { SectionHeadline } from '../layout/StatHeadline'
+import {
+  GOAL_TABLE_SHELL,
+  goalRowStripe,
+  goalStickyLabelBg,
+  probabilityHeatmapClasses,
+  PROBABILITY_HEATMAP_BANDS,
+} from '../goals/goalTableStyles'
+import { HeatmapLegend } from '../goals/HeatmapLegend'
 
 export function MultiplyProbabilityTable({
   table,
@@ -34,7 +42,7 @@ export function MultiplyProbabilityTable({
     <div className="space-y-4">
       <SectionHeadline headline={buildMultiplyHeadline(table, fundName)} />
 
-      <ScrollTable minWidth={720} className="rounded-xl border border-slate-300/90 bg-white shadow-sm dark:border-slate-600 dark:bg-card">
+      <ScrollTable minWidth={720} className={GOAL_TABLE_SHELL}>
         <table className={FI_TABLE}>
           <thead>
             <tr>
@@ -46,7 +54,7 @@ export function MultiplyProbabilityTable({
               </th>
             </tr>
             <tr>
-              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Multiply</th>
+              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20 bg-[#1e3a5f]'))}>Multiply</th>
               {table.holdingYears.map((y) => (
                 <th key={y} className={fiMultiplyHeaderCell()}>
                   {y} Year
@@ -56,8 +64,10 @@ export function MultiplyProbabilityTable({
           </thead>
           <tbody>
             {table.rows.map((row, rowIndex) => (
-              <tr key={row.multiply} className={rowIndex % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20'}>
-                <td className={fiBodyCell(fiStickyLabelCell('font-semibold'))}>{row.multiply} times</td>
+              <tr key={row.multiply} className={goalRowStripe(rowIndex)}>
+                <td className={cn(fiBodyCell(fiStickyLabelCell('font-semibold')), goalStickyLabelBg(rowIndex))}>
+                  {row.multiply} times
+                </td>
                 {row.cells.map((cell) => {
                   const highlighted = isCellHighlighted(row, cell.holdingYears)
                   return (
@@ -69,8 +79,10 @@ export function MultiplyProbabilityTable({
                           : undefined
                       }
                       className={cn(
-                        fiBodyCell('font-medium'),
-                        highlighted && 'ring-2 ring-inset ring-sky-400/90 ring-offset-1',
+                        fiBodyCell('tabular-nums'),
+                        probabilityHeatmapClasses(cell.percent),
+                        highlighted &&
+                          'ring-2 ring-inset ring-sky-500/80 dark:ring-sky-400/90 ring-offset-0 shadow-sm',
                       )}
                     >
                       {cell.percent == null ? '—' : `${Math.round(cell.percent)}%`}
@@ -81,6 +93,7 @@ export function MultiplyProbabilityTable({
             ))}
           </tbody>
         </table>
+        <HeatmapLegend bands={PROBABILITY_HEATMAP_BANDS} />
       </ScrollTable>
 
       <div className="grid gap-3 md:grid-cols-3">

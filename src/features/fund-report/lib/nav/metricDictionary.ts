@@ -15,6 +15,8 @@ export const METRIC_DICTIONARY: Record<string, string> = {
   ulcerIndex: 'Measures depth and duration of drawdowns — lower is smoother.',
   calmar: 'Return divided by max drawdown — reward for pain taken.',
   valueAtRisk95: 'Worst daily loss in the bottom 5% of days.',
+  downsideCapture: 'Share of benchmark losses the fund captured — lower is more defensive.',
+  upsideCapture: 'Share of benchmark gains the fund captured — higher is better.',
   rollingVolatility: 'Annualised volatility over a rolling 1-year window of daily returns.',
   typicalSwing: 'Average absolute move per period — how far price typically swings up or down.',
   weeklyVolatility: 'Annualised volatility based on week-to-week returns.',

@@ -1,4 +1,5 @@
 import type {
+  FundReportAssessment,
   FundReportInvestment,
   FundReportPerformance,
   FundReportRisk,
@@ -275,6 +276,54 @@ export function buildIntraYearDeclineHeadline(
 }
 
 /** Deck page 34: "Temporary market declines of 30-60% occur once every 7-10 years". */
+export function buildRiskHeadline(
+  risk: Risk,
+  qualityScore: FundReportAssessment['qualityScore'],
+  fundName: string,
+): Headline | null {
+  const metrics = risk.risk
+  const quality = qualityScore.score
+  const riskQualityNames = new Set([
+    'Sharpe',
+    'Standard Deviation',
+    'Beta Risk Level',
+    'Rolling Returns',
+    'Consistency',
+  ])
+  const riskComponents = qualityScore.components.filter((component) =>
+    riskQualityNames.has(component.name),
+  )
+  const riskAverage =
+    riskComponents.length > 0
+      ? Math.round(
+          riskComponents.reduce((sum, component) => sum + component.score, 0) / riskComponents.length,
+        )
+      : null
+
+  const level = metrics.riskLevel.trim().toLowerCase()
+  const levelPhrase =
+    level === 'low'
+      ? 'a smoother ride'
+      : level === 'high' || level === 'very high'
+        ? 'a bumpier ride'
+        : 'moderate volatility'
+
+  return {
+    parts: [
+      `${shortFundName(fundName)} offers `,
+      accent(levelPhrase),
+      ' with ',
+      accentMark(`${metrics.sharpeRatio.toFixed(2)} Sharpe`),
+      ' and a ',
+      accent(`${quality}/100`),
+      ' overall quality score',
+      riskAverage != null ? ` (${riskAverage}/100 on risk factors)` : '',
+      '.',
+    ],
+    note: `Volatility ${pct(metrics.volatility, 1)} · Max drawdown ${pct(metrics.maxDrawdown, 1)} · Beta ${metrics.beta.toFixed(2)} · Risk level ${metrics.riskLevel}.`,
+  }
+}
+
 export function buildDrawdownHeadline(
   drawdown: Risk['drawdown'],
   fundName: string,
