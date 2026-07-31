@@ -26,7 +26,6 @@ import {
   GRID_STROKE,
   MARGIN_X,
   TICK_LINE,
-  ZERO_LINE_STROKE,
   xLabel,
   yLabel,
 } from '@/lib/charts/chartAxes'
@@ -40,10 +39,20 @@ const chartConfig = {
   count: { label: 'Windows', color: CHART_COLORS.fund },
 } satisfies ChartConfig
 
+/** Headroom above the plot so the average annotation is not clipped by the chart edge. */
+const CHART_MARGIN = { ...MARGIN_X, top: 28 }
+
 function binColor(bin: RollingDistributionBin) {
   if (bin.binEnd <= 0) return CHART_COLORS.red
   if (bin.binStart < 0) return CHART_COLORS.amber
   return CHART_COLORS.fund
+}
+
+/** The final bin owns its upper bound, so an average equal to the best window still lands. */
+function binForValue(bins: readonly RollingDistributionBin[], value: number) {
+  return bins.find(
+    (bin, index) => value >= bin.binStart && (value < bin.binEnd || index === bins.length - 1),
+  )
 }
 
 function DistributionTooltip({
@@ -198,7 +207,7 @@ export function RollingReturnDistributionChart({
         }
       >
         <ChartContainer config={chartConfig} className={chartHeightForGuide(CHART_GUIDES.distribution)}>
-          <BarChart data={distribution?.bins ?? []} margin={MARGIN_X}>
+          <BarChart data={distribution?.bins ?? []} margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
             <XAxis
               dataKey="label"
@@ -218,19 +227,16 @@ export function RollingReturnDistributionChart({
             <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<DistributionTooltip period={period} />} />
             {distribution ? (
               <ReferenceLine
-                x={
-                  distribution.bins.find(
-                    (bin) =>
-                      distribution.stats.average >= bin.binStart && distribution.stats.average < bin.binEnd,
-                  )?.label
-                }
-                stroke={ZERO_LINE_STROKE}
-                strokeDasharray="4 4"
+                x={binForValue(distribution.bins, distribution.stats.average)?.label}
+                stroke={CHART_COLORS.muted}
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
                 label={{
-                  value: `Avg ${distribution.stats.average.toFixed(1)}%`,
+                  value: `Average ${distribution.stats.average.toFixed(1)}%`,
                   position: 'top',
-                  fill: 'var(--muted-foreground)',
-                  fontSize: 10,
+                  fill: 'var(--foreground)',
+                  fontSize: 11,
+                  fontWeight: 600,
                 }}
               />
             ) : null}
