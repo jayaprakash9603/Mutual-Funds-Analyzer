@@ -26,6 +26,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
 import {
   getDetailedRollingReturnData,
   type RollingReturnChartPoint,
@@ -44,6 +45,7 @@ import {
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import { formatIndexedNavTick } from '../../lib/drawdown/declineRecoveryCycles'
 import type { FundReportRisk } from '../../schemas'
+import { ChartRangeToggle, type ChartRangeOption } from './ChartRangeToggle'
 
 const FUND_COLOR = CHART_COLORS.fund
 const BENCHMARK_COLOR = CHART_COLORS.benchmark
@@ -61,6 +63,13 @@ const ROLLING_CHART_MARGIN = { top: 16, right: 56, left: 8, bottom: 12 }
 const TOOLTIP_CURSOR = { stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }
 const Y_DOMAIN: ['auto', 'auto'] = ['auto', 'auto']
 const CHART_HEIGHT_CLASS = 'aspect-auto h-[300px] w-full sm:h-[360px] lg:h-[400px]'
+
+type SeriesKey = 'fund' | 'benchmark'
+
+const SERIES_OPTIONS: ReadonlyArray<ChartRangeOption<SeriesKey>> = [
+  { id: 'fund', label: 'Fund' },
+  { id: 'benchmark', label: 'Benchmark' },
+]
 
 function periodYears(period: Period): number {
   const match = period.match(/^(\d+)/)
@@ -145,7 +154,10 @@ export function FundReportReturnsChart({
 }: FundReportReturnsChartProps) {
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD)
   const [mode, setMode] = useState<'rolling' | 'absolute'>(offlineView ? 'absolute' : 'rolling')
+  const [series, setSeries] = useState<SeriesKey>('fund')
   const axis = useResponsiveAxis()
+  // Two lines in a phone-width plot read as noise, so the series split one per tab there.
+  const isSmall = useIsSmallScreen()
 
   const { data: analysisData, loading: analysisLoading } = useFundAnalysis(
     !offlineView && mode === 'rolling' ? scheme : null,
@@ -167,11 +179,26 @@ export function FundReportReturnsChart({
     [indexedNav, period],
   )
 
-  const rollingTickInterval = useMemo(() => {
-    const count = rollingChartData.length
-    if (count <= 8) return 0
-    return Math.max(1, Math.floor(count / 8))
-  }, [rollingChartData.length])
+  /**
+   * With one series per tab an auto domain rescales per tab, which makes a weaker
+   * benchmark look like the fund. Both tabs share the combined range instead.
+   */
+  const sharedYDomain = useMemo((): [number, number] | ['auto', 'auto'] => {
+    if (rollingChartData.length === 0) return Y_DOMAIN
+    const values = rollingChartData.flatMap((point) => [point.fund, point.benchmark])
+    const low = Math.min(...values)
+    const high = Math.max(...values)
+    const padding = (high - low) * 0.05 || 1
+    return [Math.floor(low - padding), Math.ceil(high + padding)]
+  }, [rollingChartData])
+
+  const visibleSeries = useMemo(() => {
+    const all = [
+      { key: 'fund' as const, name: fundName, color: FUND_COLOR },
+      { key: 'benchmark' as const, name: benchmarkName, color: BENCHMARK_COLOR },
+    ]
+    return isSmall ? all.filter((entry) => entry.key === series) : all
+  }, [isSmall, series, fundName, benchmarkName])
 
   const periodControl = (
     <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
@@ -225,6 +252,16 @@ export function FundReportReturnsChart({
             </p>
           ) : (
             <div className={CHART_PANEL_CLASS}>
+            {isSmall ? (
+              <div className="mb-3">
+                <ChartRangeToggle
+                  options={SERIES_OPTIONS}
+                  value={series}
+                  onChange={setSeries}
+                  ariaLabel="Show fund or benchmark returns"
+                />
+              </div>
+            ) : null}
             <ChartContainer config={rollingConfig} className={CHART_HEIGHT_CLASS}>
               <LineChart data={rollingChartData} margin={ROLLING_CHART_MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -232,7 +269,7 @@ export function FundReportReturnsChart({
                   dataKey="shortLabel"
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
-                  interval={rollingTickInterval}
+                  interval="preserveStartEnd"
                   minTickGap={axis.xGap}
                   tick={axis.tick}
                   angle={axis.xAngle}
@@ -247,7 +284,7 @@ export function FundReportReturnsChart({
                   axisLine={AXIS_LINE}
                   tick={axis.tick}
                   tickFormatter={(value) => `${value}%`}
-                  domain={Y_DOMAIN}
+                  domain={isSmall ? sharedYDomain : Y_DOMAIN}
                   width={axis.yWidth}
                 >
                   <Label {...yLabelRight('Return (%)')} />
@@ -258,44 +295,34 @@ export function FundReportReturnsChart({
                   }
                   cursor={TOOLTIP_CURSOR}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="fund"
-                  name="fund"
-                  stroke={FUND_COLOR}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="benchmark"
-                  name="benchmark"
-                  stroke={BENCHMARK_COLOR}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
+                {visibleSeries.map((entry) => (
+                  <Line
+                    key={entry.key}
+                    type="monotone"
+                    dataKey={entry.key}
+                    name={entry.key}
+                    stroke={entry.color}
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                ))}
               </LineChart>
             </ChartContainer>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border/70 pt-3 text-sm dark:border-slate-700/60">
-              <span className="inline-flex max-w-full items-center gap-2">
-                <span
-                  className="inline-block h-0.5 w-6 shrink-0 rounded-full"
-                  style={{ backgroundColor: FUND_COLOR }}
-                />
-                <span className="truncate text-muted-foreground">{fundName}</span>
-              </span>
-              <span className="inline-flex max-w-full items-center gap-2">
-                <span
-                  className="inline-block h-0.5 w-6 shrink-0 rounded-full"
-                  style={{ backgroundColor: BENCHMARK_COLOR }}
-                />
-                <span className="truncate text-muted-foreground">{benchmarkName}</span>
-              </span>
+              {visibleSeries.map((entry) => (
+                <span key={entry.key} className="inline-flex max-w-full items-center gap-2">
+                  <span
+                    className="inline-block h-0.5 w-6 shrink-0 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="truncate text-muted-foreground">{entry.name}</span>
+                </span>
+              ))}
             </div>
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Hover a point for the full rolling window range ({period}).
+              {isSmall ? ' The tooltip shows both fund and benchmark so you can compare.' : ''}
             </p>
             </div>
           )}
