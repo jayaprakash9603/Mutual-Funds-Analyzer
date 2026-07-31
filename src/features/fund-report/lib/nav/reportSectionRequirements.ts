@@ -7,6 +7,7 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'golden-triangle': ['assessment', 'risk'],
   returns: ['performance'],
   rolling: ['performance'],
+  'performance-timeline': ['performance', 'assessment'],
   'return-patterns': ['performance'],
   benchmark: ['performance'],
   probability: ['performance'],

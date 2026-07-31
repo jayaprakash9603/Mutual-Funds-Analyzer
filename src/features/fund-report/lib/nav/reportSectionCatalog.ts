@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   CloudRain,
   Flag,
+  History,
   Layers,
   Layers2,
   LineChart,
@@ -53,6 +54,7 @@ export const SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'returns', label: 'Returns', icon: TrendingUp },
       { id: 'rolling', label: 'Rolling', icon: LineChart },
+      { id: 'performance-timeline', label: 'Timeline', icon: History },
       { id: 'return-patterns', label: 'Patterns', icon: Layers2 },
       { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
       { id: 'probability', label: 'Probability', icon: Percent },

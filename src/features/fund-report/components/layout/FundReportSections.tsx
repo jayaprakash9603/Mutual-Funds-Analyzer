@@ -43,6 +43,7 @@ import { AnnotatedDrawdownChart } from '../charts/AnnotatedDrawdownChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { FundBenchmarkAnalysisCharts } from '../charts/FundBenchmarkAnalysisCharts'
+import { PerformanceTimelinePanel } from '../charts/PerformanceTimelinePanel'
 import { FundLongTermStoryChart } from '../charts/FundLongTermStoryChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { MissingBestQuarterChart } from '../charts/MissingBestQuarterChart'
@@ -242,6 +243,25 @@ export function FundReportSections({
             </div>
           )}
         </ReportGroupBoundary>
+      </SectionShell>
+      ) : null}
+
+      {shouldRender("performance-timeline") ? (
+      <SectionShell
+        id="performance-timeline"
+        variant="stack"
+        title="Performance Timeline"
+        description="Historical checkpoints across rolling return windows — inception, peak, trough, midpoint, and latest — with fund vs benchmark alpha and Golden Triangle context."
+      >
+        {scheme ? (
+          <PerformanceTimelinePanel
+            scheme={scheme}
+            fundName={fundName}
+            benchmarkName={benchmarkName}
+            startDate={startDate}
+            offlineView={isSharedView}
+          />
+        ) : null}
       </SectionShell>
       ) : null}
 
