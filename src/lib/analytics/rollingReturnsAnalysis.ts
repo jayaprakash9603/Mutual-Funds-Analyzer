@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { parseNavDate } from '@/lib/utils'
-import { alignRollingReturns, mean } from './navSeries'
+import { alignRollingReturns, mean, stdDev } from './navSeries'
 import type { AnalysisInput, RollingReturnRow } from './types'
 
 export interface RollingReturnChartPoint {
@@ -135,6 +135,74 @@ export function getDetailedRollingReturnData(input: AnalysisInput) {
   ]
 
   return { points, tableRows, alignedCount: aligned.length }
+}
+
+export interface RollingDistributionBin {
+  label: string
+  binStart: number
+  binEnd: number
+  midpoint: number
+  count: number
+  percentOfWindows: number
+}
+
+export interface RollingReturnDistribution {
+  bins: RollingDistributionBin[]
+  stats: ReturnStats
+  standardDeviation: number
+  windowCount: number
+  negativeCount: number
+  negativePercent: number
+  modalBin: RollingDistributionBin
+}
+
+const DEFAULT_DISTRIBUTION_BINS = 18
+
+export function getRollingReturnDistribution(
+  input: AnalysisInput,
+  binCount = DEFAULT_DISTRIBUTION_BINS,
+): RollingReturnDistribution | null {
+  const returns = input.fund.map((row) => row.scheme_rolling_returns)
+  if (returns.length === 0) return null
+
+  const minimum = Math.min(...returns)
+  const maximum = Math.max(...returns)
+  const step = (maximum - minimum) / binCount || 1
+
+  const bins: RollingDistributionBin[] = Array.from({ length: binCount }, (_, index) => {
+    const binStart = minimum + index * step
+    const binEnd = binStart + step
+    return {
+      label: `${binStart.toFixed(1)} to ${binEnd.toFixed(1)}`,
+      binStart,
+      binEnd,
+      midpoint: (binStart + binEnd) / 2,
+      count: 0,
+      percentOfWindows: 0,
+    }
+  })
+
+  for (const value of returns) {
+    const index = Math.min(binCount - 1, Math.max(0, Math.floor((value - minimum) / step)))
+    bins[index].count += 1
+  }
+
+  for (const bin of bins) {
+    bin.percentOfWindows = (bin.count / returns.length) * 100
+  }
+
+  const negativeCount = returns.filter((value) => value < 0).length
+  const modalBin = bins.reduce((peak, bin) => (bin.count > peak.count ? bin : peak), bins[0])
+
+  return {
+    bins,
+    stats: computeStats(returns),
+    standardDeviation: stdDev(returns),
+    windowCount: returns.length,
+    negativeCount,
+    negativePercent: (negativeCount / returns.length) * 100,
+    modalBin,
+  }
 }
 
 export { CONSISTENCY_BUCKETS }

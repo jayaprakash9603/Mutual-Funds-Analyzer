@@ -42,8 +42,12 @@ import {
 import { AnnotatedDrawdownChart } from '../charts/AnnotatedDrawdownChart'
 import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
+import { FundAnnualReturnsChart } from '../charts/FundAnnualReturnsChart'
 import { FundBenchmarkAnalysisCharts } from '../charts/FundBenchmarkAnalysisCharts'
+import { FundGrowthTrendChart } from '../charts/FundGrowthTrendChart'
+import { FundRollingTrendChart } from '../charts/FundRollingTrendChart'
 import { PerformanceTimelinePanel } from '../charts/PerformanceTimelinePanel'
+import { RollingReturnDistributionChart } from '../charts/RollingReturnDistributionChart'
 import { FundLongTermStoryChart } from '../charts/FundLongTermStoryChart'
 import { MissingBestDaysChart } from '../charts/MissingBestDaysChart'
 import { MissingBestQuarterChart } from '../charts/MissingBestQuarterChart'
@@ -220,6 +224,29 @@ export function FundReportSections({
             </div>
           )}
         </ReportGroupBoundary>
+        <div className="mt-5">
+          <ReportInsightCard
+            title="Absolute returns"
+            subtitle="Pick a window below to see how ₹10,000 in this fund would have grown — fund only, no benchmark."
+          >
+            <FundGrowthTrendChart
+              fundName={fundName}
+              indexedNav={risk.data?.drawdown.indexedNav ?? []}
+              loading={risk.loading && risk.data == null}
+            />
+          </ReportInsightCard>
+        </div>
+        {scheme ? (
+          <div className="mt-5">
+            <FundAnnualReturnsChart
+              scheme={scheme}
+              fundName={fundName}
+              benchmarkName={benchmarkName}
+              startDate={startDate}
+              offlineView={isSharedView}
+            />
+          </div>
+        ) : null}
       </SectionShell>
       ) : null}
 
@@ -243,6 +270,31 @@ export function FundReportSections({
             </div>
           )}
         </ReportGroupBoundary>
+        {scheme ? (
+          <>
+            <div className="mt-5">
+              <ReportInsightCard
+                title="Rolling return trend"
+                subtitle="Pick a rolling window below to see every window this fund has completed — fund only, no benchmark."
+              >
+                <FundRollingTrendChart
+                  scheme={scheme}
+                  fundName={fundName}
+                  startDate={startDate}
+                  offlineView={isSharedView}
+                />
+              </ReportInsightCard>
+            </div>
+            <div className="mt-5">
+              <RollingReturnDistributionChart
+                scheme={scheme}
+                fundName={fundName}
+                startDate={startDate}
+                offlineView={isSharedView}
+              />
+            </div>
+          </>
+        ) : null}
       </SectionShell>
       ) : null}
 
