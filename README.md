@@ -278,7 +278,7 @@ The default `npm run build` produces the **demo** frontend (fixtures under `publ
 | Root directory | `/` (repo root) |
 | Node.js version | `22` (see `.node-version`) |
 
-`wrangler.toml` points `[assets].directory` at `./dist` so the default Cloudflare Deploy command succeeds. SPA fallback uses `not_found_handling = "single-page-application"` (and `public/_redirects` when served as classic Pages).
+`wrangler.toml` points `[assets].directory` at `./dist` so the default Cloudflare Deploy command succeeds. SPA fallback uses `not_found_handling = "single-page-application"` (do not add a `/* → /index.html` `_redirects` rule — Workers treats that as an infinite loop).
 
 Optional: if you prefer pure Pages auto-publish, clear the Deploy command and keep only the build output directory as `dist`. Manual upload: `npm run pages:deploy`.
 

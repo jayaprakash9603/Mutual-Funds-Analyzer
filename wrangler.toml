@@ -5,7 +5,8 @@
 # declare [assets] (Workers static assets). Without it, deploy fails with
 # "Missing entry-point to Worker script or to assets directory".
 #
-# SPA fallback is handled via not_found_handling (plus public/_redirects for Pages).
+# SPA fallback: not_found_handling only. Do not ship public/_redirects —
+# Workers rejects `/* /index.html 200` as an infinite redirect loop.
 
 name = "mutual-funds-analyzer"
 compatibility_date = "2026-08-01"
