@@ -1,0 +1,4 @@
+Contact: https://github.com/jayaprakash9603/Mutual-Funds-Analyzer
+Preferred-Languages: en
+Canonical: https://analyzer.example.com/.well-known/security.txt
+Policy: https://analyzer.example.com/guidelines

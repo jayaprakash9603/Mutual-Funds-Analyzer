@@ -1,0 +1,12 @@
+/* TEAM */
+Product: Analyzer
+Site: Mutual fund research tool (India)
+Contact: via the project repository
+
+/* THANKS */
+Market data providers and open research sources credited on /sources
+
+/* SITE */
+Standards: HTML5, CSS, WCAG-minded UI
+Components: React, Vite
+Last update: 2026

@@ -1,0 +1,18 @@
+# Analyzer — crawl guidance for the public demo / marketing site.
+# Update Sitemap URL to your production origin after deploy.
+
+User-agent: *
+Allow: /
+Allow: /disclaimer
+Allow: /privacy
+Allow: /terms
+Allow: /sources
+Allow: /guidelines
+Allow: /method
+Allow: /fund
+
+# Prefer indexing informational and legal pages; app deep-links remain allowed.
+Disallow: /demo/
+Disallow: /*?*
+
+Sitemap: https://analyzer.example.com/sitemap.xml

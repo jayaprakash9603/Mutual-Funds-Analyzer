@@ -262,6 +262,8 @@ Open http://localhost:5173 — the navbar shows a **Demo data** badge and sample
 npm run build:demo   # static demo build for hosting
 ```
 
+Upload the generated `dist/` folder to your static host. Demo builds include SEO assets (`robots.txt`, `sitemap.xml`, `llms.txt`, web manifest), a compliance banner, footer links, and legal pages (`/disclaimer`, `/privacy`, `/terms`, `/sources`, `/guidelines`). Before go-live, replace `https://analyzer.example.com` in `index.html`, `public/robots.txt`, and `public/sitemap.xml` with your real origin.
+
 > Demo mode **does not** talk to a live API. To refresh fixtures from a running backend:
 
 ```bash

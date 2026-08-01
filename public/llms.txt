@@ -1,0 +1,27 @@
+# Analyzer
+
+> Presentation-grade mutual fund research for India. Educational analytics only — not investment advice.
+
+Analyzer helps investors and advisors review Indian mutual funds using rolling returns, Chance of Beating (COB) the benchmark, Sharpe Ratio, drawdowns, SIP matrices, and peer context.
+
+## Important
+
+- This product is not a SEBI-registered investment adviser or research analyst service.
+- Past performance does not guarantee future results.
+- Demo deployments use sample / captured fixtures and may not reflect live NAVs.
+- Always verify figures with your AMC, RTA, or licensed adviser before acting.
+
+## Key pages
+
+- [Home](/): Product overview
+- [Fund report](/fund): Full research report
+- [Method](/method): Golden Triangle scoring rules
+- [Disclaimer](/disclaimer): Regulatory and risk notices
+- [Privacy](/privacy): Data practices
+- [Terms](/terms): Terms of use
+- [Sources](/sources): Data attribution
+- [Guidelines](/guidelines): Respectful composition & usage
+
+## Contact
+
+Prefer the project repository for issues and feedback.
