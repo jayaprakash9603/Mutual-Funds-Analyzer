@@ -2,6 +2,7 @@ import {
   fiBodyCell,
   fiHeaderCell,
   fiSubHeaderCell,
+  fiStickyLabelCell,
   fiStickyStripeBg,
   FI_TABLE,
 } from '@/components/fundsindia/tableStyles'
@@ -19,13 +20,6 @@ interface TrailingReturnsTableProps {
   fundName: string
 }
 
-const PERIOD_COL =
-  'min-w-[7.5rem] px-2 py-2 text-left text-[11px] font-semibold sm:min-w-[8.5rem] sm:px-2.5 sm:text-xs md:min-w-[10rem] md:px-3 md:text-sm'
-
-/** Matches stacked Key Parameters header (title row + sub-header row). */
-const PINNED_HEAD_HEIGHT =
-  'h-[4.75rem] sm:h-[5.25rem] md:h-[5.75rem]'
-
 export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTableProps) {
   if (periods.length === 0) {
     return <p className="text-xs text-muted-foreground sm:text-sm">No trailing return periods available.</p>
@@ -37,39 +31,19 @@ export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTable
       subtitle={fundName}
       meta="Absolute return, CAGR, growth of ₹10,000, and money multiplier by holding period."
     >
-      <ScrollTable
-        minWidth={APP_TABLE_MIN_WIDTH.md}
-        pinnedLeading={
-          <table className={FI_TABLE}>
-            <thead>
-              <tr>
-                <th
-                  className={cn(
-                    fiHeaderCell(),
-                    PERIOD_COL,
-                    PINNED_HEAD_HEIGHT,
-                    'align-middle normal-case',
-                  )}
-                >
-                  Period
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {periods.map((period, index) => (
-                <tr key={period.label} className={fiStickyStripeBg(index)}>
-                  <td className={cn(fiBodyCell(), PERIOD_COL, fiStickyStripeBg(index), 'font-semibold')}>
-                    {period.label}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        }
-      >
+      <ScrollTable minWidth={APP_TABLE_MIN_WIDTH.md}>
         <table className={FI_TABLE}>
           <thead>
             <tr>
+              <th
+                rowSpan={2}
+                className={cn(
+                  fiHeaderCell(),
+                  fiStickyLabelCell('z-30 bg-brand text-left normal-case text-white shadow-[4px_0_10px_-4px_rgba(0,0,0,0.35)]'),
+                )}
+              >
+                Period
+              </th>
               <th colSpan={4} className={fiHeaderCell()}>
                 Key Parameters
               </th>
@@ -83,7 +57,16 @@ export function TrailingReturnsTable({ periods, fundName }: TrailingReturnsTable
           </thead>
           <tbody>
             {periods.map((period, index) => (
-              <tr key={period.label} className={cn(index % 2 === 0 ? 'bg-card' : 'bg-muted/20')}>
+              <tr key={period.label} className={fiStickyStripeBg(index)}>
+                <td
+                  className={cn(
+                    fiBodyCell(),
+                    fiStickyLabelCell('z-20 font-semibold'),
+                    fiStickyStripeBg(index),
+                  )}
+                >
+                  {period.label}
+                </td>
                 <td
                   className={fiBodyCell('font-semibold')}
                   style={{ color: signedReturnColor(period.absoluteReturn) }}
