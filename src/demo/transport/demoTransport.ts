@@ -288,44 +288,60 @@ async function handleLumpsumSimulate(request: DemoRequest, manifest: DemoManifes
     data: {
       lumpsum?: {
         timeline?: unknown[]
-        scenarios?: Array<{ amount: number }>
+        scenarios?: Array<{
+          principal: number
+          currentValue: number
+          gain: number
+          cagr: number
+          moneyMultiplied: number
+        }>
       }
     }
   }
   const lumpsum = envelope.data.lumpsum
   const amount = Number.parseInt(request.params.get('amount') ?? '100000', 10)
   const scenario =
-    lumpsum?.scenarios?.find((row) => row.amount === amount) ?? lumpsum?.scenarios?.[0] ?? null
+    lumpsum?.scenarios?.find((row) => row.principal === amount) ?? lumpsum?.scenarios?.[0] ?? null
   if (scenario) {
     return { scenario, timeline: lumpsum?.timeline ?? [] }
   }
   return {
     scenario: {
-      amount,
-      finalValue: amount,
-      absoluteGain: 0,
+      principal: amount,
+      currentValue: amount,
+      gain: 0,
       cagr: 0,
-      xirr: 0,
+      moneyMultiplied: 1,
     },
     timeline: [],
   }
 }
 
 async function handleStepUpSipSimulate(request: DemoRequest): Promise<unknown> {
-  const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
-  const stepUpPercent = Number.parseFloat(request.params.get('step_up_percent') ?? '10')
+  const initialAmount = Number.parseInt(request.params.get('initial_amount') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const modeParam = (request.params.get('step_up_mode') ?? 'PERCENT').toUpperCase()
+  const stepUpMode = modeParam === 'FIXED' ? 'FIXED' : 'PERCENT'
+  const stepUpPercent = Number.parseFloat(request.params.get('step_up_percent') ?? '10') || 0
+  const stepUpAmount = Number.parseFloat(request.params.get('step_up_amount') ?? '2000') || 0
+  const stepUpValue = stepUpMode === 'PERCENT' ? stepUpPercent : stepUpAmount
+
   return {
     scheduleDay,
+    stepUpMode,
     stepUpPercent,
+    stepUpAmount,
     scenario: {
-      monthlyAmount: amount,
-      stepUpPercent,
-      totalInvested: 0,
-      finalValue: 0,
-      absoluteGain: 0,
+      initialMonthlyAmount: initialAmount,
+      currentMonthlyAmount: initialAmount,
+      stepUpMode,
+      stepUpValue,
+      currentValue: 0,
+      totalGain: 0,
       xirr: 0,
-      installmentCount: 0,
+      moneyInvested: 0,
+      projectedValue10Y: 0,
+      instalmentCount: 0,
     },
     timeline: [],
   }
