@@ -274,13 +274,15 @@ The default `npm run build` produces the **demo** frontend (fixtures under `publ
 |---------|--------|
 | Build command | `npm run build` |
 | Build output directory | `dist` |
-| **Deploy command** | **Leave empty** (do not use `npx wrangler deploy`) |
+| Deploy command | `npx wrangler deploy` (works with `[assets]` in `wrangler.toml`) |
 | Root directory | `/` (repo root) |
 | Node.js version | `22` (see `.node-version`) |
 
-`npx wrangler deploy` is for **Workers** and will fail on a Pages project (`Missing entry-point…`). Pages already publishes `dist` after a successful build when the output directory is set. For a manual upload only, use `npm run pages:deploy` (`wrangler pages deploy dist`).
+`wrangler.toml` points `[assets].directory` at `./dist` so the default Cloudflare Deploy command succeeds. SPA fallback uses `not_found_handling = "single-page-application"` (and `public/_redirects` when served as classic Pages).
 
-SPA routing is covered by `public/_redirects`. After you connect the GitHub repo, every push to `main` rebuilds and deploys the demo automatically.
+Optional: if you prefer pure Pages auto-publish, clear the Deploy command and keep only the build output directory as `dist`. Manual upload: `npm run pages:deploy`.
+
+After you connect the GitHub repo, every push to `main` rebuilds and deploys the demo automatically.
 
 > Demo mode **does not** talk to a live API. To refresh fixtures from a running backend:
 

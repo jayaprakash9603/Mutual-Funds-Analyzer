@@ -1,15 +1,15 @@
-# Cloudflare Pages — static demo frontend (npm run build = demo mode).
+# Static demo frontend for Cloudflare.
+# Build: npm run build  →  output in ./dist
 #
-# Dashboard settings:
-#   Build command:           npm run build
-#   Build output directory:  dist
-#   Deploy command:          (leave EMPTY)
-#   Node.js version:         22
+# Your dashboard Deploy command is `npx wrangler deploy`, so this file must
+# declare [assets] (Workers static assets). Without it, deploy fails with
+# "Missing entry-point to Worker script or to assets directory".
 #
-# Do NOT set Deploy command to `npx wrangler deploy` — that is for Workers and
-# fails on a Pages project. Pages publishes `dist` automatically after the build.
-# Manual upload: npm run pages:deploy
+# SPA fallback is handled via not_found_handling (plus public/_redirects for Pages).
 
 name = "mutual-funds-analyzer"
 compatibility_date = "2026-08-01"
-pages_build_output_dir = "dist"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
