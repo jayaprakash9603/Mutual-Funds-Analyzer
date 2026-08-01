@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/context/ThemeProvider'
 import { AppProvider } from '@/context/AppContext'
@@ -34,6 +34,7 @@ function PageLoader() {
 }
 
 function AppShell() {
+  const location = useLocation()
   const { open, setOpen } = useCommandPalette()
   const showCommandPalette = useFeature('ui.commandPalette')
   const showLanding = useFeature('ui.landingPage')
@@ -41,6 +42,8 @@ function AppShell() {
   const showCompare = useFeature('ui.comparePage')
   const showMethod = useFeature('ui.methodPage')
   const showFundReport = useFeature('ui.fundReportPage')
+  const hideFooterOnReport =
+    location.pathname === '/fund' || location.pathname.startsWith('/fund/')
 
   /**
    * Redirect target for disabled routes. It resolves to a page that is still on, so
