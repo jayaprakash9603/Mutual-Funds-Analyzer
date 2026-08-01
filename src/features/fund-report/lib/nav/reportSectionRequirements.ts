@@ -14,7 +14,6 @@ const SECTION_GROUP_REQUIREMENTS: Record<string, readonly ReportGroupKey[]> = {
   'goal-planner': ['performance'],
   risk: ['risk', 'assessment'],
   volatility: ['risk'],
-  portfolio: [],
   consistency: ['risk'],
   drawdown: ['risk'],
   'bear-market': ['risk'],

@@ -13,7 +13,6 @@ import {
   LineChart,
   Mountain,
   Percent,
-  PieChart,
   Repeat,
   Shield,
   Sparkles,
@@ -66,7 +65,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'risk', label: 'Risk', icon: Shield },
       { id: 'volatility', label: 'Volatility', icon: Activity },
-      { id: 'portfolio', label: 'Portfolio', icon: PieChart },
       { id: 'consistency', label: 'Consistency', icon: Sparkles },
       { id: 'drawdown', label: 'Drawdown', icon: TrendingDown },
       { id: 'bear-market', label: 'Bear Market', icon: CloudRain },

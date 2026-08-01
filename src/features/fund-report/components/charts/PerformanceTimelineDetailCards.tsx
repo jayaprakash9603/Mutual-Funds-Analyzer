@@ -130,7 +130,7 @@ export function PerformanceTimelineSummaryStrip({
 }) {
   return (
     <div className="space-y-4">
-      <AppMetricGrid variant="compact">
+      <AppMetricGrid>
         <MetricTile
           label={`${summary.period} windows`}
           value={String(summary.windowCount)}

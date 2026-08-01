@@ -75,7 +75,7 @@ import {
   ReportGroupBoundary,
   TableSkeleton,
 } from './ReportGroupBoundary'
-import { MetricTile, SectionShell, UnavailableNotice } from './SectionShell'
+import { MetricTile, SectionShell } from './SectionShell'
 import { RiskAnalysisPanel } from './RiskAnalysisPanel'
 import { TrailingReturnsTable } from '../tables/TrailingReturnsTable'
 import { GoalPlannerSection } from '../goals/GoalPlannerSection'
@@ -544,12 +544,6 @@ export function FundReportSections({
             )
           }}
         </ReportGroupBoundary>
-      </SectionShell>
-      ) : null}
-
-      {shouldRender("portfolio") ? (
-      <SectionShell id="portfolio" title="Portfolio Analysis">
-        <UnavailableNotice label="Portfolio holdings and sector allocation" />
       </SectionShell>
       ) : null}
 
