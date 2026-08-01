@@ -54,6 +54,8 @@
   --report-sticky-bar-height: 3.25rem;
   /* Updated at runtime by AppChrome (navbar ± demo banner). Fallback = navbar h-16. */
   --app-chrome-offset: 4rem;
+  /* Compact home footer height; measured by SiteFooter on `/`. */
+  --landing-footer-offset: 0px;
   --report-page-top: calc(var(--app-chrome-offset) + var(--report-sticky-bar-height));
   --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.02 240);

@@ -63,7 +63,7 @@ export function LandingPage() {
       <HeroBackdrop />
 
       <div className="relative mx-auto flex w-full max-w-[84rem] flex-1 flex-col px-4 sm:px-6 lg:px-8">
-        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-12 lg:gap-14 lg:py-8">
+        <div className="grid flex-1 items-center gap-8 py-8 sm:gap-10 sm:py-10 lg:grid-cols-12 lg:gap-12 lg:py-6">
           <div className="lg:col-span-7">
             <motion.p
               {...fade(0)}
@@ -112,14 +112,14 @@ export function LandingPage() {
           </motion.div>
         </div>
 
-        <div className="mb-8 grid border-t border-border/60 sm:grid-cols-[1.05fr_1.15fr_0.9fr] sm:divide-x sm:divide-border/60 lg:mb-10">
+        <div className="mb-4 grid border-t border-border/60 sm:grid-cols-[1.05fr_1.15fr_0.9fr] sm:divide-x sm:divide-border/60 lg:mb-5">
           {criteria.map((rule, index) => (
             <motion.div
               key={rule.title}
               initial={reduceMotion ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 + index * 0.09, ease: EASE }}
-              className="py-5 sm:first:pr-6 sm:last:pl-6 sm:[&:nth-child(2)]:px-6"
+              className="py-4 sm:first:pr-6 sm:last:pl-6 sm:[&:nth-child(2)]:px-6 lg:py-3.5"
             >
               <div className="flex items-center gap-2.5">
                 <rule.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
