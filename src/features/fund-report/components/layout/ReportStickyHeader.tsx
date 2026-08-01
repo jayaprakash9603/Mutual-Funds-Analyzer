@@ -39,11 +39,14 @@ export function ReportStickyHeader({
     <TooltipProvider>
       <div
         className={cn(
-          'fixed top-16 z-30 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
+          'fixed z-30 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
           'inset-x-0',
           sidebarVisible && 'lg:left-[var(--report-sidebar-width)]',
         )}
-        style={{ height: 'var(--report-sticky-bar-height)' }}
+        style={{
+          top: 'var(--app-chrome-offset)',
+          height: 'var(--report-sticky-bar-height)',
+        }}
       >
         <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
           <div className="min-w-0 flex-1">

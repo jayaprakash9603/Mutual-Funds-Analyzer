@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/context/ThemeProvider'
 import { AppProvider } from '@/context/AppContext'
 import { FeatureFlagProvider, useFeature } from '@/context/FeatureFlagProvider'
 import { Navbar } from '@/components/layout/Navbar'
+import { AppChrome } from '@/components/layout/AppChrome'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { DemoComplianceBanner } from '@/components/layout/DemoComplianceBanner'
 import { CommandPalette, useCommandPalette } from '@/components/layout/CommandPalette'
@@ -57,8 +58,10 @@ function AppShell() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <DemoComplianceBanner />
-      <Navbar />
+      <AppChrome>
+        <DemoComplianceBanner />
+        <Navbar />
+      </AppChrome>
       <main id="main-content" className="flex-1">
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>

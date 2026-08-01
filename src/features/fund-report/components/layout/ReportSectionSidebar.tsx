@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 import { cn } from '@/lib/utils'
-import { REPORT_PAGE_TOP_PX } from '../../lib/nav/reportLayoutConstants'
 import { SECTION_GROUPS } from '../../lib/nav/reportSectionCatalog'
 
 export const REPORT_SIDEBAR_WIDTH_PX = 240
@@ -21,7 +20,7 @@ export function ReportSectionSidebar({
   return (
     <aside
       aria-label="Report sections"
-      style={{ top: `${REPORT_PAGE_TOP_PX}px` }}
+      style={{ top: 'var(--report-page-top)' }}
       className={cn(
         'fixed bottom-0 left-0 z-30 hidden w-[var(--report-sidebar-width)] flex-col border-r border-border/50 bg-muted/25 dark:bg-muted/10 lg:flex',
         className,

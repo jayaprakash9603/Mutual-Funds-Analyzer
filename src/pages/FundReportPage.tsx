@@ -3,9 +3,15 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
+import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useAppChromeOffset } from '@/hooks/useAppChromeOffset'
 import { useIsReportMobileLayout } from '@/hooks/useMediaQuery'
-import { ReportScrollProvider, REPORT_SECTION_SCROLL_OFFSET } from '@/features/fund-report/context/ReportScrollContext'
+import { ReportScrollProvider } from '@/features/fund-report/context/ReportScrollContext'
+import {
+  REPORT_MOBILE_NAV_HEIGHT_PX,
+  REPORT_STICKY_BAR_HEIGHT_PX,
+} from '@/features/fund-report/lib/nav/reportLayoutConstants'
 import { FundReportSections } from '@/features/fund-report/components/layout/FundReportSections'
 import { ReportStickyHeader, ReportStickyHeaderSpacer } from '@/features/fund-report/components/layout/ReportStickyHeader'
 import { ReportPageShell } from '@/features/fund-report/components/layout/ReportPageShell'
@@ -39,10 +45,13 @@ export function FundReportPage() {
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
 
   const isMobileReportLayout = useIsReportMobileLayout()
+  const chromeOffset = useAppChromeOffset()
+  const sectionScrollOffset =
+    chromeOffset + REPORT_STICKY_BAR_HEIGHT_PX + REPORT_MOBILE_NAV_HEIGHT_PX
   const sectionIds = useMemo(() => REPORT_SECTIONS.map((section) => section.id), [])
   const { activeSection: scrollActiveSection, scrollToSection } = useSectionNav(
     isMobileReportLayout ? sectionIds : [],
-    REPORT_SECTION_SCROLL_OFFSET,
+    sectionScrollOffset,
   )
 
   const [desktopActiveSection, setDesktopActiveSection] = useState(DEFAULT_REPORT_SECTION)
@@ -317,7 +326,7 @@ export function FundReportPage() {
       )}
 
       <PageContainer width="wide" className="space-y-4 pb-6 pt-2">
-        <ReportScrollProvider offset={REPORT_SECTION_SCROLL_OFFSET}>
+        <ReportScrollProvider offset={sectionScrollOffset}>
         {!snapshotLoading && <ReportStickyHeaderSpacer />}
         {snapshotLoading && (
           <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
@@ -331,7 +340,7 @@ export function FundReportPage() {
           </div>
         )}
 
-        {!isSharedView && !snapshotLoading && (
+        {!isSharedView && !snapshotLoading && showReport && (
           <DemoFundPicker selectedScheme={scheme || null} onSelect={selectScheme} />
         )}
 
@@ -371,11 +380,27 @@ export function FundReportPage() {
           </div>
         )}
 
-        {!showReport && !snapshotLoading && !liveReport.anyLoading && (
-          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-            {isDemoBuild()
-              ? 'Pick a sample fund above (or search by name) to open the full demo report.'
-              : 'Search and select a fund to generate the full report.'}
+        {!showReport && !snapshotLoading && (
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 py-4">
+            <div className="space-y-2 text-center sm:text-left">
+              <h1 className="text-2xl font-semibold tracking-tight">Open a fund report</h1>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {isDemoBuild()
+                  ? 'Choose a sample fund below, or search by name. Demo mode uses captured fixtures — no live backend.'
+                  : 'Search and select a scheme to generate the full research report.'}
+              </p>
+            </div>
+
+            {isDemoBuild() && (
+              <DemoFundPicker selectedScheme={scheme || null} onSelect={selectScheme} />
+            )}
+
+            <FundSelector
+              mode="fund-only"
+              variant="default"
+              selectedScheme={scheme || null}
+              onSelectScheme={selectScheme}
+            />
           </div>
         )}
       </ReportScrollProvider>
