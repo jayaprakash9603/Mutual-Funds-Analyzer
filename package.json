@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build --mode demo",
     "build:demo": "tsc -b && vite build --mode demo",
     "build:live": "tsc -b && vite build",
+    "pages:deploy": "wrangler pages deploy dist --project-name=mutual-funds-analyzer",
     "demo:capture": "node scripts/capture-demo-data.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

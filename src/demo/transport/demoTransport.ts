@@ -211,8 +211,10 @@ async function handlePeers(request: DemoRequest, manifest: DemoManifest): Promis
 async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
   const scheme = request.params.get('scheme') ?? ''
   const fund = requireFund(manifest, scheme)
-  const file = requireFile(fund.files.drawdownPeers, 'the drawdown peer comparison', scheme)
-  return loadDemoFixture(file, request.signal)
+  if (!fund.files.drawdownPeers) {
+    return { thresholdRows: [], peerCount: 0 }
+  }
+  return loadDemoFixture(fund.files.drawdownPeers, request.signal)
 }
 
 async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
@@ -281,6 +283,54 @@ async function handleStpSimulate(request: DemoRequest): Promise<unknown> {
   }
 }
 
+async function handleLumpsumSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const envelope = (await handleFundReportInvestment(request, manifest)) as {
+    data: {
+      lumpsum?: {
+        timeline?: unknown[]
+        scenarios?: Array<{ amount: number }>
+      }
+    }
+  }
+  const lumpsum = envelope.data.lumpsum
+  const amount = Number.parseInt(request.params.get('amount') ?? '100000', 10)
+  const scenario =
+    lumpsum?.scenarios?.find((row) => row.amount === amount) ?? lumpsum?.scenarios?.[0] ?? null
+  if (scenario) {
+    return { scenario, timeline: lumpsum?.timeline ?? [] }
+  }
+  return {
+    scenario: {
+      amount,
+      finalValue: amount,
+      absoluteGain: 0,
+      cagr: 0,
+      xirr: 0,
+    },
+    timeline: [],
+  }
+}
+
+async function handleStepUpSipSimulate(request: DemoRequest): Promise<unknown> {
+  const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
+  const stepUpPercent = Number.parseFloat(request.params.get('step_up_percent') ?? '10')
+  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  return {
+    scheduleDay,
+    stepUpPercent,
+    scenario: {
+      monthlyAmount: amount,
+      stepUpPercent,
+      totalInvested: 0,
+      finalValue: 0,
+      absoluteGain: 0,
+      xirr: 0,
+      installmentCount: 0,
+    },
+    timeline: [],
+  }
+}
+
 /** A table instead of branching, so adding an endpoint stays a one-line change. */
 const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.schemes]: handleSchemes,
@@ -296,7 +346,9 @@ const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.fundReportAssessment]: handleFundReportAssessment,
   [API_ROUTES.fundReportMatrix]: handleFundReportMatrix,
   [API_ROUTES.fundReportSipSimulate]: handleSipSimulate,
+  [API_ROUTES.fundReportLumpsumSimulate]: handleLumpsumSimulate,
   [API_ROUTES.fundReportSwpSimulate]: handleSwpSimulate,
+  [API_ROUTES.fundReportStepUpSipSimulate]: handleStepUpSipSimulate,
   [API_ROUTES.fundReportStpSimulate]: handleStpSimulate,
   [API_ROUTES.fundReportPeers]: handlePeers,
   [API_ROUTES.fundReportDrawdownPeers]: handleDrawdownPeers,

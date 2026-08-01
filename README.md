@@ -274,8 +274,11 @@ The default `npm run build` produces the **demo** frontend (fixtures under `publ
 |---------|--------|
 | Build command | `npm run build` |
 | Build output directory | `dist` |
+| **Deploy command** | **Leave empty** (do not use `npx wrangler deploy`) |
 | Root directory | `/` (repo root) |
 | Node.js version | `22` (see `.node-version`) |
+
+`npx wrangler deploy` is for **Workers** and will fail on a Pages project (`Missing entry-point…`). Pages already publishes `dist` after a successful build when the output directory is set. For a manual upload only, use `npm run pages:deploy` (`wrangler pages deploy dist`).
 
 SPA routing is covered by `public/_redirects`. After you connect the GitHub repo, every push to `main` rebuilds and deploys the demo automatically.
 

@@ -1,5 +1,15 @@
 # Cloudflare Pages — static demo frontend (npm run build = demo mode).
-# Dashboard: Build command `npm run build`, output directory `dist`, Node 22.
+#
+# Dashboard settings:
+#   Build command:           npm run build
+#   Build output directory:  dist
+#   Deploy command:          (leave EMPTY)
+#   Node.js version:         22
+#
+# Do NOT set Deploy command to `npx wrangler deploy` — that is for Workers and
+# fails on a Pages project. Pages publishes `dist` automatically after the build.
+# Manual upload: npm run pages:deploy
+
 name = "mutual-funds-analyzer"
 compatibility_date = "2026-08-01"
 pages_build_output_dir = "dist"
