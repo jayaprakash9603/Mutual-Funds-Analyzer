@@ -37,9 +37,15 @@ export function fiStickyYearCell(className?: string) {
   return fiStickyLabelCell(className)
 }
 
+/** Solid fill so horizontally scrolled cells cannot show through sticky labels. */
+export function fiStickyStripeBg(rowIndex: number): string {
+  return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted'
+}
+
 export function fiStickyLabelCell(className?: string) {
   return cn(
-    'sticky left-0 z-10 min-w-[96px] border-r bg-background px-1.5 py-1.5 text-left align-top text-[11px] font-semibold sm:min-w-[120px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[140px] md:px-3 md:py-2 lg:min-w-[180px]',
+    'sticky left-0 z-10 min-w-[96px] border-r bg-card px-1.5 py-1.5 text-left align-top text-[11px] font-semibold sm:min-w-[120px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[140px] md:px-3 md:py-2 lg:min-w-[180px]',
+    'shadow-[4px_0_10px_-4px_rgba(15,23,42,0.22)] dark:shadow-[4px_0_10px_-4px_rgba(0,0,0,0.55)]',
     FI_GRID,
     className,
   )
@@ -55,7 +61,8 @@ export function fiMatrixDataCell(className?: string) {
 
 export function fiMatrixYearCell(className?: string) {
   return cn(
-    'sticky left-0 z-10 min-w-[68px] border-r px-1.5 py-1.5 align-middle text-center text-[11px] font-bold sm:min-w-[80px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[96px] md:px-3 md:py-2.5',
+    'sticky left-0 z-10 min-w-[68px] border-r bg-card px-1.5 py-1.5 align-middle text-center text-[11px] font-bold sm:min-w-[80px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[96px] md:px-3 md:py-2.5',
+    'shadow-[4px_0_10px_-4px_rgba(15,23,42,0.22)] dark:shadow-[4px_0_10px_-4px_rgba(0,0,0,0.55)]',
     FI_GRID,
     className,
   )
