@@ -29,9 +29,24 @@ function AppShell() {
   const { open, setOpen } = useCommandPalette()
   const showCommandPalette = useFeature('ui.commandPalette')
   const showLanding = useFeature('ui.landingPage')
+  const showDashboard = useFeature('ui.dashboardPage')
   const showCompare = useFeature('ui.comparePage')
   const showMethod = useFeature('ui.methodPage')
   const showFundReport = useFeature('ui.fundReportPage')
+
+  /**
+   * Redirect target for disabled routes. It resolves to a page that is still on, so
+   * turning a page off can never point a redirect at another disabled page or at itself.
+   */
+  const fallbackPath = showFundReport
+    ? '/fund'
+    : showDashboard
+      ? '/dashboard'
+      : showCompare
+        ? '/compare'
+        : showMethod
+          ? '/method'
+          : '/'
 
   return (
     <>
@@ -40,12 +55,17 @@ function AppShell() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={showLanding ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/fund" element={showFundReport ? <FundReportPage /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/fund/:scheme" element={showFundReport ? <FundReportPage /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/compare" element={showCompare ? <ComparePage /> : <Navigate to="/dashboard" replace />} />
-              <Route path="/method" element={showMethod ? <MethodPage /> : <Navigate to="/dashboard" replace />} />
+              <Route
+                path="/"
+                element={
+                  showLanding || fallbackPath === '/' ? <LandingPage /> : <Navigate to={fallbackPath} replace />
+                }
+              />
+              <Route path="/dashboard" element={showDashboard ? <DashboardPage /> : <Navigate to={fallbackPath} replace />} />
+              <Route path="/fund" element={showFundReport ? <FundReportPage /> : <Navigate to={fallbackPath} replace />} />
+              <Route path="/fund/:scheme" element={showFundReport ? <FundReportPage /> : <Navigate to={fallbackPath} replace />} />
+              <Route path="/compare" element={showCompare ? <ComparePage /> : <Navigate to={fallbackPath} replace />} />
+              <Route path="/method" element={showMethod ? <MethodPage /> : <Navigate to={fallbackPath} replace />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

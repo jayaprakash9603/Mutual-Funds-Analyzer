@@ -11,7 +11,10 @@ export const featureDefaults: Record<string, boolean> = {
   'analysis.peerComparison': true,
   'ui.landingPage': true,
   'ui.methodPage': true,
-  'ui.comparePage': true,
+  // Analyze and Compare are dormant; the fund report is the only analysis surface.
+  // The analysis.* flags stay on because the report's charts still call /api/analysis.
+  'ui.dashboardPage': false,
+  'ui.comparePage': false,
   'ui.commandPalette': true,
   'ui.favorites': true,
   'ui.recentAnalyses': true,

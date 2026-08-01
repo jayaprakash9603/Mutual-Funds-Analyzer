@@ -34,6 +34,7 @@ public final class FeatureFlagResolver {
         flags.put(FeatureKeys.ANALYSIS_PEER_COMPARISON, analysis.isPeerComparison());
         flags.put(FeatureKeys.UI_LANDING_PAGE, ui.isLandingPage());
         flags.put(FeatureKeys.UI_METHOD_PAGE, ui.isMethodPage());
+        flags.put(FeatureKeys.UI_DASHBOARD_PAGE, ui.isDashboardPage());
         flags.put(FeatureKeys.UI_COMPARE_PAGE, ui.isComparePage());
         flags.put(FeatureKeys.UI_COMMAND_PALETTE, ui.isCommandPalette());
         flags.put(FeatureKeys.UI_FAVORITES, ui.isFavorites());

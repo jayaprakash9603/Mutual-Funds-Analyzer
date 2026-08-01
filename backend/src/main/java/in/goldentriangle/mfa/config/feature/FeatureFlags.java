@@ -83,7 +83,9 @@ public class FeatureFlags {
     public static class UiFeatures {
         private boolean landingPage = true;
         private boolean methodPage = true;
-        private boolean comparePage = true;
+        /** Analyze and Compare are dormant; the fund report is the only analysis surface. */
+        private boolean dashboardPage = false;
+        private boolean comparePage = false;
         private boolean commandPalette = true;
         private boolean favorites = true;
         private boolean recentAnalyses = true;
@@ -103,6 +105,8 @@ public class FeatureFlags {
         public void setLandingPage(boolean landingPage) { this.landingPage = landingPage; }
         public boolean isMethodPage() { return methodPage; }
         public void setMethodPage(boolean methodPage) { this.methodPage = methodPage; }
+        public boolean isDashboardPage() { return dashboardPage; }
+        public void setDashboardPage(boolean dashboardPage) { this.dashboardPage = dashboardPage; }
         public boolean isComparePage() { return comparePage; }
         public void setComparePage(boolean comparePage) { this.comparePage = comparePage; }
         public boolean isCommandPalette() { return commandPalette; }

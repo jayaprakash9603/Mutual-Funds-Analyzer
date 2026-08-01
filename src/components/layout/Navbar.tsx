@@ -25,12 +25,13 @@ export function Navbar() {
   const { theme, setTheme } = useTheme()
   const showThemeToggle = useFeature('ui.themeToggle')
   const showLanding = useFeature('ui.landingPage')
+  const showDashboard = useFeature('ui.dashboardPage')
   const showCompare = useFeature('ui.comparePage')
   const showMethod = useFeature('ui.methodPage')
   const showFundReport = useFeature('ui.fundReportPage')
 
   const visibleItems = navItems.filter((item) => {
-    if (item.to === '/dashboard') return true
+    if (item.to === '/dashboard') return showDashboard
     if (item.to === '/fund') return showFundReport
     if (item.to === '/') return showLanding
     if (item.to === '/compare') return showCompare

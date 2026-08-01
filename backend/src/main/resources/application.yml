@@ -44,7 +44,9 @@ features:
   ui:
     landingPage: true
     methodPage: true
-    comparePage: true
+    # Analyze and Compare are dormant; the fund report is the only analysis surface.
+    dashboardPage: false
+    comparePage: false
     commandPalette: true
     favorites: true
     recentAnalyses: true

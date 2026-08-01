@@ -20,6 +20,7 @@ public final class FeatureKeys {
 
     public static final String UI_LANDING_PAGE = "ui.landingPage";
     public static final String UI_METHOD_PAGE = "ui.methodPage";
+    public static final String UI_DASHBOARD_PAGE = "ui.dashboardPage";
     public static final String UI_COMPARE_PAGE = "ui.comparePage";
     public static final String UI_COMMAND_PALETTE = "ui.commandPalette";
     public static final String UI_FAVORITES = "ui.favorites";

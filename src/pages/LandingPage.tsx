@@ -88,7 +88,7 @@ export function LandingPage() {
             <motion.div {...fade(0.5)} className="mt-9 flex flex-wrap items-center gap-3">
               <MagneticCta>
                 <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
-                  <Link to="/dashboard">
+                  <Link to="/fund">
                     Analyze a fund
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>

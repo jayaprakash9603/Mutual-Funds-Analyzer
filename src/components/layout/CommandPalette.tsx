@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Command } from 'cmdk'
-import { Search, BarChart3, GitCompare, BookOpen, Star, Clock } from 'lucide-react'
+import { Search, BarChart3, GitCompare, BookOpen, FileText, Star, Clock } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useAppContext } from '@/context/AppContext'
+import { useFeature } from '@/context/FeatureFlagProvider'
 
 interface CommandPaletteProps {
   open: boolean
@@ -13,11 +14,19 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate()
   const { favorites, recentAnalyses } = useAppContext()
+  const showDashboard = useFeature('ui.dashboardPage')
+  const showCompare = useFeature('ui.comparePage')
+  const showMethod = useFeature('ui.methodPage')
+  const showFundReport = useFeature('ui.fundReportPage')
 
   const run = (path: string) => {
     navigate(path)
     onOpenChange(false)
   }
+
+  // Saved schemes open wherever fund analysis actually lives.
+  const schemePath = (scheme: string) =>
+    `${showFundReport ? '/fund' : '/dashboard'}?scheme=${encodeURIComponent(scheme)}`
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -30,22 +39,33 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <Command.List className="max-h-[min(420px,calc(100vh-10rem))] overflow-y-auto p-2">
             <Command.Empty>No results found.</Command.Empty>
             <Command.Group heading="Navigation">
-              <Command.Item onSelect={() => run('/dashboard')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
-                <BarChart3 className="h-4 w-4" /> Analyze Fund
-              </Command.Item>
-              <Command.Item onSelect={() => run('/compare')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
-                <GitCompare className="h-4 w-4" /> Compare Funds
-              </Command.Item>
-              <Command.Item onSelect={() => run('/method')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
-                <BookOpen className="h-4 w-4" /> Learn Method
-              </Command.Item>
+              {showFundReport && (
+                <Command.Item onSelect={() => run('/fund')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
+                  <FileText className="h-4 w-4" /> Fund Report
+                </Command.Item>
+              )}
+              {showDashboard && (
+                <Command.Item onSelect={() => run('/dashboard')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
+                  <BarChart3 className="h-4 w-4" /> Analyze Fund
+                </Command.Item>
+              )}
+              {showCompare && (
+                <Command.Item onSelect={() => run('/compare')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
+                  <GitCompare className="h-4 w-4" /> Compare Funds
+                </Command.Item>
+              )}
+              {showMethod && (
+                <Command.Item onSelect={() => run('/method')} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent">
+                  <BookOpen className="h-4 w-4" /> Learn Method
+                </Command.Item>
+              )}
             </Command.Group>
             {favorites.length > 0 && (
               <Command.Group heading="Favorites">
                 {favorites.map((f) => (
                   <Command.Item
                     key={f}
-                    onSelect={() => run(`/dashboard?scheme=${encodeURIComponent(f)}`)}
+                    onSelect={() => run(schemePath(f))}
                     className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent"
                   >
                     <Star className="h-4 w-4" /> {f}
@@ -58,7 +78,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 {recentAnalyses.map((r) => (
                   <Command.Item
                     key={r.scheme}
-                    onSelect={() => run(`/dashboard?scheme=${encodeURIComponent(r.scheme)}`)}
+                    onSelect={() => run(schemePath(r.scheme))}
                     className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 aria-selected:bg-accent"
                   >
                     <Clock className="h-4 w-4" /> {r.scheme}
