@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { isDemoBuild } from '@/demo/config/demoMode'
 
-/** Persistent notice on demo builds: sample data + not advice. */
+/** Demo-only notice on the home page: sample data + not advice. */
 export function DemoComplianceBanner() {
-  if (!isDemoBuild()) return null
+  const { pathname } = useLocation()
+  if (!isDemoBuild() || pathname !== '/') return null
 
   return (
     <aside
