@@ -271,7 +271,7 @@
 
   @media (min-width: 1024px) and (min-height: 680px) {
     .landing-viewport {
-      height: calc(100dvh - var(--app-chrome-offset));
+      height: calc(100dvh - var(--app-chrome-offset) - var(--landing-footer-offset));
       overflow: hidden;
     }
   }
