@@ -342,10 +342,6 @@ export function FundReportPage() {
           </div>
         )}
 
-        {!isSharedView && !snapshotLoading && showReport && (
-          <DemoFundPicker selectedScheme={scheme || null} onSelect={selectScheme} />
-        )}
-
         {showReportShell && (
           <div className="space-y-4">
             <ReportSectionMobileNav
