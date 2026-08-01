@@ -15,4 +15,4 @@ Allow: /fund
 Disallow: /demo/
 Disallow: /*?*
 
-Sitemap: https://analyzer.example.com/sitemap.xml
+Sitemap: https://analyzer.quickcalci.com/sitemap.xml

@@ -44,6 +44,6 @@ describe('demoMode', () => {
     const joined = LIVE_APP_SETUP.flatMap((step) => [step.title, step.description, ...step.commands]).join(' ')
     expect(joined).toMatch(/docker compose|dev:api/)
     expect(joined).toMatch(/dev:client|npm run dev/)
-    expect(LIVE_APP_URL).toMatch(/5173/)
+    expect(LIVE_APP_URL).toMatch(/analyzer\.quickcalci\.com/)
   })
 })

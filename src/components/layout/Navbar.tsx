@@ -75,8 +75,6 @@ export function Navbar() {
 
         <div className="flex-1 md:hidden" aria-hidden="true" />
 
-        <NavMobileMenu items={visibleItems} pathname={location.pathname} />
-
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <DemoModeToggle />
           {showThemeToggle && (
@@ -91,6 +89,7 @@ export function Navbar() {
               <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
           )}
+          <NavMobileMenu items={visibleItems} pathname={location.pathname} />
         </div>
       </div>
     </header>

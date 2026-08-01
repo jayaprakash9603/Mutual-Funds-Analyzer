@@ -5,8 +5,7 @@ export const SITE = {
   tagline: 'Presentation-grade mutual fund research for India',
   description:
     'Analyzer scores Indian mutual funds with rolling returns, Chance of Beating (COB), and Sharpe Ratio versus the benchmark — plus drawdowns, SIP matrices, peers, and meeting-ready insights.',
-  /** Update this to your production URL before deploying the demo build. */
-  origin: 'https://analyzer.example.com',
+  origin: 'https://analyzer.quickcalci.com',
   locale: 'en_IN',
   keywords: [
     'mutual fund analyzer',
