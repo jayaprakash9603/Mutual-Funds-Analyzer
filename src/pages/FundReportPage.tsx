@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
+import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useIsReportMobileLayout } from '@/hooks/useMediaQuery'
 import { ReportScrollProvider, REPORT_SECTION_SCROLL_OFFSET } from '@/features/fund-report/context/ReportScrollContext'
@@ -330,6 +331,10 @@ export function FundReportPage() {
           </div>
         )}
 
+        {!isSharedView && !snapshotLoading && (
+          <DemoFundPicker selectedScheme={scheme || null} onSelect={selectScheme} />
+        )}
+
         {showReportShell && (
           <div className="space-y-4">
             <ReportSectionMobileNav
@@ -368,7 +373,9 @@ export function FundReportPage() {
 
         {!showReport && !snapshotLoading && !liveReport.anyLoading && (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-            Search and select a fund to generate the full report.
+            {isDemoBuild()
+              ? 'Pick a sample fund above (or search by name) to open the full demo report.'
+              : 'Search and select a fund to generate the full report.'}
           </div>
         )}
       </ReportScrollProvider>
