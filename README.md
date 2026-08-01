@@ -31,7 +31,6 @@ Search any Indian mutual fund and open a deep report: Golden Triangle scoring, r
 - [Scripts reference](#scripts-reference)
 - [Screenshots](#screenshots)
 - [Troubleshooting](#troubleshooting)
-- [License](#license)
 
 ---
 
@@ -446,9 +445,3 @@ OpenAPI UI (when enabled): http://localhost:8080/swagger-ui/index.html
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl/Cmd + K` | Command palette — search funds, favorites, recent reports |
-
----
-
-## License
-
-Private project (`"private": true` in `package.json`). Add an explicit license file if you plan to open-source or redistribute.
