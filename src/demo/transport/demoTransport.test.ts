@@ -119,7 +119,7 @@ describe('demoTransport routing', () => {
     const overview = await request(API_ROUTES.fundReportOverview, { scheme: ALPHA })
     expect(overview).toMatchObject({
       freshness: 'FRESH',
-      schemaVersion: 3,
+      schemaVersion: 7,
       data: { scheme: ALPHA, profile: { fundName: ALPHA, dataTo: '2026-01-01' } },
     })
   })
@@ -145,9 +145,13 @@ describe('demoTransport routing', () => {
     await expect(request(API_ROUTES.fundReportPeers, { scheme: BETA })).rejects.toThrow(
       /peer comparison/i,
     )
-    await expect(request(API_ROUTES.fundReportDrawdownPeers, { scheme: BETA })).rejects.toThrow(
-      /drawdown peer comparison/i,
-    )
+  })
+
+  it('returns an empty drawdown-peer payload when that fixture was not captured', async () => {
+    await expect(request(API_ROUTES.fundReportDrawdownPeers, { scheme: BETA })).resolves.toEqual({
+      thresholdRows: [],
+      peerCount: 0,
+    })
   })
 
   it('falls back to the nearest captured period', async () => {

@@ -24,6 +24,7 @@ Search any Indian mutual fund and open a deep report: Golden Triangle scoring, r
   - [Option A — Docker (recommended)](#option-a--docker-recommended)
   - [Option B — Local development](#option-b--local-development)
   - [Option C — Demo mode (no backend)](#option-c--demo-mode-no-backend)
+  - [Cloudflare Pages (demo hosting)](#cloudflare-pages-demo-hosting)
 - [First-time walkthrough](#first-time-walkthrough)
 - [Project structure](#project-structure)
 - [Architecture & data sources](#architecture--data-sources)
@@ -258,10 +259,25 @@ npm run dev:demo
 Open http://localhost:5173 — the navbar shows a **Demo data** badge and sample-fund chips.
 
 ```bash
-npm run build:demo   # static demo build for hosting
+npm run build        # default production build = demo mode (for Cloudflare / static hosts)
+npm run build:demo   # same as npm run build
+npm run build:live   # API-backed build (used by Docker)
 ```
 
-Upload the generated `dist/` folder to your static host. Demo builds include SEO assets (`robots.txt`, `sitemap.xml`, `llms.txt`, web manifest), a compliance banner, footer links, and legal pages (`/disclaimer`, `/privacy`, `/terms`, `/sources`, `/guidelines`). Before go-live, replace `https://analyzer.example.com` in `index.html`, `public/robots.txt`, and `public/sitemap.xml` with your real origin.
+Upload the generated `dist/` folder to your static host, or connect the repo to Cloudflare Pages (below). Demo builds include SEO assets (`robots.txt`, `sitemap.xml`, `llms.txt`, web manifest), a compliance banner, footer links, and legal pages (`/disclaimer`, `/privacy`, `/terms`, `/sources`, `/guidelines`). Before go-live, replace `https://analyzer.example.com` in `index.html`, `public/robots.txt`, and `public/sitemap.xml` with your real origin.
+
+#### Cloudflare Pages (demo hosting)
+
+The default `npm run build` produces the **demo** frontend (fixtures under `public/demo/`, no Spring Boot). Docker continues to use `npm run build:live` via the root `Dockerfile`.
+
+| Setting | Value |
+|---------|--------|
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | `/` (repo root) |
+| Node.js version | `22` (see `.node-version`) |
+
+SPA routing is covered by `public/_redirects`. After you connect the GitHub repo, every push to `main` rebuilds and deploys the demo automatically.
 
 > Demo mode **does not** talk to a live API. To refresh fixtures from a running backend:
 
@@ -389,8 +405,9 @@ MYSQL_PUBLISH_PORT=3306
 | `npm run dev:client` | Vite only |
 | `npm run dev:api` | Spring Boot only |
 | `npm run dev:demo` | Vite with demo fixtures (no API) |
-| `npm run build` | Production frontend build |
-| `npm run build:demo` | Production build with demo mode on |
+| `npm run build` | Production **demo** build (Cloudflare / static hosts) |
+| `npm run build:demo` | Alias for `npm run build` |
+| `npm run build:live` | Production build with live API mode (Docker) |
 | `npm run demo:capture` | Refresh `public/demo` fixtures from a live API |
 | `npm run preview` | Preview the production frontend build |
 | `npm run lint` | oxlint |

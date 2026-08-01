@@ -1,0 +1,5 @@
+# Cloudflare Pages — static demo frontend (npm run build = demo mode).
+# Dashboard: Build command `npm run build`, output directory `dist`, Node 22.
+name = "mutual-funds-analyzer"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "dist"

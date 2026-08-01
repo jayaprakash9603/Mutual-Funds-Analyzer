@@ -13,7 +13,7 @@ COPY vite.config.ts ./
 COPY public ./public
 COPY src ./src
 
-RUN npm run build
+RUN npm run build:live
 
 FROM nginx:1.27-alpine AS runtime
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
