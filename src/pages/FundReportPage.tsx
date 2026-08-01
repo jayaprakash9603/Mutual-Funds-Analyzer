@@ -295,6 +295,8 @@ export function FundReportPage() {
 
   const showReport = isSharedView || !!scheme
   const showReportShell = showReport && !snapshotLoading
+  /** Avoid two fund search fields: sticky bar only after a fund is open. */
+  const showStickyFundBar = showReport && !snapshotLoading
 
   return (
     <ReportPageShell
@@ -307,7 +309,7 @@ export function FundReportPage() {
         />
       }
     >
-      {!snapshotLoading && (
+      {showStickyFundBar && (
         <ReportStickyHeader
           scheme={scheme}
           fundLabel={fundLabel}
@@ -327,7 +329,7 @@ export function FundReportPage() {
 
       <PageContainer width="wide" className="space-y-4 pb-6 pt-2">
         <ReportScrollProvider offset={sectionScrollOffset}>
-        {!snapshotLoading && <ReportStickyHeaderSpacer />}
+        {showStickyFundBar && <ReportStickyHeaderSpacer />}
         {snapshotLoading && (
           <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             Loading shared report snapshot…
