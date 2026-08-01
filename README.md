@@ -1,351 +1,452 @@
 # Analyzer
 
-**Presentation-grade mutual fund research for India** — rolling returns, Golden Triangle scoring, drawdowns, SIP / lump-sum matrices, peer comparison, and AI-style insights in one report.
+**Presentation-grade mutual fund research for India.**
+
+Search any Indian mutual fund and open a deep report: Golden Triangle scoring, rolling returns, drawdowns, SIP / lump-sum / STP / SWP matrices, peer comparison, and meeting-ready one-liners — all from real NAV history.
 
 <p align="center">
-  <img src="Assets/report/overview/fund-overview.png" alt="Fund Overview — Parag Parikh Flexi Cap Fund" width="900" />
+  <img src="Assets/report/overview/fund-overview.png" alt="Analyzer fund overview" width="920" />
 </p>
 
 <p align="center">
-  <em>Fund overview with key facts, rating, and long-term growth — the first screen of every report.</em>
+  <em>Fund overview — key facts, rating, and long-term growth on one screen.</em>
 </p>
 
 ---
 
-## Why Analyzer
+## Table of contents
 
-Most fund pages show a trailing return and a star rating. Analyzer is built for the questions that come up in real meetings:
+- [What you can do](#what-you-can-do)
+- [Golden Triangle method](#golden-triangle-method)
+- [Product tour](#product-tour)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Option A — Docker (recommended)](#option-a--docker-recommended)
+  - [Option B — Local development](#option-b--local-development)
+  - [Option C — Demo mode (no backend)](#option-c--demo-mode-no-backend)
+- [First-time walkthrough](#first-time-walkthrough)
+- [Project structure](#project-structure)
+- [Architecture & data sources](#architecture--data-sources)
+- [Configuration](#configuration)
+- [Scripts reference](#scripts-reference)
+- [Screenshots](#screenshots)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-- How often did this fund beat its benchmark over rolling windows?
-- What does a typical year look like — and how deep do temporary declines go?
-- What happens if I miss the best days, buy at an all-time high, or book profits early?
-- How do SIPs, lump sums, STPs, and SWPs actually play out on this NAV history?
+---
 
-Every section opens with a **presentation-ready one-liner** so you can walk someone through the chart without decoding the table first.
+## What you can do
+
+Analyzer turns daily NAV history into a **fund report** you can present in a review, client call, or personal study session.
+
+| Area | What you get |
+|------|----------------|
+| **Snapshot** | Fund facts, AMC, category, NAV, age, rating, and long-term growth chart |
+| **Golden Triangle** | Pass / fail on Rolling Return, Chance of Beating (COB), and Sharpe vs benchmark |
+| **Returns** | Trailing returns, absolute growth of ₹10,000, calendar-year bars vs benchmark |
+| **Rolling returns** | Avg / max / min / std, >10% hit rates, trend and distribution charts |
+| **Probability** | Odds of negative returns, >7% / >10% returns, doubling / tripling money by horizon |
+| **Risk** | Volatility, intra-year drawdowns, crash episodes, bear-market recovery, best-days cost, all-time highs |
+| **Investment** | Lump sum, SIP (with tax / XIRR), STP, SWP, goal planner, wealth matrices |
+| **Peers** | Category peer tables from investt.in rolling returns (cached for speed) |
+| **Insights** | Strengths, watch-outs, risk level, and who the fund suits |
+| **Export / share** | Download report PDF and share links from the report toolbar |
+
+Presentation-ready **one-liners** sit above each section so the chart is easy to narrate without decoding every cell.
+
+> **Note:** The primary product surface is the **Fund Report** (`/fund`). Analyze and Compare pages exist in the codebase but are currently dormant via feature flags.
+
+---
+
+## Golden Triangle method
+
+A fund **passes** when all three checks succeed (defaults shown below):
+
+| Rule | Pass condition |
+|------|----------------|
+| **Rolling Return** | Fund average rolling return **>** benchmark average |
+| **COB** | Chance of beating the benchmark **> 70%** |
+| **Sharpe Ratio** | Fund Sharpe **>** benchmark Sharpe |
+
+<p align="center">
+  <img src="Assets/report/overview/golden-triangle-result.png" alt="Golden Triangle result card" width="720" />
+</p>
+
+<p align="center">
+  <em>Clear pass / fail with the three numbers side by side — useful as a first filter before deeper analysis.</em>
+</p>
+
+Read the full explainer in the app at **Method** (`/method`).
 
 ---
 
 ## Product tour
 
-### Snapshot — score at a glance
+### Snapshot & score
 
-<p align="center">
-  <img src="Assets/report/overview/golden-triangle-result.png" alt="Golden Triangle Result" width="720" />
-</p>
-
-The **Golden Triangle** is a clear pass / fail on three rules:
-
-1. **Rolling Return** — Fund average &gt; Benchmark average  
-2. **COB** — Chance of Beating Benchmark &gt; 70%  
-3. **Sharpe Ratio** — Fund Sharpe &gt; Benchmark Sharpe  
-
-<p align="center">
-  <img src="Assets/report/overview/golden-triangle-score.png" alt="Golden Triangle Score — fund vs benchmark rolling returns" width="900" />
-</p>
-
-<p align="center">
-  <em>Rolling return path of the fund versus its benchmark — switch window and return type as you present.</em>
-</p>
-
-### Performance — returns, rolling windows, probability
-
-| Returns dashboard | Absolute returns |
+| Overview | Score vs benchmark |
 | :---: | :---: |
-| <img src="Assets/report/performance/returns-dashboard.png" alt="Returns dashboard" width="420" /> | <img src="Assets/report/performance/absolute-returns-chart.png" alt="Absolute returns chart" width="420" /> |
+| <img src="Assets/report/overview/fund-overview.png" width="420" alt="Fund overview" /> | <img src="Assets/report/overview/golden-triangle-score.png" width="420" alt="Golden Triangle score" /> |
 
-| Annual returns vs benchmark | Rolling returns table |
+### Performance
+
+| Returns dashboard | Rolling returns |
 | :---: | :---: |
-| <img src="Assets/report/performance/annual-returns-chart.png" alt="Annual returns" width="420" /> | <img src="Assets/report/performance/rolling-returns-table.png" alt="Rolling returns table" width="420" /> |
+| <img src="Assets/report/performance/returns-dashboard.png" width="420" alt="Returns dashboard" /> | <img src="Assets/report/performance/rolling-returns-table.png" width="420" alt="Rolling returns table" /> |
+
+| Calendar-year volatility | Probability of milestones |
+| :---: | :---: |
+| <img src="Assets/report/performance/calendar-year-volatility.png" width="420" alt="Calendar year volatility" /> | <img src="Assets/report/performance/probability-analysis.png" width="420" alt="Probability analysis" /> |
 
 <p align="center">
   <img src="Assets/report/performance/rolling-return-trend.png" alt="Rolling return trend" width="900" />
 </p>
 
 <p align="center">
-  <em>Rolling return trend with average, best, and worst — the story behind consistency.</em>
+  <em>Rolling return trend — average, best, and worst windows at a glance.</em>
 </p>
 
-| Return distribution | Calendar-year patterns |
+### Risk
+
+| Drawdowns | Bear market & recovery |
 | :---: | :---: |
-| <img src="Assets/report/performance/rolling-return-distribution.png" alt="Rolling return distribution" width="420" /> | <img src="Assets/report/performance/return-patterns.png" alt="Return patterns" width="420" /> |
-
-| Odds of negative returns | Odds of &gt;10% returns |
-| :---: | :---: |
-| <img src="Assets/report/performance/negative-returns-probability.png" alt="Negative returns probability" width="420" /> | <img src="Assets/report/performance/returns-above-10-percent.png" alt="Returns above 10%" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/performance/calendar-year-volatility.png" alt="Calendar year volatility" width="900" />
-</p>
-
-<p align="center">
-  <em>Calendar years sorted high to low — yearly returns rarely look like the long-term average.</em>
-</p>
-
-| Compounding vs profit booking | Fund vs benchmark growth |
-| :---: | :---: |
-| <img src="Assets/report/performance/compounding-vs-profit-booking.png" alt="Compounding vs profit booking" width="420" /> | <img src="Assets/report/performance/fund-vs-benchmark-growth.png" alt="Fund vs benchmark growth" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/performance/probability-analysis.png" alt="Probability analysis" width="900" />
-</p>
-
-<p align="center">
-  <em>Probability of milestones — double, triple, and beyond — by holding period.</em>
-</p>
-
-### Risk — drawdowns, bear markets, best days, ATHs
-
-| Volatility | Daily return distribution |
-| :---: | :---: |
-| <img src="Assets/report/risk/volatility-overview.png" alt="Volatility overview" width="420" /> | <img src="Assets/report/risk/daily-return-distribution.png" alt="Daily return distribution" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/risk/annual-drawdown-vs-returns.png" alt="Annual drawdown vs returns" width="900" />
-</p>
-
-<p align="center">
-  <em>Intra-year declines next to year-end returns — temporary pain often coexists with a green year.</em>
-</p>
-
-| Drawdown analysis | Drawdown episodes |
-| :---: | :---: |
-| <img src="Assets/report/risk/drawdown-analysis.png" alt="Drawdown analysis" width="420" /> | <img src="Assets/report/risk/drawdown-episodes-table.png" alt="Drawdown episodes" width="420" /> |
-
-| Bear market & recovery | Decline / recovery cycles |
-| :---: | :---: |
-| <img src="Assets/report/risk/bear-market-recovery.png" alt="Bear market recovery" width="420" /> | <img src="Assets/report/risk/decline-recovery-cycles.png" alt="Decline recovery cycles" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/risk/indexed-nav-path.png" alt="Indexed NAV path" width="900" />
-</p>
-
-<p align="center">
-  <em>Full NAV path with decline legs in red and recovery phases in green.</em>
-</p>
+| <img src="Assets/report/risk/drawdown-analysis.png" width="420" alt="Drawdown analysis" /> | <img src="Assets/report/risk/bear-market-recovery.png" width="420" alt="Bear market recovery" /> |
 
 | Missing the best days | All-time highs |
 | :---: | :---: |
-| <img src="Assets/report/risk/best-days-miss-analysis.png" alt="Best days miss analysis" width="420" /> | <img src="Assets/report/risk/ath-frequency-chart.png" alt="ATH frequency" width="420" /> |
+| <img src="Assets/report/risk/best-days-miss-analysis.png" width="420" alt="Best days analysis" /> | <img src="Assets/report/risk/ath-frequency-chart.png" width="420" alt="ATH frequency" /> |
 
-### Investment — lump sum, SIP, STP, SWP, goals
+### Investment planners
 
 | Lump sum | SIP |
 | :---: | :---: |
-| <img src="Assets/report/investment/lumpsum-analysis.png" alt="Lump sum analysis" width="420" /> | <img src="Assets/report/investment/sip-analysis.png" alt="SIP analysis" width="420" /> |
+| <img src="Assets/report/investment/lumpsum-analysis.png" width="420" alt="Lump sum analysis" /> | <img src="Assets/report/investment/sip-analysis.png" width="420" alt="SIP analysis" /> |
 
-| CAGR heat matrix | SIP XIRR matrix |
+| CAGR / XIRR heat matrices | Goal planner |
 | :---: | :---: |
-| <img src="Assets/report/investment/lumpsum-cagr-matrix.png" alt="Lump sum CAGR matrix" width="420" /> | <img src="Assets/report/investment/sip-xirr-matrix.png" alt="SIP XIRR matrix" width="420" /> |
+| <img src="Assets/report/investment/lumpsum-cagr-matrix.png" width="420" alt="CAGR matrix" /> | <img src="Assets/report/investment/goal-planner-matrix.png" width="420" alt="Goal planner" /> |
 
-| STP | SWP |
+### Peers & insights
+
+| Peer comparison | Insights |
 | :---: | :---: |
-| <img src="Assets/report/investment/stp-analysis.png" alt="STP analysis" width="420" /> | <img src="Assets/report/investment/swp-analysis.png" alt="SWP analysis" width="420" /> |
-
-| Goal planner | Years to double |
-| :---: | :---: |
-| <img src="Assets/report/investment/goal-planner-matrix.png" alt="Goal planner" width="420" /> | <img src="Assets/report/investment/years-to-double.png" alt="Years to double" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/investment/step-up-sip-milestones.png" alt="Step-up SIP milestones" width="900" />
-</p>
-
-<p align="center">
-  <em>Step-up SIP journey — how much came from instalments versus compounding.</em>
-</p>
-
-### Assessment — peers & insights
-
-| Peer comparison | Category peers |
-| :---: | :---: |
-| <img src="Assets/report/assessment/peer-comparison.png" alt="Peer comparison" width="420" /> | <img src="Assets/report/assessment/category-peers-table.png" alt="Category peers table" width="420" /> |
-
-<p align="center">
-  <img src="Assets/report/assessment/ai-insights.png" alt="AI insights" width="900" />
-</p>
-
-<p align="center">
-  <em>Risk level, strengths, watch-outs, and who the fund suits — ready for a client conversation.</em>
-</p>
+| <img src="Assets/report/assessment/peer-comparison.png" width="420" alt="Peer comparison" /> | <img src="Assets/report/assessment/ai-insights.png" width="420" alt="AI insights" /> |
 
 ---
 
-## Screenshot library
+## Prerequisites
 
-All product shots live under [`Assets/`](Assets/) with descriptive names:
+### Docker path (easiest)
 
-```
-Assets/
-└── report/
-    ├── overview/       # Fund facts, Golden Triangle score & result
-    ├── performance/    # Returns, rolling, patterns, benchmark, probability
-    ├── risk/           # Volatility, drawdowns, bear market, best days, ATH
-    ├── investment/     # Lump sum, SIP, STP, SWP, goals, planners
-    └── assessment/     # Peers & AI insights
-```
+| Tool | Version |
+|------|---------|
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Recent stable |
+| Docker Compose | v2 (`docker compose`) |
 
-| Folder | Count | What you’ll find |
-|--------|------:|------------------|
-| [`Assets/report/overview/`](Assets/report/overview/) | 3 | Overview card grid, score chart, pass/fail result |
-| [`Assets/report/performance/`](Assets/report/performance/) | 18 | Trailing & rolling returns, timelines, probability, benchmark |
-| [`Assets/report/risk/`](Assets/report/risk/) | 17 | Volatility, drawdowns, recovery, best-days cost, ATHs |
-| [`Assets/report/investment/`](Assets/report/investment/) | 15 | SIP / lump sum / STP / SWP dashboards and heat matrices |
-| [`Assets/report/assessment/`](Assets/report/assessment/) | 3 | Peer tables and insights |
+### Local development path
+
+| Tool | Version |
+|------|---------|
+| [Node.js](https://nodejs.org/) | **20+** (22 recommended) |
+| npm | Comes with Node |
+| [JDK](https://adoptium.net/) | **17** |
+| [Maven](https://maven.apache.org/) | **3.9+** |
+| MySQL *(optional)* | **8.x** — or use `h2` / `nodb` profiles |
 
 ---
 
-## Stack
+## Installation
 
-### Front end
-- React 19 + TypeScript + Vite
-- Tailwind CSS + shadcn/ui-style components
-- Recharts (via the shadcn chart wrapper)
-- TanStack Table, Zod
-- Framer Motion, Lucide Icons
+### Option A — Docker (recommended)
 
-### Back end
-- Spring Boot 3.4 on Java 17, hexagonal architecture (ports and adapters)
-- Analytics, Golden Triangle rules and insight generation in the domain layer
-- Caffeine cache, feature flags, springdoc OpenAPI
-- Optional persistence: MySQL, PostgreSQL, H2 (JPA + Flyway) or MongoDB
-- Peer & matrix snapshots cached in the database for fast repeat loads
-
-## Getting Started
-
-### Local (npm + Maven)
+One command builds the frontend, backend, and MySQL stack.
 
 ```bash
-npm install
-npm run dev
-```
+# 1. Clone
+git clone https://github.com/jayaprakash9603/Mutual-Funds-Analyzer.git
+cd Mutual-Funds-Analyzer
 
-This starts:
-- **Vite** at `http://localhost:5173`
-- **Spring Boot** at `http://localhost:8080`
+# 2. Optional: copy env overrides
+cp .env.example .env
 
-Open `http://localhost:5173` in your browser. Vite proxies `/api/*` to the back end.
-
-The back end defaults to the `mysql` profile (`root` / `123456` on port 5000). Pick a different
-store with `-Dspring-boot.run.profiles=h2`, `postgres`, `mongo` or `nodb`.
-
-### Docker (frontend + backend + MySQL)
-
-```bash
-cp .env.example .env   # optional — defaults work out of the box
+# 3. Build and start
 docker compose up --build
 ```
 
-Then open:
-- **App** — `http://localhost` (nginx serves the UI and proxies `/api` to the backend)
-- **API** — `http://localhost:8080`
-- **MySQL** — `localhost:3306` (`root` / `123456`, database `mfa`)
+| URL | What |
+|-----|------|
+| http://localhost | Web app (nginx → UI + `/api` proxy) |
+| http://localhost:8080 | Spring Boot API / OpenAPI |
+| localhost:3306 | MySQL (`root` / `123456`, database `mfa`) |
 
-| Service | Image / build | Role |
-|---------|---------------|------|
-| `frontend` | root `Dockerfile` | Vite production build behind nginx |
-| `backend` | `backend/Dockerfile` | Spring Boot API (mysql profile) |
-| `mysql` | `mysql:8.4` | Persistent store for NAV / matrix / peer snapshots |
+Useful commands:
 
 ```bash
-docker compose down          # stop
-docker compose down -v       # stop and wipe the MySQL volume
+docker compose logs -f backend    # follow API logs
+docker compose down               # stop containers
+docker compose down -v            # stop and wipe MySQL data
 ```
 
-## Scripts
+Default ports can be changed in `.env` (`FRONTEND_PUBLISH_PORT`, `BACKEND_PUBLISH_PORT`, `MYSQL_PUBLISH_PORT`).
+
+---
+
+### Option B — Local development
+
+#### 1. Clone and install frontend deps
+
+```bash
+git clone https://github.com/jayaprakash9603/Mutual-Funds-Analyzer.git
+cd Mutual-Funds-Analyzer
+npm install
+```
+
+#### 2. Start a database (pick one)
+
+**MySQL (default profile)** — create a database and align credentials with `backend/src/main/resources/application-mysql.yml`:
+
+| Setting | Default |
+|---------|---------|
+| Host | `localhost` |
+| Port | `5000` *(compose uses `3306`; local default in YAML is `5000`)* |
+| Database | `mfa` |
+| User | `root` |
+| Password | `123456` |
+
+Or override with env vars: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+
+**No MySQL?** Use an in-memory / file profile:
+
+```bash
+# API only, H2
+mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=h2
+
+# API only, no persistence
+mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=nodb
+```
+
+#### 3. Start API + UI together
+
+```bash
+npm run dev
+```
+
+This runs:
+
+- Vite → http://localhost:5173 (proxies `/api/*` → `http://127.0.0.1:8080`)
+- Spring Boot → http://localhost:8080
+
+Open **http://localhost:5173**.
+
+#### 4. Or start them separately
+
+```bash
+npm run dev:api      # Spring Boot only
+npm run dev:client   # Vite only
+```
+
+---
+
+### Option C — Demo mode (no backend)
+
+Use captured fixtures when you only need a UI demo (portfolio, offline laptop, screenshots).
+
+```bash
+npm install
+npm run dev:demo
+```
+
+Open http://localhost:5173 — the navbar shows a **Demo data** badge and sample-fund chips.
+
+```bash
+npm run build:demo   # static demo build for hosting
+```
+
+> Demo mode **does not** talk to a live API. To refresh fixtures from a running backend:
+
+```bash
+npm run dev:api
+npm run demo:capture
+```
+
+---
+
+## First-time walkthrough
+
+1. Open the app (Docker → http://localhost, local → http://localhost:5173).
+2. Go to **Report** (or open `/fund`).
+3. Search for a scheme, e.g. `Parag Parikh Flexi Cap Fund - Direct Plan - Growth`.
+4. Explore the left nav:
+   - **Snapshot** → Overview, Score  
+   - **Performance** → Returns, Rolling, Patterns, Benchmark, Probability  
+   - **Risk** → Volatility, Drawdown, Bear Market, Best Days, ATH  
+   - **Investment** → Lump Sum, SIP, STP, SWP, Goals  
+   - **Assessment** → Peers, Insights  
+5. Use **Download** / **Share** in the toolbar for a PDF or link.
+6. Press `Ctrl/Cmd + K` for the command palette (search, favorites, recent reports).
+
+First load for a fund can take longer (NAV + analytics). Matrix, peers, and report sections are cached so repeats are much faster.
+
+---
+
+## Project structure
+
+```
+Mutual-Funds-Analyzer/
+├── Assets/                 # Product screenshots for this README
+├── backend/                # Spring Boot 3.4 API (Java 17)
+│   ├── Dockerfile
+│   ├── pom.xml
+│   └── src/main/...
+├── deploy/
+│   └── nginx.conf          # Production UI + /api reverse proxy
+├── public/demo/            # Demo fixtures (demo builds only)
+├── src/                    # React 19 + TypeScript frontend
+├── Dockerfile              # Frontend production image
+├── docker-compose.yml      # mysql + backend + frontend
+├── .env.example
+└── package.json
+```
+
+---
+
+## Architecture & data sources
+
+```
+Browser
+  └─ Vite (dev) or nginx (Docker)
+       └─ /api/*  →  Spring Boot (:8080)
+                        ├─ api.mfapi.in          — daily NAV + scheme catalog
+                        └─ analysis.investt.in   — benchmarks + peer rolling returns
+                             ↓
+                   Domain analytics (rolling returns, Golden Triangle, SIP/tax, matrices)
+                             ↓
+                   Caffeine cache + optional MySQL/Postgres/H2/Mongo snapshots
+```
+
+| Feature | Fund NAV / search | Rolling returns | Benchmark |
+|---------|-------------------|-----------------|-----------|
+| **Fund report** | mfapi.in | Computed from daily NAV | investt.in |
+| **Peers** | investt.in catalog | investt.in | investt.in |
+| **Matrices (SIP / CAGR)** | mfapi.in NAV | Derived on server | — |
+
+The investt API blocks browser CORS and needs a multipart GET, so the **backend always owns** those calls. Responses and computed snapshots (report sections, matrices, peers) are cached for repeat requests.
+
+---
+
+## Configuration
+
+### Feature flags
+
+`GET /api/features` returns the enabled flags. The UI and backend share the same keys (see `backend/src/main/resources/application.yml`).
+
+Examples:
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `features.ui.fundReportPage` | `true` | Fund Report route |
+| `features.ui.dashboardPage` | `false` | Analyze page (dormant) |
+| `features.ui.comparePage` | `false` | Compare page (dormant) |
+| `features.analysis.peerComparison` | `true` | Peer endpoints |
+| `features.analysis.incrementalMatrixSnapshots` | `true` | Persist matrix snapshots |
+| `features.platform.cache.enabled` | `true` | Caffeine cache |
+
+### Spring profiles
+
+| Profile | Persistence |
+|---------|-------------|
+| `mysql` *(default)* | MySQL + Flyway |
+| `postgres` | PostgreSQL + Flyway |
+| `h2` | Embedded H2 |
+| `mongo` | MongoDB |
+| `nodb` | No DB adapters |
+
+```bash
+mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=h2
+```
+
+### Docker environment
+
+See [`.env.example`](.env.example):
+
+```env
+MYSQL_DATABASE=mfa
+MYSQL_USER=root
+MYSQL_PASSWORD=123456
+FRONTEND_PUBLISH_PORT=80
+BACKEND_PUBLISH_PORT=8080
+MYSQL_PUBLISH_PORT=3306
+```
+
+---
+
+## Scripts reference
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start the Spring Boot API and the Vite dev server |
+| `npm run dev` | Start API + Vite together |
 | `npm run dev:client` | Vite only |
 | `npm run dev:api` | Spring Boot only |
-| `npm run dev:demo` | Vite in demo mode, serving captured fixtures instead of the API |
-| `npm run build` | Type-check and produce a production build |
-| `npm run build:demo` | Production build with demo mode on by default |
-| `npm run demo:capture` | Refresh the demo fixtures from a running back end |
-| `npm run preview` | Preview the production build |
-| `npm run lint` | Run oxlint |
-| `npm run test` | Front-end unit tests (Vitest) |
-| `npm run test:api` | Back-end tests, including the ArchUnit rules |
+| `npm run dev:demo` | Vite with demo fixtures (no API) |
+| `npm run build` | Production frontend build |
+| `npm run build:demo` | Production build with demo mode on |
+| `npm run demo:capture` | Refresh `public/demo` fixtures from a live API |
+| `npm run preview` | Preview the production frontend build |
+| `npm run lint` | oxlint |
+| `npm run test` | Frontend unit tests (Vitest) |
+| `npm run test:api` | Backend tests (Maven / ArchUnit) |
+| `docker compose up --build` | Full stack in containers |
 
-## Architecture
+---
+
+## Screenshots
+
+All product shots live under [`Assets/report/`](Assets/report/) with descriptive filenames:
 
 ```
-Browser → Vite (/api/*) → Spring Boot (:8080)
-                               ├─ api.mfapi.in — fund NAV + catalog (Report, Compare fund metrics)
-                               └─ analysis.investt.in — benchmark rows + Analyze page + peer rolling returns
-                               ↓
-        Domain analytics (rolling returns from NAV, Golden Triangle rules, insights)
-                               ↓
-        Rolling aggregates + peer/matrix snapshots cached in memory and DB
-                               ↓
-                       Dashboard + Fund Report + Compare
+Assets/report/
+├── overview/       (3)   Fund facts, Golden Triangle score & result
+├── performance/   (18)   Returns, rolling, patterns, benchmark, probability
+├── risk/          (17)   Volatility, drawdowns, bear market, best days, ATH
+├── investment/    (15)   Lump sum, SIP, STP, SWP, goals, planners
+└── assessment/     (3)   Peers & insights
 ```
 
-### Data sources
+A LinkedIn-ready image-only PDF (if generated locally) is typically saved as `Assets/Analyzer-Product-Tour.pdf` and is gitignored with other `*.pdf` files.
 
-| Page / feature | Fund NAV & search | Rolling returns (fund) | Benchmark / index |
-|----------------|-------------------|------------------------|-------------------|
-| **Analyze** (`/dashboard`) | investt.in | investt.in | investt.in |
-| **Fund report** | mfapi.in | Computed locally from mfapi daily NAV | investt.in (bridged by fund name) |
-| **Peers** | investt.in catalog | investt.in rolling returns | investt.in |
-| **Compare** | mfapi.in | Computed locally from mfapi daily NAV | investt.in (COB, alpha) |
+---
 
-The upstream investt API blocks browser CORS and requires a GET with a multipart body, so the back end
-owns that call, caches responses, and serves the analytics to the UI. mfapi.in provides free daily NAV
-history; fund rolling returns, SIP, lumpsum, and matrix cells are derived from that series on the server.
-Fund-versus-index rolling aggregates for the Analyze page are stored incrementally, so a later request only
-folds in the NAV rows that arrived since the last computation.
+## Troubleshooting
 
-## Demo mode
+| Problem | What to try |
+|---------|-------------|
+| **Frontend loads but API fails** | Confirm backend is up on `:8080`. In Docker, wait until `mfa-backend` is healthy (`docker compose ps`). |
+| **`Port 5173 / 80 / 8080 already in use`** | Stop the other process, or change publish ports in `.env`. |
+| **MySQL connection refused (local)** | Start MySQL, check port (`5000` in default YAML vs `3306` in Docker), or use `-Dspring-boot.run.profiles=h2`. |
+| **First fund report is slow** | Expected on cold cache — NAV download + analytics. Reload the same fund afterward; sections / matrices / peers reuse DB + memory caches. |
+| **Peers stuck on loading** | Needs outbound access to investt.in. Check backend logs; retry after the first successful category load (results are snapshotted). |
+| **Demo chips but empty live data** | You are on `npm run dev:demo`. Use `npm run dev` (or Docker) for live APIs. |
+| **Windows proxy / IPv6 issues** | Vite proxies to `127.0.0.1:8080` on purpose. Prefer that over `localhost` if Spring binds IPv4 only. |
+| **Docker build fails on Maven/npm** | Ensure Docker has enough RAM (4 GB+ recommended) and a working network for dependency downloads. |
 
-Demo mode is a **separate front-end build** that serves every API response from JSON files in
-`public/demo`. Use it for demos, portfolios, or any environment where the back end should not
-run. Live builds (`npm run dev`, `npm run build`) always talk to `/api/*` and never show demo
-controls.
+API health (Docker / local):
 
 ```bash
-npm run dev:demo      # local demo with fixtures
-npm run build:demo    # static demo build for hosting
+curl http://localhost:8080/actuator/health
 ```
 
-In a demo build the navbar shows a **Demo data** badge and sample-fund chips on Analyze and
-Report. **Use live data** opens a guide for running the live application separately — it does
-**not** switch this demo page to the API. Live mode requires its own front-end server
-(`npm run dev` or `npm run dev:client`) plus the Spring Boot back end on port 8080.
+OpenAPI UI (when enabled): http://localhost:8080/swagger-ui/index.html
 
-Every response still passes through the same zod schemas, so a stale fixture fails loudly
-instead of rendering wrong numbers.
+---
 
-### Refreshing the fixtures
+## Keyboard shortcuts
 
-```bash
-npm run dev:api        # back end must be up
-npm run demo:capture   # or double-click scripts\capture-demo-data.bat
-```
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + K` | Command palette — search funds, favorites, recent reports |
 
-The script resolves each fund in `DEMO_FUNDS` through `/api/schemes`, so scheme spellings are
-never hardcoded, then captures the report, all rolling-return periods, all four matrix modes,
-the fund-versus-index matrix, and peers per fund, plus one shared feature-flag, scheme list and
-comparison payload. Filenames are recorded in `public/demo/manifest.json`, which is the only
-thing the front end reads to find a fixture. Long NAV series are sampled down to 400 points a
-side, keeping the chart shape while holding the whole data set at about 5 MB.
+---
 
-A fund is dropped from the demo set if its report cannot be captured, so the search list and the
-quick-pick chips only ever offer funds that have data.
+## License
 
-## Feature flags
-
-`GET /api/features` returns the enabled flags. The UI gates panels and charts on them via
-`FeatureGate`, and the back end gates endpoints and beans on the same keys, so a feature can be
-switched off in `application.yml` without touching either code base.
-
-## Pages
-
-- **/** — Landing page with animated hero
-- **/dashboard** — Full fund analysis with stat cards, Golden Triangle result, rolling-returns table and charts
-- **/fund** (Report) — Deep fund report: returns, risk, SIP / lump sum / STP / SWP, peers, insights
-- **/compare** — Compare up to 5 funds with a table and a radar chart
-- **/method** — Golden Triangle method explainer
-
-## Keyboard Shortcuts
-
-- `Ctrl/Cmd + K` — Command palette (search, favorites, recent analyses)
+Private project (`"private": true` in `package.json`). Add an explicit license file if you plan to open-source or redistribute.
