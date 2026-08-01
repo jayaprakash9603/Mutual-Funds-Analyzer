@@ -89,7 +89,7 @@ function AppShell() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      <SiteFooter />
+      {!hideFooterOnReport && <SiteFooter />}
       {showCommandPalette && <CommandPalette open={open} onOpenChange={setOpen} />}
       <Toaster richColors position="bottom-right" />
     </div>
