@@ -8,12 +8,17 @@ COPY src ./src
 RUN mvn -B -q -DskipTests package \
     && cp target/mutual-funds-analyzer-backend-*.jar /build/app.jar
 
-FROM eclipse-temurin:17-jre-alpine AS runtime
+# Debian JRE (not Alpine): Alpine's CA bundle frequently breaks Java HTTPS
+# to public APIs (mfapi.in / investt) with PKIX path building failures.
+FROM eclipse-temurin:17-jre-jammy AS runtime
 WORKDIR /app
 
-RUN apk add --no-cache curl \
-    && addgroup -S app \
-    && adduser -S app -G app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app \
+    && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
 
 USER app
 

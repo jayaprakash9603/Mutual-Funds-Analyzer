@@ -23,7 +23,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: jayaprakash9603/mfa-backend:${MFA_VERSION:-1.0.1}
+    image: jayaprakash9603/mfa-backend:${MFA_VERSION:-1.0.2}
     container_name: mfa-backend
     restart: unless-stopped
     depends_on:
@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: jayaprakash9603/mfa-frontend:${MFA_VERSION:-1.0.1}
+    image: jayaprakash9603/mfa-frontend:${MFA_VERSION:-1.0.2}
     container_name: mfa-frontend
     restart: unless-stopped
     depends_on:
