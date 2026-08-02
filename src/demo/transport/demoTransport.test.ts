@@ -110,8 +110,8 @@ describe('demoTransport routing', () => {
   })
 
   it('serves the captured fund report', async () => {
-    await expect(request(API_ROUTES.fundReport, { scheme: ALPHA })).resolves.toEqual(
-      fixtures['fund-report/alpha.json'],
+    await expect(request(API_ROUTES.fundReport, { scheme: ALPHA })).resolves.toMatchObject(
+      fixtures['fund-report/alpha.json'] as Record<string, unknown>,
     )
   })
 
@@ -125,7 +125,9 @@ describe('demoTransport routing', () => {
   })
 
   it('serves peers, drawdown peers, and the fund vs index matrix', async () => {
-    await expect(request(API_ROUTES.fundReportPeers, { scheme: ALPHA })).resolves.toEqual({ rows: [] })
+    await expect(request(API_ROUTES.fundReportPeers, { scheme: ALPHA })).resolves.toMatchObject({
+      rows: [],
+    })
     await expect(request(API_ROUTES.fundReportDrawdownPeers, { scheme: ALPHA })).resolves.toEqual({
       thresholdRows: [],
       peerCount: 0,

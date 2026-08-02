@@ -3,7 +3,6 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
-import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useAppChromeOffset } from '@/hooks/useAppChromeOffset'
 import { useIsReportMobileLayout } from '@/hooks/useMediaQuery'
@@ -155,9 +154,21 @@ export function FundReportPage() {
 
   const selectScheme = (next: string) => {
     if (isSharedView) return
-    setScheme(next)
-    setSearchParams({ scheme: next })
+    const trimmed = next.trim()
+    setScheme(trimmed)
+    if (trimmed) {
+      setSearchParams({ scheme: trimmed })
+    } else {
+      setSearchParams({})
+    }
   }
+
+  // Keep local scheme in sync when the URL changes (back/forward, cleared query).
+  useEffect(() => {
+    if (isSharedView) return
+    const fromRoute = routeScheme ?? searchParams.get('scheme') ?? ''
+    setScheme((current) => (current === fromRoute ? current : fromRoute))
+  }, [routeScheme, searchParams, isSharedView])
 
   const liveReportRef = useRef(liveReport)
   liveReportRef.current = liveReport
@@ -295,8 +306,8 @@ export function FundReportPage() {
 
   const showReport = isSharedView || !!scheme
   const showReportShell = showReport && !snapshotLoading
-  /** Avoid two fund search fields: sticky bar only after a fund is open. */
-  const showStickyFundBar = showReport && !snapshotLoading
+  /** Same pill search + actions bar whether or not a fund is selected yet. */
+  const showStickyFundBar = !snapshotLoading
 
   return (
     <ReportPageShell
@@ -379,26 +390,15 @@ export function FundReportPage() {
         )}
 
         {!showReport && !snapshotLoading && (
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 py-4">
-            <div className="space-y-2 text-center sm:text-left">
-              <h1 className="text-2xl font-semibold tracking-tight">Open a fund report</h1>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {isDemoBuild()
-                  ? 'Choose a sample fund below, or search by name. Demo mode uses captured fixtures — no live backend.'
-                  : 'Search and select a scheme to generate the full research report.'}
-              </p>
-            </div>
-
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 py-8">
+            <p className="text-sm text-muted-foreground">
+              {isDemoBuild()
+                ? 'Search above or pick a sample fund to open the report.'
+                : 'Search for a mutual fund above to open the full research report.'}
+            </p>
             {isDemoBuild() && (
               <DemoFundPicker selectedScheme={scheme || null} onSelect={selectScheme} />
             )}
-
-            <FundSelector
-              mode="fund-only"
-              variant="default"
-              selectedScheme={scheme || null}
-              onSelectScheme={selectScheme}
-            />
           </div>
         )}
       </ReportScrollProvider>

@@ -11,6 +11,13 @@ import {
   withFundReportDefaults,
 } from '@/features/fund-report/sectionDefaults'
 import {
+  buildDemoStepUpTimeline,
+  buildDemoStpTimeline,
+  buildDemoSwpTimeline,
+  enrichDemoFundReport,
+  enrichDemoPeers,
+} from '../enrichDemoReport'
+import {
   filterCompareResults,
   filterDemoSchemes,
   resolveAnalysisFile,
@@ -131,11 +138,19 @@ async function handleFundIndexMatrix(request: DemoRequest, manifest: DemoManifes
   return loadDemoFixture(file, request.signal)
 }
 
-async function handleFundReport(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+async function loadEnrichedFundReport(
+  request: DemoRequest,
+  manifest: DemoManifest,
+): Promise<FundReport> {
   const scheme = request.params.get('scheme') ?? ''
   const fund = requireFund(manifest, scheme)
   const file = requireFile(fund.files.fundReport, 'the fund report', scheme)
-  return loadDemoFixture(file, request.signal)
+  const raw = await loadDemoFixture<Record<string, unknown>>(file, request.signal)
+  return withFundReportDefaults(enrichDemoFundReport(raw))
+}
+
+async function handleFundReport(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  return loadEnrichedFundReport(request, manifest)
 }
 
 function envelopeFromReport<T>(report: FundReport, data: T): ReportSectionEnvelope<T> {
@@ -161,8 +176,9 @@ async function handleFundReportSection(
   if (dedicated) {
     return loadDemoFixture(dedicated, request.signal)
   }
-  const file = requireFile(fund.files.fundReport, label, scheme)
-  const report = withFundReportDefaults(await loadDemoFixture<FundReport>(file, request.signal))
+  // label retained so call sites stay readable when a dedicated section file is missing
+  void label
+  const report = await loadEnrichedFundReport(request, manifest)
   const groups = splitFundReport(report)
   const payload =
     section === 'risk'
@@ -205,7 +221,7 @@ async function handlePeers(request: DemoRequest, manifest: DemoManifest): Promis
   const scheme = request.params.get('scheme') ?? ''
   const fund = requireFund(manifest, scheme)
   const file = requireFile(fund.files.peers, 'the peer comparison', scheme)
-  return loadDemoFixture(file, request.signal)
+  return enrichDemoPeers(await loadDemoFixture(file, request.signal))
 }
 
 async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
@@ -219,67 +235,82 @@ async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest)
 
 async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
   const envelope = await handleFundReportInvestment(request, manifest) as {
-    data: { sip: { scheduleDay?: number; chartAmount?: number; timeline?: unknown[]; scenarios: Array<{ monthlyAmount: number }> } }
+    data: {
+      sip: {
+        scheduleDay?: number
+        chartAmount?: number
+        timeline?: Array<{ date: string; invested: number; corpus: number; nav: number }>
+        scenarios: Array<{
+          monthlyAmount: number
+          currentValue: number
+          totalGain: number
+          xirr: number
+          moneyInvested: number
+          projectedValue10Y: number
+          stcg?: number
+          ltcg?: number
+          postTaxXirr?: number
+        }>
+      }
+    }
   }
   const sip = envelope.data.sip
   const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
-  const scenario =
+  const base =
     sip.scenarios.find((row) => row.monthlyAmount === amount) ?? sip.scenarios[0] ?? null
-  if (!scenario) {
+  if (!base) {
     throw new ApiError('Demo mode has no SIP scenario data for this fund.', NOT_FOUND)
   }
-  const defaultAmount = sip.chartAmount ?? 10_000
-  const defaultDay = sip.scheduleDay ?? 1
-  const timeline =
-    amount === defaultAmount && scheduleDay === defaultDay ? sip.timeline ?? [] : sip.timeline ?? []
+  const factor = amount / Math.max(base.monthlyAmount, 1)
+  const scenario = {
+    ...base,
+    monthlyAmount: amount,
+    currentValue: base.currentValue * factor,
+    totalGain: base.totalGain * factor,
+    moneyInvested: base.moneyInvested * factor,
+    projectedValue10Y: base.projectedValue10Y * factor,
+    stcg: (base.stcg ?? 0) * factor,
+    ltcg: (base.ltcg ?? 0) * factor,
+  }
+  const timeline = (sip.timeline ?? []).map((point) => ({
+    ...point,
+    invested: point.invested * factor,
+    corpus: point.corpus * factor,
+  }))
   return { scheduleDay, scenario, timeline }
 }
 
-async function handleSwpSimulate(request: DemoRequest): Promise<unknown> {
+async function handleSwpSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const report = await loadEnrichedFundReport(request, manifest)
   const initialCorpus = Number.parseInt(request.params.get('initial_corpus') ?? '1000000', 10)
   const monthlyWithdrawal = Number.parseInt(request.params.get('monthly_withdrawal') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
-  return {
-    scheduleDay,
-    scenario: {
-      initialCorpus,
-      monthlyWithdrawal,
-      totalWithdrawn: 0,
-      remainingCorpus: initialCorpus,
-      withdrawalCount: 0,
-      depleted: false,
-      stcg: 0,
-      ltcg: 0,
-      postTaxRemaining: initialCorpus,
-    },
-    timeline: [],
-  }
+  const built = buildDemoSwpTimeline(
+    report.drawdown?.indexedNav ?? [],
+    initialCorpus,
+    monthlyWithdrawal,
+  )
+  return { scheduleDay, scenario: built.scenario, timeline: built.timeline }
 }
 
-async function handleStpSimulate(request: DemoRequest): Promise<unknown> {
+async function handleStpSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const report = await loadEnrichedFundReport(request, manifest)
   const lumpSum = Number.parseInt(request.params.get('lump_sum') ?? '1000000', 10)
   const transferMonths = Number.parseInt(request.params.get('transfer_months') ?? '6', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
-  const monthlyTransfer = Math.max(1, Math.round(lumpSum / transferMonths))
+  const built = buildDemoStpTimeline(
+    report.drawdown?.indexedNav ?? [],
+    lumpSum,
+    transferMonths,
+  )
   return {
     sourceScheme: request.params.get('source_scheme') ?? '',
     targetScheme: request.params.get('scheme') ?? '',
     scheduleDay,
     transferMonths,
-    scenario: {
-      lumpSum,
-      monthlyTransfer,
-      transferMonths,
-      totalTransferred: 0,
-      transferCount: 0,
-      sourceRemaining: lumpSum,
-      targetValue: 0,
-      totalValue: lumpSum,
-      totalGain: 0,
-      xirr: 0,
-    },
-    timeline: [],
+    scenario: built.scenario,
+    timeline: built.timeline,
   }
 }
 
@@ -317,7 +348,11 @@ async function handleLumpsumSimulate(request: DemoRequest, manifest: DemoManifes
   }
 }
 
-async function handleStepUpSipSimulate(request: DemoRequest): Promise<unknown> {
+async function handleStepUpSipSimulate(
+  request: DemoRequest,
+  manifest: DemoManifest,
+): Promise<unknown> {
+  const report = await loadEnrichedFundReport(request, manifest)
   const initialAmount = Number.parseInt(request.params.get('initial_amount') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
   const modeParam = (request.params.get('step_up_mode') ?? 'PERCENT').toUpperCase()
@@ -325,25 +360,20 @@ async function handleStepUpSipSimulate(request: DemoRequest): Promise<unknown> {
   const stepUpPercent = Number.parseFloat(request.params.get('step_up_percent') ?? '10') || 0
   const stepUpAmount = Number.parseFloat(request.params.get('step_up_amount') ?? '2000') || 0
   const stepUpValue = stepUpMode === 'PERCENT' ? stepUpPercent : stepUpAmount
+  const built = buildDemoStepUpTimeline(
+    report.drawdown?.indexedNav ?? [],
+    initialAmount,
+    stepUpMode,
+    stepUpValue,
+  )
 
   return {
     scheduleDay,
     stepUpMode,
     stepUpPercent,
     stepUpAmount,
-    scenario: {
-      initialMonthlyAmount: initialAmount,
-      currentMonthlyAmount: initialAmount,
-      stepUpMode,
-      stepUpValue,
-      currentValue: 0,
-      totalGain: 0,
-      xirr: 0,
-      moneyInvested: 0,
-      projectedValue10Y: 0,
-      instalmentCount: 0,
-    },
-    timeline: [],
+    scenario: built.scenario,
+    timeline: built.timeline,
   }
 }
 

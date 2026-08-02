@@ -4,8 +4,6 @@ FROM maven:3.9.9-eclipse-temurin-17-alpine AS build
 WORKDIR /build
 
 COPY pom.xml .
-RUN mvn -B -q dependency:go-offline
-
 COPY src ./src
 RUN mvn -B -q -DskipTests package \
     && cp target/mutual-funds-analyzer-backend-*.jar /build/app.jar

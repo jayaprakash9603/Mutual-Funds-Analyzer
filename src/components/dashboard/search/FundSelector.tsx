@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -81,6 +81,12 @@ export function FundSelector({
     setShowResults(false)
   }
 
+  const clearScheme = () => {
+    setQuery('')
+    setShowResults(false)
+    onSelectScheme('')
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (!showResults) return
 
@@ -115,13 +121,17 @@ export function FundSelector({
       <Search
         className={cn(
           'pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground',
-          variant === 'compact' ? 'left-3.5' : 'left-3',
+          variant === 'compact' || fundOnly ? 'left-3.5' : 'left-3',
         )}
         aria-hidden="true"
       />
       <Input
         id="fund-search"
-        placeholder={variant === 'compact' ? 'Search or change fund…' : 'Search funds e.g. Parag Parikh, HDFC, Axis...'}
+        placeholder={
+          variant === 'compact'
+            ? 'Search funds e.g. Parag Parikh, HDFC, Axis…'
+            : 'Search funds e.g. Parag Parikh, HDFC, Axis...'
+        }
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
@@ -131,7 +141,7 @@ export function FundSelector({
         onKeyDown={onKeyDown}
         className={cn(
           'pl-10',
-          variant === 'compact' && [
+          (variant === 'compact' || fundOnly) && [
             'h-11 w-full min-w-0 truncate rounded-full border-border/60 bg-muted/30 pr-10 text-sm shadow-inner',
             'transition-[border-color,background-color,box-shadow] duration-200',
             'placeholder:text-muted-foreground/75',
@@ -147,9 +157,18 @@ export function FundSelector({
         aria-controls="fund-search-results"
         aria-autocomplete="list"
       />
-      {loading && (
+      {loading ? (
         <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-      )}
+      ) : variant === 'compact' && selectedScheme ? (
+        <button
+          type="button"
+          className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Clear selected fund"
+          onClick={clearScheme}
+        >
+          <X className="size-3.5" aria-hidden="true" />
+        </button>
+      ) : null}
       <FundSearchDropdown
         open={dropdownOpen}
         anchorRef={inputWrapRef}
@@ -179,16 +198,25 @@ export function FundSelector({
   }
 
   return (
-    <Card className={cn('glass', dropdownOpen && 'relative z-[60]')}>
-      <CardHeader>
+    <Card
+      className={cn(
+        fundOnly
+          ? 'border-border/70 bg-background shadow-none'
+          : 'glass',
+        dropdownOpen && 'relative z-[60]',
+      )}
+    >
+      <CardHeader className={fundOnly ? 'pb-3' : undefined}>
         <CardTitle>{fundOnly ? 'Select Fund' : 'Fund Selection'}</CardTitle>
       </CardHeader>
       <CardContent className={fundOnly ? 'space-y-2' : 'grid gap-4 md:grid-cols-2'}>
         <div className={fundOnly ? 'space-y-2' : 'space-y-2 md:col-span-2'} ref={containerRef}>
-          <Label htmlFor="fund-search">Mutual Fund</Label>
+          <Label htmlFor="fund-search" className={fundOnly ? 'text-sm text-muted-foreground' : undefined}>
+            Mutual Fund
+          </Label>
           {searchField}
           {fundOnly && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Category, benchmark, and rolling periods are shown in the report below after you select a fund.
             </p>
           )}

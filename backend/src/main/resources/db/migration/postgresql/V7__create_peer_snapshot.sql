@@ -16,7 +16,7 @@ CREATE INDEX idx_peer_fund_snapshot_lookup
 CREATE TABLE peer_comparison_snapshot (
     id BIGSERIAL PRIMARY KEY,
     scheme VARCHAR(512) NOT NULL,
-    category VARCHAR(256) NOT NULL,
+    category VARCHAR(128) NOT NULL,
     start_date VARCHAR(32) NOT NULL,
     peer_schemes_json TEXT NOT NULL,
     payload_json TEXT NOT NULL,
