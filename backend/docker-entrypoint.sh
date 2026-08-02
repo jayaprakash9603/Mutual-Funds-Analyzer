@@ -25,26 +25,30 @@ import_one_cert() {
   return 0
 }
 
+# No CA files is a valid default (public networks). Only import when *.crt/*.pem exist.
 if [ -d "$CERT_DIR" ] && [ -f "$JAVA_CACERTS" ]; then
   cert_count=0
   for cert in "$CERT_DIR"/*.crt "$CERT_DIR"/*.pem; do
+    [ -e "$cert" ] || continue
     [ -f "$cert" ] || continue
     case "$(basename "$cert")" in
-      README.md|*.md|*.sh) continue ;;
+      *.md|*.sh|*.txt|*.der) continue ;;
     esac
     cert_count=$((cert_count + 1))
   done
 
   if [ "$cert_count" -gt 0 ]; then
+    echo "Importing ${cert_count} TLS CA file(s) from ${CERT_DIR}"
     cp "$JAVA_CACERTS" "$TRUST_STORE"
     chmod 644 "$TRUST_STORE"
     rm -rf "$SPLIT_DIR"
     mkdir -p "$SPLIT_DIR"
     idx=0
     for cert in "$CERT_DIR"/*.crt "$CERT_DIR"/*.pem; do
+      [ -e "$cert" ] || continue
       [ -f "$cert" ] || continue
       case "$(basename "$cert")" in
-        README.md|*.md|*.sh) continue ;;
+        *.md|*.sh|*.txt|*.der) continue ;;
       esac
       # Split multi-cert PEM bundles — keytool only reads the first cert otherwise.
       awk -v out="$SPLIT_DIR" -v base="$(basename "$cert" | tr -c 'A-Za-z0-9._-' '_')" '
@@ -54,12 +58,15 @@ if [ -d "$CERT_DIR" ] && [ -f "$JAVA_CACERTS" ]; then
       ' "$cert"
     done
     for split in "$SPLIT_DIR"/*.crt; do
+      [ -e "$split" ] || continue
       [ -f "$split" ] || continue
       import_one_cert "$split" "corp-ca-${idx}"
       idx=$((idx + 1))
     done
     JAVA_OPTS="${JAVA_OPTS:-} -Djavax.net.ssl.trustStore=${TRUST_STORE} -Djavax.net.ssl.trustStorePassword=${STORE_PASS}"
     export JAVA_OPTS
+  else
+    echo "No extra TLS CAs in ${CERT_DIR}; using the default Java truststore"
   fi
 fi
 

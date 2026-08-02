@@ -1,4 +1,7 @@
-# Corporate TLS certificates (Docker)
+# Optional TLS certificates (Docker)
+
+Most laptops and servers need nothing here. `docker compose up --build` works
+with only this README present — the backend uses the default Java truststore.
 
 Outbound HTTPS from the backend container may fail with:
 
@@ -6,11 +9,11 @@ Outbound HTTPS from the backend container may fail with:
 PKIX path building failed ... unable to find valid certification path
 ```
 
-This usually means network TLS inspection is replacing the public certificate
+That usually means network TLS inspection is replacing the public certificate
 chain with an internal CA that the host OS trusts, but the JVM inside Docker
-does not.
+does not. Only then add CA files as below.
 
-## Fix
+## Fix (TLS-inspecting networks only)
 
 1. Place one or more PEM/CRT CA files in this folder (for example
    `corporate-proxy-ca-bundle.crt`).
