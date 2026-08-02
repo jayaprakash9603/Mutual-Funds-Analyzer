@@ -41,3 +41,7 @@ coverage/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/data/
+
+# Corporate TLS inspection CAs mounted into the backend container
+deploy/certs/*
+!deploy/certs/README.md

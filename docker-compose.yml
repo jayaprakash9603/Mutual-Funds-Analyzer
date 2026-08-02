@@ -37,6 +37,10 @@ services:
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-123456}
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+      SSL_CERT_DIR: /certs
+    volumes:
+      # Optional corporate TLS inspection CAs. See deploy/certs/README.md
+      - ./deploy/certs:/certs:ro
     ports:
       - "${BACKEND_PUBLISH_PORT:-8080}:8080"
     healthcheck:
