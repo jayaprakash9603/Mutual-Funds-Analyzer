@@ -159,7 +159,15 @@ Read the full explainer in the app at **Method** (`/method`).
 
 ### Option A — Docker (recommended)
 
-One command builds the frontend, backend, and MySQL stack.
+**Full step-by-step (files to download, pull-only vs build, demo vs live):** see **[DOCKER.md](./DOCKER.md)**.
+
+Images are built from **host artifacts** (faster and more reliable on corporate networks):
+
+1. Maven packages the backend JAR on your machine  
+2. `npm run build:live` produces `dist/` on your machine  
+3. Slim Dockerfiles only **copy** those artifacts into runtime images  
+
+Requires local **JDK 17 + Maven** and **Node 20+** (same as Option B).
 
 ```bash
 # 1. Clone
@@ -169,13 +177,39 @@ cd Mutual-Funds-Analyzer
 # 2. Optional: copy env overrides
 cp .env.example .env
 
-# 3. Build and start
-docker compose up --build
+# 3. Build JAR + frontend, then create images
+npm run docker:images
+# or:  powershell -File scripts/build-docker-images.ps1
+
+# 4. Start the stack (no rebuild)
+docker compose up -d
+```
+
+Push to Docker Hub (after `docker login`):
+
+```bash
+npm run docker:push
+# or:  powershell -File scripts/build-docker-images.ps1 -Push
+```
+
+Manual steps (same as the script):
+
+```bash
+mvn -f backend/pom.xml -B -DskipTests package
+# stage JAR for the slim Dockerfile
+mkdir -p backend/docker
+cp backend/target/mutual-funds-analyzer-backend-*.jar backend/docker/app.jar
+
+npm ci
+npm run build:live
+
+docker compose build backend frontend
+docker compose up -d
 ```
 
 | URL | What |
 |-----|------|
-| http://localhost | Web app (nginx → UI + `/api` proxy) |
+| http://localhost:8088 | Web app (nginx → UI + `/api` proxy) |
 | http://localhost:8080 | Spring Boot API / OpenAPI |
 | localhost:3306 | MySQL (`root` / `123456`, database `mfa`) |
 
@@ -188,6 +222,8 @@ docker compose down -v            # stop and wipe MySQL data
 ```
 
 Default ports can be changed in `.env` (`FRONTEND_PUBLISH_PORT`, `BACKEND_PUBLISH_PORT`, `MYSQL_PUBLISH_PORT`).
+
+Optional in-Docker builds (slow): `backend/Dockerfile.maven` and root `Dockerfile.maven`.
 
 ---
 
@@ -418,7 +454,9 @@ MYSQL_PUBLISH_PORT=3306
 | `npm run lint` | oxlint |
 | `npm run test` | Frontend unit tests (Vitest) |
 | `npm run test:api` | Backend tests (Maven / ArchUnit) |
-| `docker compose up --build` | Full stack in containers |
+| `npm run docker:images` | Host-build JAR + dist, then Docker images |
+| `npm run docker:push` | Same as above, then push to Docker Hub |
+| `docker compose up -d` | Full stack in containers |
 
 ---
 

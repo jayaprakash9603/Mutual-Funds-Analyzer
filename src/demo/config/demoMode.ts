@@ -5,6 +5,8 @@
  * Demo and live are separate deployments — a demo build cannot switch to live data in place.
  * The navbar guides users to the hosted live app or a local live stack.
  */
+import { resolveApiUrl } from '@/lib/backendUrl'
+
 const BACKEND_PROBE_PATH = '/api/features'
 const BACKEND_PROBE_TIMEOUT_MS = 5_000
 
@@ -22,10 +24,10 @@ export function isDemoModeEnabled(): boolean {
   return isDemoBuild()
 }
 
-/** Probes the Spring Boot API so the setup dialog can show whether the back end is up. */
+/** Probes the Spring Boot API so setup dialogs can show whether the back end is up. */
 export async function checkBackendAvailable(signal?: AbortSignal): Promise<boolean> {
   try {
-    const response = await fetch(BACKEND_PROBE_PATH, {
+    const response = await fetch(resolveApiUrl(BACKEND_PROBE_PATH), {
       signal: signal ?? AbortSignal.timeout(BACKEND_PROBE_TIMEOUT_MS),
     })
     return response.ok
@@ -71,28 +73,34 @@ export const LIVE_APP_SETUP: LiveSetupStep[] = [
     hrefLabel: LIVE_APP_URL,
   },
   {
-    title: 'Or start the back end locally',
-    description: 'Spring Boot must listen on port 8080 so the live front end can load real fund data.',
+    title: 'Download compose + pull live images (easiest)',
+    description:
+      'Download docker-compose.live.yml and .env.example from the repo, then pull backend + frontend from Docker Hub.',
     detail:
-      'Prefer Docker if you want MySQL + API + nginx together. Use npm run dev:api when you already have a database configured.',
-    commands: ['docker compose up', 'npm run dev:api'],
+      'After containers are healthy, open http://localhost:8088 — that is the LIVE UI. This demo tab stays on fixtures. Full guide: DOCKER.md',
+    commands: [
+      'copy .env.example .env',
+      'docker compose -f docker-compose.live.yml pull',
+      'docker compose -f docker-compose.live.yml up -d',
+      'start http://localhost:8088',
+    ],
   },
   {
-    title: 'Start the live front end locally',
-    description: 'Run the non-demo Vite app — do not use npm run dev:demo or npm run build (demo).',
-    detail: `When the server is ready, open ${LOCAL_LIVE_APP_URL} in a new tab. Keep this demo tab if you still want sample data.`,
-    commands: ['npm run dev', 'npm run dev:client'],
+    title: 'Or build images from source, then run',
+    description: 'When you have the full git clone with JDK 17, Maven, and Node 20+.',
+    detail: 'Both images share MFA_VERSION (e.g. 1.0.3). See DOCKER.md Option 1.',
+    commands: ['npm run docker:images', 'docker compose up -d', 'start http://localhost:8088'],
   },
   {
     title: 'Confirm you are on live data',
     description: 'Live builds do not show the amber “Demo data” badge or demo fund chips.',
     detail:
-      'Search any scheme name; reports load from your API. If calls fail, check that the back end is healthy on port 8080.',
+      'Docker live UI: http://localhost:8088. Hosted: analyzer.quickcalci.com. If API calls fail, check mfa-backend is healthy.',
     commands: [],
     href: LIVE_APP_URL,
-    hrefLabel: 'Open live Analyzer',
+    hrefLabel: 'Open hosted live Analyzer',
   },
 ]
 
 export const LIVE_APP_NOTE =
-  'This page always uses demo fixtures. Live market data needs the hosted live app or a local API + live front end.'
+  'This page always uses demo fixtures. Live market data needs Docker (http://localhost:8088), the hosted live app, or npm run dev with the API.'

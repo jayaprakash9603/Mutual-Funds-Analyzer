@@ -1,6 +1,7 @@
 import { ApiError } from './apiError'
 import { isDemoModeEnabled } from '@/demo/config/demoMode'
 import { fetchDemoJson } from '@/demo/transport/demoTransport'
+import { resolveApiUrl } from '@/lib/backendUrl'
 
 export { ApiError }
 
@@ -51,7 +52,8 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
   }
 
   const query = search.toString()
-  const response = await fetch(query ? `${path}?${query}` : path, buildInit(body, signal))
+  const url = resolveApiUrl(path)
+  const response = await fetch(query ? `${url}?${query}` : url, buildInit(body, signal))
   if (!response.ok) {
     const serverError = await readServerError(response)
     const fallback = label

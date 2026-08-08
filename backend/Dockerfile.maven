@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+# Optional: full in-Docker Maven build (slow on restricted networks).
+# Prefer the default Dockerfile with a host-built JAR.
+
+FROM maven:3.9.9-eclipse-temurin-17-alpine AS build
+WORKDIR /build
+
+COPY pom.xml .
+COPY src ./src
+RUN mvn -B -q -DskipTests package \
+    && cp target/mutual-funds-analyzer-backend-*.jar /build/app.jar
+
+FROM eclipse-temurin:17-jre-jammy AS runtime
+WORKDIR /app
+
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY --from=build /build/app.jar /app/app.jar
+
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+ENV SSL_CERT_DIR=/certs
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+  CMD ["bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+
+ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]

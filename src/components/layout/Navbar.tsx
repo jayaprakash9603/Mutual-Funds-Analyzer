@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { BarChart3, GitCompare, Home, Moon, Sun, BookOpen, FileText } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
+import { BackendSettingsDialog } from '@/components/layout/BackendSettingsDialog'
 import { DemoModeToggle } from '@/components/layout/DemoModeToggle'
 import { NavMobileMenu } from '@/components/layout/NavMobileMenu'
 import { NavTabs, type NavTabItem } from '@/components/layout/NavTabs'
@@ -77,6 +78,7 @@ export function Navbar() {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <DemoModeToggle />
+          <BackendSettingsDialog />
           {showThemeToggle && (
             <Button
               variant="outline"

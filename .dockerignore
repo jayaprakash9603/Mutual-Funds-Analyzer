@@ -1,5 +1,4 @@
 node_modules
-dist
 dist-ssr
 coverage
 .git
@@ -10,8 +9,10 @@ coverage
 .playwright-cli
 .screenshots
 Assets
-backend/target
-backend/data
+backend
+!deploy
+deploy/certs/**
+!deploy/certs/README.md
 *.md
 !README.md
 *.log
@@ -24,3 +25,12 @@ backend/data
 *.trace.db
 agent-transcripts
 terminals
+src
+public
+index.html
+package.json
+package-lock.json
+tsconfig*.json
+vite.config.ts
+scripts
+Dockerfile.maven

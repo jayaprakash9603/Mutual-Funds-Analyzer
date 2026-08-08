@@ -1,3 +1,12 @@
+# Pull-only stack — no local Maven/npm build required.
+# Prereq: images jayaprakash9603/mfa-backend:$MFA_VERSION and
+#         jayaprakash9603/mfa-frontend:$MFA_VERSION exist locally or on Docker Hub.
+#
+#   copy .env.example .env
+#   docker compose -f docker-compose.hub.yml pull
+#   docker compose -f docker-compose.hub.yml up -d
+#   → http://localhost:8088
+
 services:
   mysql:
     image: mysql:8.4
@@ -20,9 +29,6 @@ services:
       - mfa
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
     image: jayaprakash9603/mfa-backend:${MFA_VERSION:-1.0.3}
     container_name: mfa-backend
     restart: unless-stopped
@@ -39,7 +45,6 @@ services:
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
       SSL_CERT_DIR: /certs
     volumes:
-      # Optional corporate TLS inspection CAs. See deploy/certs/README.md
       - ./deploy/certs:/certs:ro
     ports:
       - "${BACKEND_PUBLISH_PORT:-8080}:8080"
@@ -53,9 +58,6 @@ services:
       - mfa
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: jayaprakash9603/mfa-frontend:${MFA_VERSION:-1.0.3}
     container_name: mfa-frontend
     restart: unless-stopped

@@ -39,6 +39,7 @@ coverage/
 *.sln
 # Maven / Java
 backend/target/
+backend/docker/app.jar
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/data/
 
