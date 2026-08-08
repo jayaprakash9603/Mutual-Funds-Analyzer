@@ -9,7 +9,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -135,7 +135,8 @@ export function FundGrowthTrendChart({
 
   return (
     <div className="space-y-3">
-      <div className={CHART_PANEL_CLASS}>
+      {/* Nested inside ReportInsightCard — inset only, no second bordered frame. */}
+      <div className={CHART_INSET_CLASS}>
         <div className="flex flex-col gap-3 px-1 pb-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">{fundName}</p>

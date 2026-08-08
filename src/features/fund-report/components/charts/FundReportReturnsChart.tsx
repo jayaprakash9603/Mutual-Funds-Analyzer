@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CHART_HEADER_CLASS, CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_HEADER_CLASS, CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import {
   CHART_TOOLTIP_CURSOR,
   ChartContainer,
@@ -228,7 +228,7 @@ export function FundReportReturnsChart({
       </div>
 
       <Tabs value={mode} onValueChange={(value) => setMode(value as 'rolling' | 'absolute')}>
-        <div className="border-b border-border/60 px-4 sm:px-6">
+        <div className="border-b border-border/60 px-3 sm:px-6">
           <TabsList scrollable className="h-10 bg-transparent p-0">
             <TabsTrigger value="rolling" className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:bg-transparent">
               Rolling returns
@@ -239,7 +239,7 @@ export function FundReportReturnsChart({
           </TabsList>
         </div>
 
-        <TabsContent value="rolling" className="m-0 px-4 py-6 sm:px-6">
+        <TabsContent value="rolling" className="m-0 px-3 py-4 sm:px-6 sm:py-6">
           {offlineView ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
               Rolling returns are not included in shared snapshots. Switch to absolute returns.
@@ -251,7 +251,7 @@ export function FundReportReturnsChart({
               No rolling return data for {period}
             </p>
           ) : (
-            <div className={CHART_PANEL_CLASS}>
+            <div className={CHART_PANEL_RESPONSIVE_CLASS}>
             {isSmall ? (
               <div className="mb-3">
                 <ChartRangeToggle
@@ -328,7 +328,7 @@ export function FundReportReturnsChart({
           )}
         </TabsContent>
 
-        <TabsContent value="absolute" className="m-0 px-4 py-6 sm:px-6">
+        <TabsContent value="absolute" className="m-0 px-3 py-4 sm:px-6 sm:py-6">
           {indexedNavLoading && absoluteChartData.length === 0 ? (
             <Skeleton className={CHART_HEIGHT_CLASS} />
           ) : absoluteChartData.length === 0 ? (
@@ -336,7 +336,7 @@ export function FundReportReturnsChart({
               Indexed NAV history is not available yet
             </p>
           ) : (
-            <div className={CHART_PANEL_CLASS}>
+            <div className={CHART_PANEL_RESPONSIVE_CLASS}>
             <ChartContainer config={absoluteConfig} className={CHART_HEIGHT_CLASS}>
               <LineChart data={absoluteChartData} margin={chartPlotMargin({ top: 16, right: 12, bottom: 8 })}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />

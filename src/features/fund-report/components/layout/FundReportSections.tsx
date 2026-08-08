@@ -158,21 +158,24 @@ export function FundReportSections({
       <SectionShell id="overview" title="Fund Overview" description="Key fund facts and quick rating.">
         <ReportGroupBoundary state={overview} skeleton={<MetricGridSkeleton count={8} />}>
           {(data) => (
-            <>
-              <AppMetricGrid>
-                <MetricTile label="Fund" value={data.profile.fundName} valueVariant="text" />
-                <MetricTile label="AMC" value={data.profile.amc || '—'} valueVariant="text" />
-                <MetricTile label="Category" value={data.profile.category || '—'} valueVariant="text" />
-                <MetricTile label="Benchmark" value={data.profile.benchmarkName} valueVariant="text" />
-                <MetricTile label="NAV" value={`₹${data.profile.latestNav.toFixed(2)}`} />
-                <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} valueVariant="text" />
-                <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} valueVariant="text" />
-                <MetricTile
-                  label="Data Range"
-                  value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`}
-                  valueVariant="text"
-                />
-              </AppMetricGrid>
+            <div className="space-y-3 sm:space-y-4">
+              {/* Own card on phones (SectionShell stacks); transparent inside desktop section card. */}
+              <div className="rounded-lg border border-border/60 bg-card p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+                <AppMetricGrid>
+                  <MetricTile label="Fund" value={data.profile.fundName} valueVariant="text" />
+                  <MetricTile label="AMC" value={data.profile.amc || '—'} valueVariant="text" />
+                  <MetricTile label="Category" value={data.profile.category || '—'} valueVariant="text" />
+                  <MetricTile label="Benchmark" value={data.profile.benchmarkName} valueVariant="text" />
+                  <MetricTile label="NAV" value={`₹${data.profile.latestNav.toFixed(2)}`} />
+                  <MetricTile label="Fund Age" value={`${data.profile.fundAgeYears.toFixed(1)} yrs`} valueVariant="text" />
+                  <MetricTile label="Rating" value={`${stars} ${data.profile.overallRatingLabel}`} valueVariant="text" />
+                  <MetricTile
+                    label="Data Range"
+                    value={`${data.profile.dataFrom.slice(0, 10)} → ${data.profile.dataTo.slice(0, 10)}`}
+                    valueVariant="text"
+                  />
+                </AppMetricGrid>
+              </div>
               <FundLongTermStoryChart
                 fundName={data.profile.fundName}
                 category={data.profile.category}
@@ -182,7 +185,7 @@ export function FundReportSections({
                 indexedNav={risk.data?.drawdown.indexedNav ?? []}
                 loading={risk.loading && (risk.data?.drawdown.indexedNav?.length ?? 0) === 0}
               />
-            </>
+            </div>
           )}
         </ReportGroupBoundary>
       </SectionShell>
@@ -194,21 +197,19 @@ export function FundReportSections({
         title="Golden Triangle Score"
         description="Rolling return, COB, and Sharpe vs benchmark."
       >
-        <div className="space-y-6">
-          {scheme ? (
-            <FundReportReturnsChart
-              scheme={scheme}
-              fundName={fundName}
-              benchmarkName={benchmarkName}
-              indexedNav={risk.data?.drawdown.indexedNav}
-              indexedNavLoading={risk.loading && risk.data == null}
-              offlineView={isSharedView}
-            />
-          ) : null}
-          <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
-            {(data) => <GoldenTriangleResultCard result={toGoldenTriangle(data.goldenTriangle)} />}
-          </ReportGroupBoundary>
-        </div>
+        {scheme ? (
+          <FundReportReturnsChart
+            scheme={scheme}
+            fundName={fundName}
+            benchmarkName={benchmarkName}
+            indexedNav={risk.data?.drawdown.indexedNav}
+            indexedNavLoading={risk.loading && risk.data == null}
+            offlineView={isSharedView}
+          />
+        ) : null}
+        <ReportGroupBoundary state={assessment} skeleton={<CardSkeleton />}>
+          {(data) => <GoldenTriangleResultCard result={toGoldenTriangle(data.goldenTriangle)} />}
+        </ReportGroupBoundary>
       </SectionShell>
       ) : null}
 
@@ -216,7 +217,7 @@ export function FundReportSections({
       <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg border border-border/60 bg-card p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
               <SectionHeadline
                 headline={buildTrailingReturnsHeadline(data.trailingReturns, fundName)}
               />
@@ -224,28 +225,24 @@ export function FundReportSections({
             </div>
           )}
         </ReportGroupBoundary>
-        <div className="mt-5">
-          <ReportInsightCard
-            title="Absolute returns"
-            subtitle="Pick a window below to see how ₹10,000 in this fund would have grown — fund only, no benchmark."
-          >
-            <FundGrowthTrendChart
-              fundName={fundName}
-              indexedNav={risk.data?.drawdown.indexedNav ?? []}
-              loading={risk.loading && risk.data == null}
-            />
-          </ReportInsightCard>
-        </div>
+        <ReportInsightCard
+          title="Absolute returns"
+          subtitle="Pick a window below to see how ₹10,000 in this fund would have grown — fund only, no benchmark."
+        >
+          <FundGrowthTrendChart
+            fundName={fundName}
+            indexedNav={risk.data?.drawdown.indexedNav ?? []}
+            loading={risk.loading && risk.data == null}
+          />
+        </ReportInsightCard>
         {scheme ? (
-          <div className="mt-5">
-            <FundAnnualReturnsChart
-              scheme={scheme}
-              fundName={fundName}
-              benchmarkName={benchmarkName}
-              startDate={startDate}
-              offlineView={isSharedView}
-            />
-          </div>
+          <FundAnnualReturnsChart
+            scheme={scheme}
+            fundName={fundName}
+            benchmarkName={benchmarkName}
+            startDate={startDate}
+            offlineView={isSharedView}
+          />
         ) : null}
       </SectionShell>
       ) : null}
@@ -258,7 +255,7 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg border border-border/60 bg-card p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
               <SectionHeadline
                 headline={buildRollingReturnsHeadline(data.rollingReturns, fundName)}
               />
@@ -272,27 +269,23 @@ export function FundReportSections({
         </ReportGroupBoundary>
         {scheme ? (
           <>
-            <div className="mt-5">
-              <ReportInsightCard
-                title="Rolling return trend"
-                subtitle="Pick a rolling window below to see every window this fund has completed — fund only, no benchmark."
-              >
-                <FundRollingTrendChart
-                  scheme={scheme}
-                  fundName={fundName}
-                  startDate={startDate}
-                  offlineView={isSharedView}
-                />
-              </ReportInsightCard>
-            </div>
-            <div className="mt-5">
-              <RollingReturnDistributionChart
+            <ReportInsightCard
+              title="Rolling return trend"
+              subtitle="Pick a rolling window below to see every window this fund has completed — fund only, no benchmark."
+            >
+              <FundRollingTrendChart
                 scheme={scheme}
                 fundName={fundName}
                 startDate={startDate}
                 offlineView={isSharedView}
               />
-            </div>
+            </ReportInsightCard>
+            <RollingReturnDistributionChart
+              scheme={scheme}
+              fundName={fundName}
+              startDate={startDate}
+              offlineView={isSharedView}
+            />
           </>
         ) : null}
       </SectionShell>

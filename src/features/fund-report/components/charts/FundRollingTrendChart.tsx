@@ -8,7 +8,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -151,7 +151,7 @@ export function FundRollingTrendChart({
           No {period} rolling windows available for this fund.
         </p>
       ) : (
-        <div className={CHART_PANEL_CLASS}>
+        <div className={CHART_INSET_CLASS}>
           <div className="flex flex-col gap-3 px-1 pb-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">

@@ -10,7 +10,8 @@ import {
 } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
+import { cn } from '@/lib/utils'
 import {
   AXIS_LINE,
   CHART_HEIGHT_WIDE,
@@ -131,8 +132,8 @@ export function FundLongTermStoryChart({
   const srSummary = `Long-term growth chart for ${fundName}. ${chartData.length} daily NAV points. CAGR ${cagrText} percent, multiplied ${multipleText} times over ${yearsText} years.`
 
   return (
-    <div className="mt-6 overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
-      <div className={CHART_PANEL_CLASS}>
+    <div className="mt-0 overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm sm:mt-6">
+      <div className={cn(CHART_PANEL_RESPONSIVE_CLASS, 'sm:border-0 sm:shadow-none')}>
         <h4 className="text-center text-sm font-bold text-foreground sm:text-base">{chartTitle}</h4>
 
         <div className="mx-auto mt-3 max-w-xl rounded-lg border border-[color-mix(in_srgb,var(--long-term-story-trend)_30%,transparent)] bg-[color-mix(in_srgb,var(--long-term-story-trend)_8%,transparent)] px-3 py-2 text-center">

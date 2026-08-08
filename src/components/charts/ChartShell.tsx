@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { appPanelSurface } from '@/lib/ui/appCardStyles'
 import { CHART_HEIGHT, CHART_HEIGHT_COMPACT, CHART_HEIGHT_WIDE } from '@/lib/charts/chartAxes'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import { cn } from '@/lib/utils'
 import type { ChartGuide } from '@/lib/analytics/chartGuide'
 
@@ -70,7 +70,7 @@ function ChartShellBody({
           </p>
         ) : (
           <>
-            <div className={CHART_PANEL_CLASS}>{children}</div>
+            <div className={CHART_PANEL_RESPONSIVE_CLASS}>{children}</div>
             {footer}
           </>
         )}
@@ -146,7 +146,7 @@ export function ChartShell({ guide, children, loading, empty, footer, variant = 
           </p>
         ) : (
           <>
-            <div className={CHART_PANEL_CLASS}>{children}</div>
+            <div className={CHART_PANEL_RESPONSIVE_CLASS}>{children}</div>
             {footer}
           </>
         )}
