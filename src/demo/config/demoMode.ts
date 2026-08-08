@@ -36,13 +36,24 @@ export async function checkBackendAvailable(signal?: AbortSignal): Promise<boole
   }
 }
 
+export interface LiveSetupDownload {
+  label: string
+  href: string
+  /** Suggested filename for the download attribute. */
+  filename: string
+  /** Emphasize as the main download CTA. */
+  primary?: boolean
+}
+
 export interface LiveSetupStep {
   title: string
   description: string
-  /** Extra guidance shown under the description. */
   detail?: string
+  /** Plain checklist lines (not shell). */
+  checklist?: string[]
+  /** Copyable shell commands. */
   commands: string[]
-  /** When set, the step shows this link instead of (or in addition to) commands. */
+  downloads?: LiveSetupDownload[]
   href?: string
   hrefLabel?: string
 }
@@ -53,54 +64,57 @@ export const LIVE_APP_URL = 'https://analyzer.quickcalci.com/'
 /** Local live front end for developers running the stack on their machine. */
 export const LOCAL_LIVE_APP_URL = 'http://localhost:5173'
 
+/** Local Docker live UI after compose is up. */
+export const LOCAL_DOCKER_LIVE_URL = 'http://localhost:8088'
+
+/** One-click pack served from `public/downloads/` (compose + env + short README). */
+export const LIVE_DOCKER_ZIP_URL = '/downloads/mfa-live-docker.zip'
+
 /** Shown when the user asks how to run live data from a demo build. */
 export const LIVE_APP_SETUP: LiveSetupStep[] = [
   {
-    title: 'Know what this demo page is',
-    description:
-      'You are on the demo build. Charts and scores come from sample / captured fixtures — not a live market API.',
-    detail:
-      'Switching to live data means opening a different app (or running the API + live front end on your machine). This tab will keep using demo fixtures.',
-    commands: [],
-  },
-  {
-    title: 'Open the hosted live app',
-    description: 'Use the production Analyzer URL when it is running with live APIs.',
-    detail:
-      'This is the fastest path for most visitors. If the live site is unavailable, continue with the local steps below.',
+    title: 'Hosted live app',
+    description: 'No install. Opens live market data in a new tab.',
     commands: [],
     href: LIVE_APP_URL,
-    hrefLabel: LIVE_APP_URL,
+    hrefLabel: 'Open analyzer.quickcalci.com',
   },
   {
-    title: 'Download compose + pull live images (easiest)',
-    description:
-      'Download docker-compose.live.yml and .env.example from the repo, then pull backend + frontend from Docker Hub.',
-    detail:
-      'After containers are healthy, open http://localhost:8088 — that is the LIVE UI. This demo tab stays on fixtures. Full guide: DOCKER.md',
+    title: 'Run live on your PC',
+    description: 'Needs Docker Desktop. Download the pack, then run the commands.',
+    detail: 'Live UI: http://localhost:8088 — this demo tab stays on fixtures.',
+    downloads: [
+      {
+        label: 'Download Docker pack',
+        href: LIVE_DOCKER_ZIP_URL,
+        filename: 'mfa-live-docker.zip',
+        primary: true,
+      },
+      {
+        label: 'compose.yml',
+        href: '/downloads/docker-compose.live.yml',
+        filename: 'docker-compose.live.yml',
+      },
+      {
+        label: 'env file',
+        href: '/downloads/env.example',
+        filename: 'env.example',
+      },
+    ],
+    checklist: ['Unzip into an empty folder', 'Rename env.example → .env'],
     commands: [
-      'copy .env.example .env',
       'docker compose -f docker-compose.live.yml pull',
       'docker compose -f docker-compose.live.yml up -d',
-      'start http://localhost:8088',
     ],
   },
   {
-    title: 'Or build images from source, then run',
-    description: 'When you have the full git clone with JDK 17, Maven, and Node 20+.',
-    detail: 'Both images share MFA_VERSION (e.g. 1.0.3). See DOCKER.md Option 1.',
-    commands: ['npm run docker:images', 'docker compose up -d', 'start http://localhost:8088'],
-  },
-  {
-    title: 'Confirm you are on live data',
-    description: 'Live builds do not show the amber “Demo data” badge or demo fund chips.',
-    detail:
-      'Docker live UI: http://localhost:8088. Hosted: analyzer.quickcalci.com. If API calls fail, check mfa-backend is healthy.',
+    title: 'Confirm live data',
+    description: 'No amber “Demo data” badge. Use localhost:8088 or the hosted URL.',
     commands: [],
-    href: LIVE_APP_URL,
-    hrefLabel: 'Open hosted live Analyzer',
+    href: LOCAL_DOCKER_LIVE_URL,
+    hrefLabel: 'Open http://localhost:8088',
   },
 ]
 
 export const LIVE_APP_NOTE =
-  'This page always uses demo fixtures. Live market data needs Docker (http://localhost:8088), the hosted live app, or npm run dev with the API.'
+  'Demo fixtures only on this page. Live data = hosted app, or Docker pack → http://localhost:8088.'

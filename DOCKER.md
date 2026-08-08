@@ -37,14 +37,19 @@ Clone or download the project, then you only need these at the root:
 
 Optional TLS trust for corporate proxies: folder [`deploy/certs/`](./deploy/certs/) (see README there).
 
-### B) Pull-only (no source build) — download these two files
+### B) Pull-only (no source build) — download the pack
+
+From the demo app: **Download Docker pack** → `mfa-live-docker.zip`
+
+Or from the repo / site:
 
 | File | Purpose |
 |------|---------|
-| [`docker-compose.live.yml`](./docker-compose.live.yml) | Pulls + runs mysql + backend + frontend |
+| [`public/downloads/mfa-live-docker.zip`](./public/downloads/mfa-live-docker.zip) | Zip: compose + env + short README |
+| [`docker-compose.live.yml`](./docker-compose.live.yml) | Same compose at repo root |
 | [`.env.example`](./.env.example) | Rename/copy to `.env` (`MFA_VERSION=1.0.3`) |
 
-No project clone required. Put both files in any empty folder, then follow Option 2 below.
+No project clone required. Unzip into any empty folder, then follow Option 2 below.
 
 ---
 

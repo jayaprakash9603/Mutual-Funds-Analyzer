@@ -40,10 +40,17 @@ describe('demoMode', () => {
     await expect(checkBackendAvailable()).resolves.toBe(false)
   })
 
-  it('documents how to start both servers for live mode', () => {
-    const joined = LIVE_APP_SETUP.flatMap((step) => [step.title, step.description, ...step.commands]).join(' ')
-    expect(joined).toMatch(/docker compose|dev:api/)
-    expect(joined).toMatch(/dev:client|npm run dev/)
+  it('documents Docker pack download and compose steps for live mode', () => {
+    const joined = LIVE_APP_SETUP.flatMap((step) => [
+      step.title,
+      step.description,
+      ...(step.checklist ?? []),
+      ...step.commands,
+      ...(step.downloads?.map((d) => d.href) ?? []),
+    ]).join(' ')
+    expect(joined).toMatch(/docker compose/)
+    expect(joined).toMatch(/mfa-live-docker\.zip|downloads/)
+    expect(joined).toMatch(/8088|Unzip|env\.example/)
     expect(LIVE_APP_URL).toMatch(/analyzer\.quickcalci\.com/)
   })
 })

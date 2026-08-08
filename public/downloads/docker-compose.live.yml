@@ -1,0 +1,78 @@
+# Analyzer LIVE stack — download this file + .env.example (rename to .env)
+# Images: jayaprakash9603/mfa-backend:1.0.3  +  jayaprakash9603/mfa-frontend:1.0.3
+#
+# Steps:
+#   1. Install Docker Desktop and start it
+#   2. Put this file in an empty folder
+#   3. Create .env next to it (copy from below or from .env.example)
+#   4. docker compose -f docker-compose.live.yml pull
+#   5. docker compose -f docker-compose.live.yml up -d
+#   6. Open http://localhost:8088   ← LIVE UI (not demo fixtures)
+#
+# Stop: docker compose -f docker-compose.live.yml down
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mfa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mfa}
+    ports:
+      - "${MYSQL_PUBLISH_PORT:-3306}:3306"
+    volumes:
+      - mfa_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - mfa
+
+  backend:
+    image: jayaprakash9603/mfa-backend:${MFA_VERSION:-1.0.3}
+    container_name: mfa-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mfa}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-123456}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${BACKEND_PUBLISH_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 30s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    networks:
+      - mfa
+
+  frontend:
+    image: jayaprakash9603/mfa-frontend:${MFA_VERSION:-1.0.3}
+    container_name: mfa-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PUBLISH_PORT:-8088}:80"
+    networks:
+      - mfa
+
+volumes:
+  mfa_mysql_data:
+
+networks:
+  mfa:
+    driver: bridge
