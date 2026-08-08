@@ -173,7 +173,7 @@ export function DashboardPage() {
       )}
 
       {!loading && result && data && chartInput && (
-        <>
+        <div className="space-y-6 sm:space-y-8">
           <FeatureGate name="ui.rollingReturnsPanel">
             <ErrorBoundary title="Unable to render the rolling returns chart">
               <RollingReturnsPanel
@@ -256,7 +256,7 @@ export function DashboardPage() {
             )}
           </section>
           </FeatureGate>
-        </>
+        </div>
       )}
     </PageContainer>
   )

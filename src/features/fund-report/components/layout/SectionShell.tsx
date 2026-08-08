@@ -2,7 +2,11 @@ import type { ReactNode, CSSProperties } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AppMetricCard } from '@/components/ui/AppMetricCard'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
 import { useReportScrollOffset } from '../../context/ReportScrollContext'
+
+/** Clear gap between stacked cards/panels inside a report section. */
+const SECTION_CHILDREN_GAP = 'space-y-4 sm:space-y-5 md:space-y-6'
 
 export function SectionShell({
   id,
@@ -26,7 +30,7 @@ export function SectionShell({
 
   if (useStack) {
     return (
-      <section id={id} style={scrollStyle} className="space-y-3 sm:space-y-4 md:space-y-5">
+      <section id={id} style={scrollStyle} className={SECTION_CHILDREN_GAP}>
         <div className="px-0.5">
           <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg md:text-xl">
             {title}
@@ -49,7 +53,7 @@ export function SectionShell({
           <CardTitle>{title}</CardTitle>
           {description ? <CardDescription>{description}</CardDescription> : null}
         </CardHeader>
-        <CardContent>{children}</CardContent>
+        <CardContent className={cn(SECTION_CHILDREN_GAP)}>{children}</CardContent>
       </Card>
     </section>
   )

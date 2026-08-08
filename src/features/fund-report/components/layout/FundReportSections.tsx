@@ -147,7 +147,7 @@ export function FundReportSections({
   )
 
   return (
-    <div id={exportRootId} className="space-y-6">
+    <div id={exportRootId} className="space-y-6 sm:space-y-8">
       {exportTitle ? (
         <div className={appHighlightCard}>
           <h2 className="text-base font-semibold text-foreground sm:text-lg">{exportTitle}</h2>
@@ -217,7 +217,7 @@ export function FundReportSections({
       <SectionShell id="returns" title="Returns Dashboard" description="Absolute return, CAGR, and growth of ₹10,000.">
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <div className="space-y-4 rounded-lg border border-border/60 bg-card p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+            <div className="space-y-4">
               <SectionHeadline
                 headline={buildTrailingReturnsHeadline(data.trailingReturns, fundName)}
               />
@@ -255,7 +255,7 @@ export function FundReportSections({
       >
         <ReportGroupBoundary state={performance} skeleton={<TableSkeleton rows={6} />}>
           {(data) => (
-            <div className="space-y-4 rounded-lg border border-border/60 bg-card p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+            <div className="space-y-4">
               <SectionHeadline
                 headline={buildRollingReturnsHeadline(data.rollingReturns, fundName)}
               />

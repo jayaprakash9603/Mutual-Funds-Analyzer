@@ -4,6 +4,8 @@ import { ApiError } from '@/api/apiError'
  * Shape of public/demo/manifest.json, written by scripts/capture-demo-data.mjs.
  * The manifest owns every filename so the slug rules live in one place only.
  */
+export type DemoSimulationKind = 'swp' | 'sip' | 'lumpsum' | 'stepUpSip' | 'stp'
+
 export interface DemoFundFiles {
   fundReport?: string
   fundReportSections?: Partial<Record<'overview' | 'performance' | 'risk' | 'investment' | 'assessment', string>>
@@ -12,6 +14,8 @@ export interface DemoFundFiles {
   fundIndexMatrix?: string
   peers?: string
   drawdownPeers?: string
+  /** Captured /simulate responses keyed by kind (defaults used by the UI). */
+  simulations?: Partial<Record<DemoSimulationKind, string>>
 }
 
 export interface DemoFund {

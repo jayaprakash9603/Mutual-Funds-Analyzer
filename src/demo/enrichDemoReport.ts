@@ -920,19 +920,25 @@ export function buildDemoSwpTimeline(
     }
   }
 
+  const navOf = (point: IndexedNavPoint): number => {
+    if (typeof point.nav === 'number' && point.nav > 0) return point.nav
+    if (typeof point.indexValue === 'number' && point.indexValue > 0) return point.indexValue
+    return 1
+  }
+
   const byMonth = new Map<string, IndexedNavPoint>()
   for (const point of indexedNav) byMonth.set(point.date.slice(0, 7), point)
   const months = [...byMonth.keys()].sort()
   let corpus = initialCorpus
   let withdrawn = 0
   let count = 0
-  const startNav = byMonth.get(months[0])?.nav || 1
+  const startNav = navOf(byMonth.get(months[0])!)
   let units = corpus / startNav
   const timeline = []
 
   for (const month of months) {
     const point = byMonth.get(month)!
-    const nav = point.nav && point.nav > 0 ? point.nav : 1
+    const nav = navOf(point)
     corpus = units * nav
     if (corpus <= 0) break
     const take = Math.min(monthlyWithdrawal, corpus)
@@ -950,7 +956,9 @@ export function buildDemoSwpTimeline(
   }
 
   const remaining = timeline.length > 0 ? timeline[timeline.length - 1].corpus : initialCorpus
-  const ltcg = Math.max(0, (initialCorpus - remaining - withdrawn) * -0.1)
+  const gain = Math.max(0, remaining + withdrawn - initialCorpus)
+  const ltcg = gain * 0.125
+  const stcg = gain * 0.02
   return {
     timeline,
     scenario: {
@@ -960,9 +968,9 @@ export function buildDemoSwpTimeline(
       remainingCorpus: remaining,
       withdrawalCount: count,
       depleted: remaining < monthlyWithdrawal,
-      stcg: 0,
+      stcg,
       ltcg,
-      postTaxRemaining: remaining - ltcg,
+      postTaxRemaining: Math.max(0, remaining - stcg - ltcg),
     },
   }
 }

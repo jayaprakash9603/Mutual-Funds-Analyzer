@@ -233,12 +233,78 @@ async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest)
   return loadDemoFixture(fund.files.drawdownPeers, request.signal)
 }
 
+type SimTimelinePoint = {
+  date: string
+  invested?: number
+  corpus?: number
+  withdrawn?: number
+  nav?: number
+  averageCorpus?: number
+  [key: string]: unknown
+}
+
+type CapturedSimulation = {
+  scheduleDay?: number
+  scenario?: Record<string, number | boolean | string>
+  timeline?: SimTimelinePoint[]
+  sourceScheme?: string
+  [key: string]: unknown
+}
+
+function scaleMoneyFields(
+  scenario: Record<string, number | boolean | string>,
+  factor: number,
+  keys: string[],
+): Record<string, number | boolean | string> {
+  const next = { ...scenario }
+  for (const key of keys) {
+    const value = next[key]
+    if (typeof value === 'number') next[key] = value * factor
+  }
+  return next
+}
+
+async function loadCapturedSimulation(
+  request: DemoRequest,
+  manifest: DemoManifest,
+  kind: 'swp' | 'sip' | 'lumpsum' | 'stepUpSip' | 'stp',
+): Promise<CapturedSimulation | null> {
+  const scheme = request.params.get('scheme') ?? ''
+  const fund = requireFund(manifest, scheme)
+  const file = fund.files.simulations?.[kind]
+  if (!file) return null
+  return loadDemoFixture<CapturedSimulation>(file, request.signal)
+}
+
 async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
+  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const captured = await loadCapturedSimulation(request, manifest, 'sip')
+  if (captured?.scenario && Array.isArray(captured.timeline)) {
+    const baseAmount = Number(captured.scenario.monthlyAmount ?? 10000) || 10000
+    const factor = amount / baseAmount
+    return {
+      scheduleDay,
+      scenario: scaleMoneyFields(captured.scenario, factor, [
+        'monthlyAmount',
+        'currentValue',
+        'totalGain',
+        'moneyInvested',
+        'projectedValue10Y',
+        'stcg',
+        'ltcg',
+      ]),
+      timeline: captured.timeline.map((point) => ({
+        ...point,
+        invested: (point.invested ?? 0) * factor,
+        corpus: (point.corpus ?? 0) * factor,
+      })),
+    }
+  }
+
   const envelope = await handleFundReportInvestment(request, manifest) as {
     data: {
       sip: {
-        scheduleDay?: number
-        chartAmount?: number
         timeline?: Array<{ date: string; invested: number; corpus: number; nav: number }>
         scenarios: Array<{
           monthlyAmount: number
@@ -255,8 +321,6 @@ async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): 
     }
   }
   const sip = envelope.data.sip
-  const amount = Number.parseInt(request.params.get('amount') ?? '10000', 10)
-  const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
   const base =
     sip.scenarios.find((row) => row.monthlyAmount === amount) ?? sip.scenarios[0] ?? null
   if (!base) {
@@ -282,10 +346,44 @@ async function handleSipSimulate(request: DemoRequest, manifest: DemoManifest): 
 }
 
 async function handleSwpSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
-  const report = await loadEnrichedFundReport(request, manifest)
   const initialCorpus = Number.parseInt(request.params.get('initial_corpus') ?? '1000000', 10)
   const monthlyWithdrawal = Number.parseInt(request.params.get('monthly_withdrawal') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const captured = await loadCapturedSimulation(request, manifest, 'swp')
+  if (captured?.scenario && Array.isArray(captured.timeline) && captured.timeline.length > 0) {
+    const baseCorpus = Number(captured.scenario.initialCorpus ?? 1_000_000) || 1_000_000
+    const baseWithdrawal = Number(captured.scenario.monthlyWithdrawal ?? 10_000) || 10_000
+    const corpusFactor = initialCorpus / baseCorpus
+    const withdrawalFactor = monthlyWithdrawal / baseWithdrawal
+    // Same withdrawal rate as capture → scale the real backend path linearly.
+    if (Math.abs(corpusFactor - withdrawalFactor) < 0.05) {
+      return {
+        scheduleDay,
+        scenario: {
+          ...scaleMoneyFields(captured.scenario, corpusFactor, [
+            'initialCorpus',
+            'monthlyWithdrawal',
+            'totalWithdrawn',
+            'remainingCorpus',
+            'stcg',
+            'ltcg',
+            'postTaxRemaining',
+          ]),
+          withdrawalCount: captured.scenario.withdrawalCount,
+          depleted: captured.scenario.depleted,
+        },
+        timeline: captured.timeline.map((point) => ({
+          ...point,
+          corpus: (point.corpus ?? 0) * corpusFactor,
+          withdrawn: (point.withdrawn ?? 0) * corpusFactor,
+          averageCorpus:
+            point.averageCorpus != null ? point.averageCorpus * corpusFactor : undefined,
+        })),
+      }
+    }
+  }
+
+  const report = await loadEnrichedFundReport(request, manifest)
   const built = buildDemoSwpTimeline(
     report.drawdown?.indexedNav ?? [],
     initialCorpus,
@@ -295,10 +393,42 @@ async function handleSwpSimulate(request: DemoRequest, manifest: DemoManifest): 
 }
 
 async function handleStpSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
-  const report = await loadEnrichedFundReport(request, manifest)
   const lumpSum = Number.parseInt(request.params.get('lump_sum') ?? '1000000', 10)
   const transferMonths = Number.parseInt(request.params.get('transfer_months') ?? '6', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
+  const captured = await loadCapturedSimulation(request, manifest, 'stp')
+  if (captured?.scenario && Array.isArray(captured.timeline) && transferMonths === 6) {
+    const baseLump = Number(captured.scenario.lumpSum ?? captured.scenario.initialCorpus ?? 1_000_000) || 1_000_000
+    const factor = lumpSum / baseLump
+    return {
+      sourceScheme: request.params.get('source_scheme') ?? captured.sourceScheme ?? '',
+      targetScheme: request.params.get('scheme') ?? '',
+      scheduleDay,
+      transferMonths,
+      scenario: scaleMoneyFields(captured.scenario, factor, [
+        'lumpSum',
+        'initialCorpus',
+        'sourceCorpus',
+        'targetCorpus',
+        'transferred',
+        'currentValue',
+        'totalGain',
+        'stcg',
+        'ltcg',
+      ]),
+      timeline: captured.timeline.map((point) => ({
+        ...point,
+        sourceCorpus:
+          point.sourceCorpus != null ? Number(point.sourceCorpus) * factor : point.sourceCorpus,
+        targetCorpus:
+          point.targetCorpus != null ? Number(point.targetCorpus) * factor : point.targetCorpus,
+        transferred:
+          point.transferred != null ? Number(point.transferred) * factor : point.transferred,
+      })),
+    }
+  }
+
+  const report = await loadEnrichedFundReport(request, manifest)
   const built = buildDemoStpTimeline(
     report.drawdown?.indexedNav ?? [],
     lumpSum,
@@ -315,6 +445,25 @@ async function handleStpSimulate(request: DemoRequest, manifest: DemoManifest): 
 }
 
 async function handleLumpsumSimulate(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const amount = Number.parseInt(request.params.get('amount') ?? '100000', 10)
+  const captured = await loadCapturedSimulation(request, manifest, 'lumpsum')
+  if (captured?.scenario && Array.isArray(captured.timeline)) {
+    const basePrincipal = Number(captured.scenario.principal ?? 100_000) || 100_000
+    const factor = amount / basePrincipal
+    return {
+      scenario: scaleMoneyFields(captured.scenario, factor, [
+        'principal',
+        'currentValue',
+        'gain',
+      ]),
+      timeline: captured.timeline.map((point) => ({
+        ...point,
+        invested: point.invested != null ? point.invested * factor : point.invested,
+        corpus: point.corpus != null ? point.corpus * factor : point.corpus,
+      })),
+    }
+  }
+
   const envelope = (await handleFundReportInvestment(request, manifest)) as {
     data: {
       lumpsum?: {
@@ -330,7 +479,6 @@ async function handleLumpsumSimulate(request: DemoRequest, manifest: DemoManifes
     }
   }
   const lumpsum = envelope.data.lumpsum
-  const amount = Number.parseInt(request.params.get('amount') ?? '100000', 10)
   const scenario =
     lumpsum?.scenarios?.find((row) => row.principal === amount) ?? lumpsum?.scenarios?.[0] ?? null
   if (scenario) {
@@ -352,7 +500,6 @@ async function handleStepUpSipSimulate(
   request: DemoRequest,
   manifest: DemoManifest,
 ): Promise<unknown> {
-  const report = await loadEnrichedFundReport(request, manifest)
   const initialAmount = Number.parseInt(request.params.get('initial_amount') ?? '10000', 10)
   const scheduleDay = Number.parseInt(request.params.get('schedule_day') ?? '1', 10)
   const modeParam = (request.params.get('step_up_mode') ?? 'PERCENT').toUpperCase()
@@ -360,6 +507,38 @@ async function handleStepUpSipSimulate(
   const stepUpPercent = Number.parseFloat(request.params.get('step_up_percent') ?? '10') || 0
   const stepUpAmount = Number.parseFloat(request.params.get('step_up_amount') ?? '2000') || 0
   const stepUpValue = stepUpMode === 'PERCENT' ? stepUpPercent : stepUpAmount
+  const captured = await loadCapturedSimulation(request, manifest, 'stepUpSip')
+  if (
+    captured?.scenario &&
+    Array.isArray(captured.timeline) &&
+    stepUpMode === 'PERCENT' &&
+    Math.abs(stepUpPercent - 10) < 0.01
+  ) {
+    const baseAmount = Number(captured.scenario.initialAmount ?? 10_000) || 10_000
+    const factor = initialAmount / baseAmount
+    return {
+      scheduleDay,
+      stepUpMode,
+      stepUpPercent,
+      stepUpAmount,
+      scenario: scaleMoneyFields(captured.scenario, factor, [
+        'initialAmount',
+        'currentValue',
+        'totalGain',
+        'moneyInvested',
+        'projectedValue10Y',
+        'stcg',
+        'ltcg',
+      ]),
+      timeline: captured.timeline.map((point) => ({
+        ...point,
+        invested: (point.invested ?? 0) * factor,
+        corpus: (point.corpus ?? 0) * factor,
+      })),
+    }
+  }
+
+  const report = await loadEnrichedFundReport(request, manifest)
   const built = buildDemoStepUpTimeline(
     report.drawdown?.indexedNav ?? [],
     initialAmount,

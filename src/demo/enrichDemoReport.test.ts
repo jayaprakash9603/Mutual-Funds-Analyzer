@@ -143,6 +143,8 @@ describe('demo simulate timelines', () => {
     const stp = buildDemoStpTimeline(nav, 1_000_000, 6)
     expect(swp.timeline.length).toBeGreaterThan(10)
     expect(swp.scenario.totalWithdrawn).toBeGreaterThan(0)
+    expect(swp.scenario.postTaxRemaining).toBeGreaterThan(0)
+    expect((swp.scenario.stcg ?? 0) + (swp.scenario.ltcg ?? 0)).toBeGreaterThan(0)
     expect(stp.timeline.length).toBeGreaterThan(5)
     expect(stp.scenario.totalTransferred).toBeGreaterThan(0)
   })

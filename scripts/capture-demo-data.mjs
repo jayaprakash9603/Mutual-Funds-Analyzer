@@ -24,8 +24,24 @@ const MATRIX_MODES = ['LUMPSUM', 'MULTIPLE', 'SIP', 'STP_6M']
 
 /** The charts downsample to 400 points anyway, so more rows than this only grow the repo. */
 const MAX_ROLLING_ROWS = 400
+/** Simulate timelines are denser; keep enough for charts without ballooning fixtures. */
+const MAX_SIM_TIMELINE_ROWS = 480
 /** Dropped from captured rows: optional in the schema and identical on every row. */
 const REDUNDANT_ROW_FIELDS = ['scheme_company', 'scheme_category']
+
+/** UI default presets — demo transport scales from these when the user picks another amount. */
+const SIM_DEFAULTS = {
+  swp: { initial_corpus: '1000000', monthly_withdrawal: '10000', schedule_day: '1' },
+  sip: { amount: '10000', schedule_day: '1' },
+  lumpsum: { amount: '100000' },
+  stepUpSip: {
+    initial_amount: '10000',
+    step_up_mode: 'PERCENT',
+    step_up_percent: '10',
+    schedule_day: '1',
+  },
+  stp: { lump_sum: '1000000', transfer_months: '6', schedule_day: '1' },
+}
 
 /** Not every catalog name resolves upstream, so several spellings get a chance per fund. */
 const MAX_CANDIDATES_PER_FUND = 4
@@ -148,6 +164,30 @@ function trimAnalysis(analysis) {
   }
 }
 
+function trimSimulation(payload) {
+  if (!payload || typeof payload !== 'object') return payload
+  if (!Array.isArray(payload.timeline)) return payload
+  return {
+    ...payload,
+    timeline: sampleEvenly(payload.timeline, MAX_SIM_TIMELINE_ROWS),
+  }
+}
+
+function trimInvestmentSection(payload) {
+  if (!payload?.data) return payload
+  const data = { ...payload.data }
+  for (const key of ['sip', 'stepUpSip', 'lumpsum', 'swp', 'stp']) {
+    const block = data[key]
+    if (block && Array.isArray(block.timeline)) {
+      data[key] = {
+        ...block,
+        timeline: sampleEvenly(block.timeline, MAX_SIM_TIMELINE_ROWS),
+      }
+    }
+  }
+  return { ...payload, data }
+}
+
 /**
  * Payout variants track a different NAV, and unrelated funds can match a search term, so
  * candidates that start with the term and offer a direct growth plan are tried first.
@@ -216,11 +256,82 @@ async function captureFund(fund) {
   ]) {
     const payload = await tryRequest(`report ${section}`, path, { scheme })
     if (payload) {
-      sections[section] = await writeJson(`fund-report-sections/${slug}-${section}.json`, payload)
+      const trimmed = section === 'investment' ? trimInvestmentSection(payload) : payload
+      sections[section] = await writeJson(`fund-report-sections/${slug}-${section}.json`, trimmed)
     }
   }
   if (Object.keys(sections).length > 0) {
     files.fundReportSections = sections
+  }
+
+  const simulations = {}
+  const swp = await tryRequest('swp simulate', '/api/fund-report/swp/simulate', {
+    scheme,
+    ...SIM_DEFAULTS.swp,
+  })
+  if (swp) {
+    simulations.swp = await writeJson(
+      `simulations/${slug}-swp.json`,
+      trimSimulation(swp),
+    )
+  }
+
+  const sipSim = await tryRequest('sip simulate', '/api/fund-report/sip/simulate', {
+    scheme,
+    ...SIM_DEFAULTS.sip,
+  })
+  if (sipSim) {
+    simulations.sip = await writeJson(
+      `simulations/${slug}-sip.json`,
+      trimSimulation(sipSim),
+    )
+  }
+
+  const lumpsumSim = await tryRequest('lumpsum simulate', '/api/fund-report/lumpsum/simulate', {
+    scheme,
+    ...SIM_DEFAULTS.lumpsum,
+  })
+  if (lumpsumSim) {
+    simulations.lumpsum = await writeJson(
+      `simulations/${slug}-lumpsum.json`,
+      trimSimulation(lumpsumSim),
+    )
+  }
+
+  const stepUpSim = await tryRequest(
+    'step-up sip simulate',
+    '/api/fund-report/step-up-sip/simulate',
+    { scheme, ...SIM_DEFAULTS.stepUpSip },
+  )
+  if (stepUpSim) {
+    simulations.stepUpSip = await writeJson(
+      `simulations/${slug}-step-up-sip.json`,
+      trimSimulation(stepUpSim),
+    )
+  }
+
+  // STP needs a distinct liquid source; try common names until one works.
+  for (const sourceTerm of [
+    'HDFC Liquid Fund - Direct Plan - Growth',
+    'ICICI Prudential Liquid Fund - Direct Plan - Growth',
+    'Axis Liquid Fund - Direct Plan - Growth',
+  ]) {
+    const stp = await tryRequest('stp simulate', '/api/fund-report/stp/simulate', {
+      scheme,
+      source_scheme: sourceTerm,
+      ...SIM_DEFAULTS.stp,
+    })
+    if (stp) {
+      simulations.stp = await writeJson(
+        `simulations/${slug}-stp.json`,
+        trimSimulation({ ...stp, sourceScheme: sourceTerm }),
+      )
+      break
+    }
+  }
+
+  if (Object.keys(simulations).length > 0) {
+    files.simulations = simulations
   }
 
   const analysis = {}

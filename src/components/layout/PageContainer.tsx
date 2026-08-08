@@ -19,7 +19,7 @@ export function PageContainer({ children, width = 'default', className }: PageCo
   return (
     <div
       className={cn(
-        'mx-auto w-full space-y-6 px-4 py-6 sm:px-6 lg:px-8',
+        'mx-auto w-full space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 lg:px-8',
         WIDTH_CLASS[width],
         className,
       )}

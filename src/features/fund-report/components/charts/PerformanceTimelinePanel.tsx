@@ -85,7 +85,7 @@ export function PerformanceTimelinePanel({
         </p>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5 md:space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground sm:text-sm">
             Milestones are computed from aligned {period} rolling windows — inception, peak, trough, midpoint, and
