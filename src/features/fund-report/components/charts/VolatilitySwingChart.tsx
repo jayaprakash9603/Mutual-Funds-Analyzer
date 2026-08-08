@@ -11,13 +11,12 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartContainer } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
   GRID_STROKE,
   chartPlotMargin,
-  formatAxisPercentTick,
   TICK_LINE,
   xLabel,
   yLabel,
@@ -85,18 +84,18 @@ export function VolatilitySwingChart({
   }
 
   return (
-    <div className={CHART_PANEL_CLASS}>
+    <div className={CHART_PANEL_RESPONSIVE_CLASS}>
       <ChartContainer config={{}} className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]">
         <BarChart data={chartData} margin={chartPlotMargin({ top: 12, bottom: 8 })}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
           <XAxis dataKey="frequency" tickLine={TICK_LINE} axisLine={AXIS_LINE} tick={axis.tick}>
-            <Label {...xLabel('Time frame')} />
+            {axis.showXLabel ? <Label {...xLabel('Time frame')} /> : null}
           </XAxis>
           <YAxis
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
             tick={axis.tick}
-            tickFormatter={formatAxisPercentTick}
+            tickFormatter={axis.formatPercentTick}
             width={axis.yWidth}
           >
             {axis.showYLabel ? <Label {...yLabel('Single-period move')} /> : null}

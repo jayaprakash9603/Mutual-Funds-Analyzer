@@ -10,13 +10,12 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartContainer } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
   GRID_STROKE,
   chartPlotMargin,
-  formatAxisPercentTick,
   TICK_LINE,
   xLabel,
   yLabel,
@@ -77,7 +76,7 @@ export function MissingBestQuarterChart({
   }
 
   return (
-    <div className={CHART_PANEL_CLASS}>
+    <div className={CHART_PANEL_RESPONSIVE_CLASS}>
       <div className="mb-3 px-1">
         <h4 className="text-sm font-semibold text-foreground">Missing best quarter</h4>
         <p className="text-xs text-muted-foreground">
@@ -87,7 +86,7 @@ export function MissingBestQuarterChart({
       </div>
       <ChartContainer
         config={{ lostCagrPercent: { label: 'Lost CAGR', color: CHART_COLORS.red } }}
-        className="aspect-auto h-[320px] w-full sm:h-[360px]"
+        className="aspect-auto h-[280px] w-full sm:h-[360px]"
       >
         <BarChart data={chartData} margin={chartPlotMargin({ top: 12, bottom: 8 })}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
@@ -99,14 +98,15 @@ export function MissingBestQuarterChart({
             minTickGap={axis.xGap}
             height={axis.xHeight}
             interval="preserveStartEnd"
+            tickFormatter={axis.formatMonthYearTick}
           >
-            <Label {...xLabel('Quarter', -2)} />
+            {axis.showXLabel ? <Label {...xLabel('Quarter', -2)} /> : null}
           </XAxis>
           <YAxis
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
             tick={axis.tick}
-            tickFormatter={formatAxisPercentTick}
+            tickFormatter={axis.formatPercentTick}
             width={axis.yWidth}
           >
             {axis.showYLabel ? <Label {...yLabel('Lost CAGR (%)')} /> : null}

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { CartesianGrid, Label, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
-import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { ReportInsightCard } from '../layout/ReportInsightCard'
 import {
   ChartContainer,
@@ -14,7 +14,6 @@ import {
   GRID_STROKE,
   MARGIN_LEFT,
   TICK_LINE,
-  TICK_MD,
   xLabel,
   yLabel,
 } from '@/lib/charts/chartAxes'
@@ -54,7 +53,7 @@ type AllTimeHighsChartProps = {
 }
 
 export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartProps) {
-  const isSmall = useIsSmallScreen()
+  const axis = useResponsiveAxis()
   const chartRows = useMemo(
     () =>
       downsampleSeries(allTimeHighs.series).map((point) => ({
@@ -102,19 +101,22 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
               ticks={yearTicks}
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               interval="preserveStartEnd"
+              tickFormatter={(value) =>
+                axis.compact ? `'${String(value).slice(-2)}` : String(value)
+              }
             >
-              <Label {...xLabel('Year')} />
+              {axis.showXLabel ? <Label {...xLabel('Year')} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
-              tick={TICK_MD}
+              tick={axis.tick}
               tickFormatter={(value) => Number(value).toFixed(0)}
-              width={56}
+              width={axis.yWidth}
             >
-              <Label {...yLabel('NAV')} />
+              {axis.showYLabel ? <Label {...yLabel('NAV')} /> : null}
             </YAxis>
             <ChartTooltip
               cursor={CHART_TOOLTIP_CURSOR}
@@ -139,14 +141,14 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
           </LineChart>
         </ChartContainer>
 
-        {!isSmall ? (
+        {!axis.isSmall ? (
           <p className="pointer-events-none absolute bottom-6 right-6 max-w-[180px] text-right text-sm font-medium text-primary italic">
             green dots indicate All Time Highs
           </p>
         ) : null}
       </div>
 
-      {isSmall ? (
+      {axis.isSmall ? (
         <p className="text-center text-sm font-medium text-primary italic">
           green dots indicate All Time Highs
         </p>

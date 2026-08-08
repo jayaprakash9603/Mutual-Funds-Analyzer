@@ -191,8 +191,9 @@ export function FundGrowthTrendChart({
               tick={axis.tick}
               minTickGap={axis.xGap}
               height={axis.xHeight}
+              tickFormatter={axis.formatMonthYearTick}
             >
-              <Label {...xLabel('Date', -2)} />
+              {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}

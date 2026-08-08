@@ -214,8 +214,9 @@ export function FundRollingTrendChart({
                 tick={axis.tick}
                 minTickGap={axis.xGap}
                 height={axis.xHeight}
+                tickFormatter={axis.formatMonthYearTick}
               >
-                <Label {...xLabel('Window end date', -2)} />
+                {axis.showXLabel ? <Label {...xLabel('Window end date', -2)} /> : null}
               </XAxis>
               <YAxis
                 orientation="right"
@@ -224,9 +225,9 @@ export function FundRollingTrendChart({
                 tick={axis.tick}
                 width={axis.yWidth}
                 domain={['auto', 'auto']}
-                tickFormatter={(value: number) => `${value}%`}
+                tickFormatter={axis.formatPercentTick}
               >
-                <Label {...yLabelRight('Return (%)')} />
+                {axis.showYLabel ? <Label {...yLabelRight('Return (%)')} /> : null}
               </YAxis>
               <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeDasharray="4 4" />
               <ChartTooltip cursor={CHART_TOOLTIP_CURSOR} content={<RollingTooltip period={period} />} />

@@ -158,8 +158,9 @@ export function FundLongTermStoryChart({
               angle={axis.xAngle}
               textAnchor={axis.xAnchor}
               interval="preserveStartEnd"
+              tickFormatter={axis.formatMonthYearTick}
             >
-              <Label {...xLabel('Date', axis.xAngle === 0 ? 0 : -4)} />
+              {axis.showXLabel ? <Label {...xLabel('Date', axis.xAngle === 0 ? 0 : -4)} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}

@@ -11,8 +11,12 @@ export const CHART_PANEL_CLASS =
 export const CHART_PANEL_RESPONSIVE_CLASS =
   'rounded-lg bg-[var(--chart-surface)] p-1 sm:rounded-xl sm:border sm:border-border/70 sm:p-4 sm:shadow-inner'
 
-/** Borderless inset surface for charts/tables already inside ReportInsightCard. */
-export const CHART_INSET_CLASS = 'rounded-lg bg-[var(--chart-surface)] p-2 sm:p-3'
+/**
+ * Inset surface for charts already inside ReportInsightCard.
+ * Flat on phones (no second grey frame); subtle panel from sm+.
+ */
+export const CHART_INSET_CLASS =
+  'rounded-none bg-transparent p-0 sm:rounded-lg sm:bg-[var(--chart-surface)] sm:p-3'
 
 /** Lets wide tables use full card width on mobile without an extra inner frame. */
 export const INSIDE_CARD_BLEED_CLASS =

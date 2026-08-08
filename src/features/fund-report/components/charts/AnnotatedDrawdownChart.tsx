@@ -12,12 +12,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, CHART_TOOLTIP_CURSOR } from '@/components/ui/chart'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
   drawdownYDomain,
-  formatAxisPercentTick,
   GRID_STROKE,
   chartPlotMargin,
   TICK_LINE,
@@ -149,7 +148,7 @@ export function AnnotatedDrawdownChart({
 
       {headline ? <p className="text-sm font-medium text-foreground">{headline}</p> : null}
 
-      <div className={CHART_PANEL_CLASS}>
+      <div className={CHART_PANEL_RESPONSIVE_CLASS}>
         <ChartContainer
           config={drawdownChartConfig}
           className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
@@ -163,14 +162,15 @@ export function AnnotatedDrawdownChart({
               tick={axis.tick}
               minTickGap={axis.xGap}
               height={axis.xHeight}
+              tickFormatter={axis.formatMonthYearTick}
             >
-              <Label {...xLabel('Date', -2)} />
+              {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
               tick={axis.tick}
-              tickFormatter={formatAxisPercentTick}
+              tickFormatter={axis.formatPercentTick}
               width={axis.yWidth}
               domain={drawdownYDomain(drawdown.series)}
               type="number"

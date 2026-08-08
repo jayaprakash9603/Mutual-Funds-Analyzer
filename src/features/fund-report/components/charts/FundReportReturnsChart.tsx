@@ -59,7 +59,8 @@ const absoluteConfig = {
   indexValue: { label: 'Indexed NAV', color: FUND_COLOR },
 } satisfies ChartConfig
 
-const ROLLING_CHART_MARGIN = { top: 16, right: 56, left: 8, bottom: 12 }
+const ROLLING_CHART_MARGIN_DESKTOP = { top: 16, right: 56, left: 8, bottom: 12 }
+const ROLLING_CHART_MARGIN_MOBILE = { top: 12, right: 40, left: 4, bottom: 8 }
 const TOOLTIP_CURSOR = { stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }
 const Y_DOMAIN: ['auto', 'auto'] = ['auto', 'auto']
 const CHART_HEIGHT_CLASS = 'aspect-auto h-[300px] w-full sm:h-[360px] lg:h-[400px]'
@@ -263,7 +264,10 @@ export function FundReportReturnsChart({
               </div>
             ) : null}
             <ChartContainer config={rollingConfig} className={CHART_HEIGHT_CLASS}>
-              <LineChart data={rollingChartData} margin={ROLLING_CHART_MARGIN}>
+              <LineChart
+                data={rollingChartData}
+                margin={isSmall ? ROLLING_CHART_MARGIN_MOBILE : ROLLING_CHART_MARGIN_DESKTOP}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
                 <XAxis
                   dataKey="shortLabel"
@@ -275,19 +279,22 @@ export function FundReportReturnsChart({
                   angle={axis.xAngle}
                   textAnchor={axis.xAnchor}
                   height={axis.xHeight}
+                  tickFormatter={axis.formatMonthYearTick}
                 >
-                  <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
+                  {axis.showXLabel ? (
+                    <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
+                  ) : null}
                 </XAxis>
                 <YAxis
                   orientation="right"
                   tickLine={TICK_LINE}
                   axisLine={AXIS_LINE}
                   tick={axis.tick}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={axis.formatPercentTick}
                   domain={isSmall ? sharedYDomain : Y_DOMAIN}
                   width={axis.yWidth}
                 >
-                  <Label {...yLabelRight('Return (%)')} />
+                  {axis.showYLabel ? <Label {...yLabelRight('Return (%)')} /> : null}
                 </YAxis>
                 <Tooltip
                   content={
@@ -347,8 +354,9 @@ export function FundReportReturnsChart({
                   minTickGap={axis.xGap}
                   tick={axis.tick}
                   height={axis.xHeight}
+                  tickFormatter={axis.formatMonthYearTick}
                 >
-                  <Label {...xLabel('Date', -2)} />
+                  {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
                 </XAxis>
                 <YAxis
                   tickLine={TICK_LINE}

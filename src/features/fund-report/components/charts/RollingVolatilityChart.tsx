@@ -9,13 +9,12 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, CHART_TOOLTIP_CURSOR } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_PANEL_RESPONSIVE_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
   GRID_STROKE,
   chartPlotMargin,
-  formatAxisPercentTick,
   TICK_LINE,
   xLabel,
   yLabel,
@@ -58,10 +57,10 @@ export function RollingVolatilityChart({
   }
 
   return (
-    <div className={CHART_PANEL_CLASS}>
+    <div className={CHART_PANEL_RESPONSIVE_CLASS}>
       <ChartContainer
         config={chartConfig}
-        className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
+        className="aspect-auto h-[280px] w-full sm:h-[380px] lg:h-[420px]"
       >
         <LineChart data={chartData} margin={chartPlotMargin({ top: 16, bottom: 8 })}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
@@ -75,14 +74,15 @@ export function RollingVolatilityChart({
             angle={axis.xAngle}
             textAnchor={axis.xAnchor}
             interval="preserveStartEnd"
+            tickFormatter={axis.formatMonthYearTick}
           >
-            <Label {...xLabel('Date', axis.xAngle === 0 ? 0 : -4)} />
+            {axis.showXLabel ? <Label {...xLabel('Date', axis.xAngle === 0 ? 0 : -4)} /> : null}
           </XAxis>
           <YAxis
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
             tick={axis.tick}
-            tickFormatter={formatAxisPercentTick}
+            tickFormatter={axis.formatPercentTick}
             width={axis.yWidth}
           >
             {axis.showYLabel ? <Label {...yLabel('Annualised volatility')} /> : null}

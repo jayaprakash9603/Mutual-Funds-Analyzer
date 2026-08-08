@@ -14,7 +14,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
@@ -112,9 +112,12 @@ export function PerformanceTimelineMilestoneChart({
   )
 
   return (
-    <div className={CHART_PANEL_CLASS}>
+    <div className={CHART_INSET_CLASS}>
       <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASS}>
-        <LineChart data={chartData} margin={{ top: 16, right: 56, left: 8, bottom: 8 }}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 16, right: axis.isSmall ? 40 : 56, left: 4, bottom: 8 }}
+        >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
           <XAxis
             dataKey="shortLabel"
@@ -125,19 +128,22 @@ export function PerformanceTimelineMilestoneChart({
             angle={axis.xAngle}
             textAnchor={axis.xAnchor}
             height={axis.xHeight}
+            tickFormatter={axis.formatMonthYearTick}
           >
-            <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
+            {axis.showXLabel ? (
+              <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
+            ) : null}
           </XAxis>
           <YAxis
             orientation="right"
             tickLine={TICK_LINE}
             axisLine={AXIS_LINE}
             tick={axis.tick}
-            tickFormatter={(value) => `${value}%`}
+            tickFormatter={axis.formatPercentTick}
             domain={Y_DOMAIN}
             width={axis.yWidth}
           >
-            <Label {...yLabelRight('Rolling return (%)')} />
+            {axis.showYLabel ? <Label {...yLabelRight('Rolling return (%)')} /> : null}
           </YAxis>
           <ChartTooltip
             cursor={CHART_TOOLTIP_CURSOR}

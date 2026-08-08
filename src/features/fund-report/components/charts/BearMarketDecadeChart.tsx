@@ -10,7 +10,6 @@ import { CHART_INSET_CLASS } from '@/lib/charts/chartSurface'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
   AXIS_LINE,
-  formatAxisPercentTick,
   GRID_STROKE,
   chartPlotMargin,
   TICK_LINE,
@@ -104,13 +103,13 @@ export function BearMarketDecadeChart({ decades, fundName }: BearMarketDecadeCha
               interval={0}
               padding={axisPadding}
             >
-              <Label {...xLabel('Decade', -2)} />
+              {axis.showXLabel ? <Label {...xLabel('Decade', -2)} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
               tick={axis.tick}
-              tickFormatter={formatAxisPercentTick}
+              tickFormatter={axis.formatPercentTick}
               width={axis.yWidth}
               domain={[0, 'auto']}
             >

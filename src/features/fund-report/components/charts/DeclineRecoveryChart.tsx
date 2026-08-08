@@ -11,7 +11,11 @@ import {
   YAxis,
 } from 'recharts'
 import { useIsSmallScreen } from '@/hooks/useMediaQuery'
-import { CHART_CYCLE_BAND_EVEN, CHART_CYCLE_BAND_ODD, CHART_PANEL_CLASS } from '@/lib/charts/chartSurface'
+import {
+  CHART_CYCLE_BAND_EVEN,
+  CHART_CYCLE_BAND_ODD,
+  CHART_PANEL_RESPONSIVE_CLASS,
+} from '@/lib/charts/chartSurface'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, CHART_TOOLTIP_CURSOR } from '@/components/ui/chart'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
 import {
@@ -19,7 +23,6 @@ import {
   GRID_STROKE,
   chartPlotMargin,
   TICK_LINE,
-  formatAxisPercentTick,
   xLabel,
   yLabel,
   ZERO_LINE_STROKE,
@@ -245,7 +248,7 @@ function IndexedNavTimeline({
         Full indexed NAV path for {fundName} (100 = first available NAV). Red traces major
         decline legs; green traces the recovery back toward the prior peak.
       </p>
-      <div className={cn('w-full', CHART_PANEL_CLASS)}>
+      <div className={cn('w-full', CHART_PANEL_RESPONSIVE_CLASS)}>
         <ChartContainer
           config={timelineConfig}
           className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
@@ -391,7 +394,7 @@ function ContinuousPhaseTimeline({
         <span>Pills show total phase move · duration</span>
       </div>
 
-      <div className={cn('w-full', CHART_PANEL_CLASS)}>
+      <div className={cn('w-full', CHART_PANEL_RESPONSIVE_CLASS)}>
         <ChartContainer
           config={phaseConfig}
           className="aspect-auto h-[320px] w-full sm:h-[380px] lg:h-[420px]"
@@ -420,14 +423,15 @@ function ContinuousPhaseTimeline({
               tick={axis.tick}
               minTickGap={axis.xGap}
               height={axis.xHeight}
+              tickFormatter={axis.formatMonthYearTick}
             >
-              <Label {...xLabel('Date', -2)} />
+              {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
             </XAxis>
             <YAxis
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
               tick={axis.tick}
-              tickFormatter={formatAxisPercentTick}
+              tickFormatter={axis.formatPercentTick}
               width={axis.yWidth}
               domain={[-model.yLimit, model.yLimit]}
               type="number"
