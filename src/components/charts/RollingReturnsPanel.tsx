@@ -310,8 +310,8 @@ function RollingReturnsChart({
           </TableHeader>
           <TableBody>
             {analysis.tableRows.map((row, i) => (
-              <TableRow key={row.name} className={i % 2 === 0 ? 'bg-background/60' : 'bg-muted/10'}>
-                <TableCell className={cn(fiStickyLabelCell('min-w-[220px] text-left font-medium'), i % 2 === 0 ? 'bg-background/60' : 'bg-muted/10')}>
+              <TableRow key={row.name} className={i % 2 === 0 ? 'bg-card' : 'bg-muted'}>
+                <TableCell className={cn(fiStickyLabelCell('min-w-[220px] text-left font-medium'), i % 2 === 0 ? 'bg-card' : 'bg-muted')}>
                   <div>{row.name}</div>
                   {row.category && (
                     <div className="mt-0.5 text-xs font-normal text-muted-foreground">{row.category}</div>

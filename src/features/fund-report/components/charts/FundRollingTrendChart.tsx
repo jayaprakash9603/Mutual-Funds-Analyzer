@@ -19,6 +19,7 @@ import {
   xLabel,
   yLabelRight,
 } from '@/lib/charts/chartAxes'
+import { formatAxisMonthYearTick, evenlySpacedTickIndices } from '@/lib/charts/axisFormatters'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
 import { DEFAULT_PERIOD, MAX_CHART_POINTS, PERIODS, type Period } from '@/lib/constants'
@@ -35,6 +36,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 type RollingTrendPoint = {
+  x: number
   label: string
   windowRange: string
   rollingReturn: number
@@ -106,8 +108,16 @@ export function FundRollingTrendChart({
         rollingReturn: row.scheme_rolling_returns,
       }
     })
-    return downsample(mapped, MAX_CHART_POINTS)
+    return downsample(mapped, MAX_CHART_POINTS).map((point, index) => ({
+      ...point,
+      x: index,
+    }))
   }, [data])
+
+  const xTicks = useMemo(
+    () => evenlySpacedTickIndices(points.length, axis.isSmall ? 4 : 5),
+    [points.length, axis.isSmall],
+  )
 
   const summary = useMemo(() => {
     if (!data || data.fund.length === 0) return null
@@ -199,7 +209,16 @@ export function FundRollingTrendChart({
           </div>
 
           <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASS}>
-            <AreaChart data={points} margin={chartPlotMargin({ top: 12, right: 48, bottom: 8 })}>
+            <AreaChart
+              data={points}
+              margin={chartPlotMargin({
+                top: 12,
+                // YAxis width reserves the right gutter — avoid a second large right margin
+                // that leaves empty space and makes X ticks look left-shifted.
+                right: axis.isSmall ? 2 : 8,
+                bottom: axis.isSmall ? 0 : 8,
+              })}
+            >
               <defs>
                 <linearGradient id={GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={FUND_COLOR} stopOpacity={0.28} />
@@ -208,13 +227,19 @@ export function FundRollingTrendChart({
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
               <XAxis
-                dataKey="label"
+                dataKey="x"
+                type="number"
+                domain={[0, Math.max(points.length - 1, 0)]}
+                ticks={xTicks}
                 tickLine={TICK_LINE}
                 axisLine={AXIS_LINE}
                 tick={axis.tick}
-                minTickGap={axis.xGap}
                 height={axis.xHeight}
-                tickFormatter={axis.formatMonthYearTick}
+                padding={{ left: 0, right: 0 }}
+                tickFormatter={(value: number) => {
+                  const point = points[value]
+                  return point ? formatAxisMonthYearTick(point.label, axis.compact) : ''
+                }}
               >
                 {axis.showXLabel ? <Label {...xLabel('Window end date', -2)} /> : null}
               </XAxis>

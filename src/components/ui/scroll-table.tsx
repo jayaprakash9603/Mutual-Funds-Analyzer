@@ -78,15 +78,18 @@ export function ScrollTable({
   if (pinnedLeading) {
     return (
       <div className={cn('relative w-full min-w-0', className)}>
-        <div className="flex w-full min-w-0 items-stretch">
+        <div className="flex w-full min-w-0 items-stretch overflow-hidden rounded-[inherit]">
+          {/* Fixed label pane — no horizontal scrollbar here. */}
           <div
             className={cn(
-              'relative z-20 shrink-0 bg-card',
+              // Solid opaque pane — scrolled metric cells must never show through.
+              'relative z-30 shrink-0 overflow-hidden bg-card',
               'shadow-[4px_0_14px_-4px_rgba(15,23,42,0.2)] dark:shadow-[4px_0_14px_-4px_rgba(0,0,0,0.55)]',
             )}
           >
             {pinnedLeading}
           </div>
+          {/* Only this pane scrolls; scrollbar sits under metric columns. */}
           {scrollPane}
         </div>
         {isSmall && overflows ? (

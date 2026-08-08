@@ -58,11 +58,18 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
                 <tr
                   key={`${episode.peakDate}-${episode.troughDate}-${index}`}
                   className={cn(
-                    index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20',
+                    index % 2 === 0 ? 'bg-card' : 'bg-muted',
                     critical && 'ring-1 ring-inset ring-red-200/80 dark:ring-red-900/50',
                   )}
                 >
-                  <td className={fiBodyCell(fiStickyLabelCell('font-medium text-muted-foreground'))}>{index + 1}</td>
+                  <td
+                    className={cn(
+                      fiBodyCell(fiStickyLabelCell('font-medium text-muted-foreground')),
+                      index % 2 === 0 ? 'bg-card' : 'bg-muted',
+                    )}
+                  >
+                    {index + 1}
+                  </td>
                   <td className={fiBodyCell()}>{episode.peakDate}</td>
                   <td className={fiBodyCell()}>{episode.troughDate}</td>
                   <td className={fiBodyCell()}>{episode.recoveryDate || '—'}</td>

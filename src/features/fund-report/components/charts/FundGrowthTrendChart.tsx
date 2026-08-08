@@ -102,11 +102,17 @@ export function FundGrowthTrendChart({
 }) {
   const axis = useResponsiveAxis()
   const [range, setRange] = useState<GrowthRangeId>(DEFAULT_GROWTH_RANGE)
-
+  // Recreate when the window changes so year-on-change tick state starts clean.
   const available = useMemo(() => availableGrowthRanges(indexedNav), [indexedNav])
   // A short-history fund may not cover the default window, so fall back instead of blanking.
   const effectiveRange = available.has(range) ? range : (longestAvailableRange(indexedNav) ?? range)
   const trend = useMemo(() => buildGrowthTrend(indexedNav, effectiveRange), [indexedNav, effectiveRange])
+  // Recreate when the window changes so year-on-change tick state starts clean.
+  const xTickFormatter = useMemo(
+    () => axis.createTimeTickFormatter(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: reset with window/axis mode
+    [axis.compact, effectiveRange, trend?.startDate, trend?.endDate],
+  )
 
   const options = useMemo<ChartRangeOption<GrowthRangeId>[]>(
     () =>
@@ -134,9 +140,9 @@ export function FundGrowthTrendChart({
   const accent = positive ? GAIN_COLOR : LOSS_COLOR
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3 overflow-x-hidden">
       {/* Nested inside ReportInsightCard — inset only, no second bordered frame. */}
-      <div className={CHART_INSET_CLASS}>
+      <div className={cn(CHART_INSET_CLASS, 'min-w-0')}>
         <div className="flex flex-col gap-3 px-1 pb-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">{fundName}</p>
@@ -153,8 +159,9 @@ export function FundGrowthTrendChart({
                 <ArrowDownRight className="size-4 shrink-0" style={{ color: accent }} aria-hidden="true" />
               )}
               <span className="text-xs text-muted-foreground sm:text-sm">
-                {format(parseISO(trend.startDate), 'd MMM yyyy')} –{' '}
-                {format(parseISO(trend.endDate), 'd MMM yyyy')}
+                {axis.isSmall
+                  ? `${format(parseISO(trend.startDate), 'd MMM yy')} – ${format(parseISO(trend.endDate), 'd MMM yy')}`
+                  : `${format(parseISO(trend.startDate), 'd MMM yyyy')} – ${format(parseISO(trend.endDate), 'd MMM yyyy')}`}
               </span>
             </div>
           </div>
@@ -175,8 +182,15 @@ export function FundGrowthTrendChart({
           </dl>
         </div>
 
-        <ChartContainer config={chartConfig} className={CHART_HEIGHT_CLASS}>
-          <AreaChart data={trend.points} margin={chartPlotMargin({ top: 12, right: 12, bottom: 8 })}>
+        <ChartContainer config={chartConfig} className={cn(CHART_HEIGHT_CLASS, 'min-w-0 max-w-full')}>
+          <AreaChart
+            data={trend.points}
+            margin={chartPlotMargin({
+              top: 12,
+              right: axis.isSmall ? 4 : 12,
+              bottom: axis.isSmall ? 0 : 8,
+            })}
+          >
             <defs>
               <linearGradient id={GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={accent} stopOpacity={0.28} />
@@ -185,13 +199,14 @@ export function FundGrowthTrendChart({
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
             <XAxis
-              dataKey="label"
+              dataKey="date"
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
               tick={axis.tick}
               minTickGap={axis.xGap}
               height={axis.xHeight}
-              tickFormatter={axis.formatMonthYearTick}
+              interval="preserveStartEnd"
+              tickFormatter={xTickFormatter}
             >
               {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
             </XAxis>

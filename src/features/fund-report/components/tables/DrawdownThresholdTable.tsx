@@ -107,11 +107,18 @@ export function DrawdownThresholdTable({
                 <tr
                   key={row.thresholdPercent}
                   className={cn(
-                    index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/80 dark:bg-muted/20',
+                    index % 2 === 0 ? 'bg-card' : 'bg-muted',
                     emphasize && 'ring-1 ring-inset ring-primary/20',
                   )}
                 >
-                  <td className={fiBodyCell(fiStickyLabelCell('font-medium'))}>{formatThresholdLabel(row.thresholdPercent)}</td>
+                  <td
+                    className={cn(
+                      fiBodyCell(fiStickyLabelCell('font-medium')),
+                      index % 2 === 0 ? 'bg-card' : 'bg-muted',
+                    )}
+                  >
+                    {formatThresholdLabel(row.thresholdPercent)}
+                  </td>
                   <td className={cn(fiBodyCell(), emphasize && 'font-semibold text-red-700 dark:text-red-400')}>
                     {formatPercent(row.fundPercentOfDays, 0)}
                   </td>

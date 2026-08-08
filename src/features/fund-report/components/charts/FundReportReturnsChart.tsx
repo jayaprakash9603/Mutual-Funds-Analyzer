@@ -159,6 +159,11 @@ export function FundReportReturnsChart({
   const axis = useResponsiveAxis()
   // Two lines in a phone-width plot read as noise, so the series split one per tab there.
   const isSmall = useIsSmallScreen()
+  const timeTickFormatter = useMemo(
+    () => axis.createTimeTickFormatter(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset year-change state with mode/period
+    [axis.compact, mode, period],
+  )
 
   const { data: analysisData, loading: analysisLoading } = useFundAnalysis(
     !offlineView && mode === 'rolling' ? scheme : null,
@@ -279,7 +284,7 @@ export function FundReportReturnsChart({
                   angle={axis.xAngle}
                   textAnchor={axis.xAnchor}
                   height={axis.xHeight}
-                  tickFormatter={axis.formatMonthYearTick}
+                  tickFormatter={timeTickFormatter}
                 >
                   {axis.showXLabel ? (
                     <Label {...xLabel('Window end date', axis.xAngle === 0 ? -2 : -4)} />
@@ -354,7 +359,8 @@ export function FundReportReturnsChart({
                   minTickGap={axis.xGap}
                   tick={axis.tick}
                   height={axis.xHeight}
-                  tickFormatter={axis.formatMonthYearTick}
+                  tickFormatter={timeTickFormatter}
+                  interval="preserveStartEnd"
                 >
                   {axis.showXLabel ? <Label {...xLabel('Date', -2)} /> : null}
                 </XAxis>

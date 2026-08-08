@@ -44,7 +44,10 @@ export function fiStickyStripeBg(rowIndex: number): string {
 
 export function fiStickyLabelCell(className?: string) {
   return cn(
-    'sticky left-0 z-10 min-w-[96px] border-r bg-card px-1.5 py-1.5 text-left align-top text-[11px] font-semibold sm:min-w-[120px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[140px] md:px-3 md:py-2 lg:min-w-[180px]',
+    // Opaque fill + high z-index so scrolled cells cannot bleed through.
+    // Prefer ScrollTable `pinnedLeading` for first columns; if sticky CSS is used,
+    // always pair with fiStickyStripeBg (never bg-muted/20 or bg-background/60).
+    'sticky left-0 z-30 isolate min-w-[7.25rem] max-w-[9.75rem] border-r bg-card px-1.5 py-1.5 text-left align-top text-[11px] font-semibold sm:min-w-[140px] sm:max-w-[220px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[180px] md:max-w-none md:px-3 md:py-2 lg:min-w-[220px]',
     'shadow-[4px_0_10px_-4px_rgba(15,23,42,0.22)] dark:shadow-[4px_0_10px_-4px_rgba(0,0,0,0.55)]',
     FI_GRID,
     className,
@@ -61,7 +64,7 @@ export function fiMatrixDataCell(className?: string) {
 
 export function fiMatrixYearCell(className?: string) {
   return cn(
-    'sticky left-0 z-10 min-w-[68px] border-r bg-card px-1.5 py-1.5 align-middle text-center text-[11px] font-bold sm:min-w-[80px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[96px] md:px-3 md:py-2.5',
+    'sticky left-0 z-30 isolate min-w-[68px] border-r bg-card px-1.5 py-1.5 align-middle text-center text-[11px] font-bold sm:min-w-[80px] sm:px-2.5 sm:py-2 sm:text-xs md:min-w-[96px] md:px-3 md:py-2.5',
     'shadow-[4px_0_10px_-4px_rgba(15,23,42,0.22)] dark:shadow-[4px_0_10px_-4px_rgba(0,0,0,0.55)]',
     FI_GRID,
     className,

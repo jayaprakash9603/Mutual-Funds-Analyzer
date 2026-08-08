@@ -5,11 +5,11 @@ import { appPanelSurface } from '@/lib/ui/appCardStyles'
 export const GOAL_TABLE_SHELL = appPanelSurface
 
 export function goalRowStripe(rowIndex: number): string {
-  return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/35 dark:bg-muted/20'
+  return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted'
 }
 
 export function goalStickyLabelBg(rowIndex: number): string {
-  return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/35 dark:bg-muted/20'
+  return rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted'
 }
 
 export type HeatmapBand = {

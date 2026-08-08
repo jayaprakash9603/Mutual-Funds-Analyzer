@@ -23,7 +23,7 @@ export function ChartRangeToggle<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-1 sm:justify-center"
+      className="flex flex-wrap items-center justify-center gap-1 px-0.5 py-1 sm:gap-1.5"
     >
       {options.map((option) => {
         const active = option.id === value
@@ -35,8 +35,8 @@ export function ChartRangeToggle<T extends string>({
             aria-pressed={active}
             onClick={() => onChange(option.id)}
             className={cn(
-              'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3.5 sm:text-sm',
+              'rounded-full border px-2 py-1 text-[11px] font-semibold transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3.5 sm:py-1.5 sm:text-sm',
               active
                 ? 'border-brand bg-brand/12 text-brand'
                 : 'border-border/70 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground',

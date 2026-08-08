@@ -5,11 +5,24 @@ import {
   FI_TABLE,
   fiBodyCell,
   fiHeaderCell,
-  fiStickyLabelCell,
+  fiStickyStripeBg,
 } from '@/components/fundsindia/tableStyles'
-import { formatPercent } from '@/lib/utils'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { cn, formatPercent } from '@/lib/utils'
 
 type Volatility = FundReportRisk['volatility']
+
+const FREQ_COL =
+  'min-w-[3.5rem] max-w-[5rem] border-r px-1.5 py-1.5 text-left align-middle font-medium sm:min-w-[5.5rem] sm:max-w-none sm:px-2.5'
+
+function shortFrequency(label: string, compact: boolean): string {
+  if (!compact) return label
+  if (/^daily$/i.test(label)) return 'Day'
+  if (/^weekly$/i.test(label)) return 'Wk'
+  if (/^monthly$/i.test(label)) return 'Mo'
+  if (/^quarterly$/i.test(label)) return 'Qtr'
+  return label
+}
 
 export function VolatilityFrequencyTable({
   volatility,
@@ -18,31 +31,59 @@ export function VolatilityFrequencyTable({
   volatility: Volatility
   benchmarkName?: string
 }) {
+  const isSmall = useIsSmallScreen()
+
   if (volatility.periods.length === 0) {
     return <p className="text-sm text-muted-foreground">No volatility frequency data available.</p>
   }
 
+  const frequencyPane = (
+    <table className={FI_TABLE}>
+      <thead>
+        <tr>
+          <th className={cn(fiHeaderCell(), FREQ_COL, 'normal-case')}>
+            {isSmall ? 'Freq' : 'Frequency'}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {volatility.periods.map((period, index) => (
+          <tr key={period.frequency} className={fiStickyStripeBg(index)}>
+            <td
+              className={cn(FREQ_COL, fiStickyStripeBg(index), 'text-[11px] sm:text-sm')}
+              title={period.frequency}
+            >
+              {shortFrequency(period.frequency, isSmall)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+
   return (
-    <ScrollTable minWidth={720} className={INSIDE_CARD_TABLE_CLASS}>
+    <ScrollTable
+      pinnedLeading={frequencyPane}
+      minWidth={isSmall ? 420 : 560}
+      className={INSIDE_CARD_TABLE_CLASS}
+    >
       <table className={FI_TABLE}>
         <thead>
           <tr>
-            <th className={fiHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Frequency</th>
-            <th className={fiHeaderCell()}>Observations</th>
-            <th className={fiHeaderCell()}>Annualised vol</th>
+            <th className={fiHeaderCell()}>{isSmall ? 'Obs' : 'Observations'}</th>
+            <th className={fiHeaderCell()}>{isSmall ? 'Vol' : 'Annualised vol'}</th>
             {volatility.benchmarkAvailable ? (
-              <th className={fiHeaderCell()}>{benchmarkName} vol</th>
+              <th className={fiHeaderCell()}>{isSmall ? 'Bmk' : `${benchmarkName} vol`}</th>
             ) : null}
-            <th className={fiHeaderCell()}>Typical swing</th>
-            <th className={fiHeaderCell()}>Best move</th>
-            <th className={fiHeaderCell()}>Worst move</th>
-            <th className={fiHeaderCell()}>% positive</th>
+            <th className={fiHeaderCell()}>{isSmall ? 'Swing' : 'Typical swing'}</th>
+            <th className={fiHeaderCell()}>Best</th>
+            <th className={fiHeaderCell()}>Worst</th>
+            <th className={fiHeaderCell()}>{isSmall ? '+%' : '% positive'}</th>
           </tr>
         </thead>
         <tbody>
-          {volatility.periods.map((period) => (
-            <tr key={period.frequency}>
-              <td className={fiBodyCell(fiStickyLabelCell('font-medium'))}>{period.frequency}</td>
+          {volatility.periods.map((period, index) => (
+            <tr key={period.frequency} className={fiStickyStripeBg(index)}>
               <td className={fiBodyCell()}>{period.observations.toLocaleString('en-IN')}</td>
               <td className={fiBodyCell()}>{formatPercent(period.annualisedVolatilityPercent, 1)}</td>
               {volatility.benchmarkAvailable ? (
@@ -53,11 +94,19 @@ export function VolatilityFrequencyTable({
               <td className={fiBodyCell()}>{formatPercent(period.typicalSwingPercent, 2)}</td>
               <td className={fiBodyCell()}>
                 {formatPercent(period.bestReturnPercent, 1)}
-                <span className="block text-[10px] text-muted-foreground sm:text-xs">{period.bestReturnDate}</span>
+                {!isSmall ? (
+                  <span className="block text-[10px] text-muted-foreground sm:text-xs">
+                    {period.bestReturnDate}
+                  </span>
+                ) : null}
               </td>
               <td className={fiBodyCell()}>
                 {formatPercent(period.worstReturnPercent, 1)}
-                <span className="block text-[10px] text-muted-foreground sm:text-xs">{period.worstReturnDate}</span>
+                {!isSmall ? (
+                  <span className="block text-[10px] text-muted-foreground sm:text-xs">
+                    {period.worstReturnDate}
+                  </span>
+                ) : null}
               </td>
               <td className={fiBodyCell()}>{formatPercent(period.positivePeriodsPercent, 0)}</td>
             </tr>

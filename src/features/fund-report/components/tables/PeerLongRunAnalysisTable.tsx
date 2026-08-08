@@ -7,9 +7,11 @@ import {
   fiBodyCell,
   fiHeaderCell,
   fiMultiplyHeaderCell,
-  fiStickyYearCell,
+  fiStickyStripeBg,
   fiSubHeaderCell,
 } from '@/components/fundsindia/tableStyles'
+import { useIsSmallScreen } from '@/hooks/useMediaQuery'
+import { shortSchemeLabel } from '@/lib/funds/shortSchemeLabel'
 import { cn, formatPercent } from '@/lib/utils'
 import { ReportInsightCard } from '../layout/ReportInsightCard'
 
@@ -48,11 +50,16 @@ function isPrimaryHorizon(label: string): boolean {
   return PRIMARY_HORIZONS.includes(label)
 }
 
+const SCHEME_COL =
+  'min-w-[7.5rem] max-w-[9.5rem] border-r px-1.5 py-1.5 text-left align-middle sm:min-w-[11rem] sm:max-w-[14rem] sm:px-2.5 sm:py-2'
+const ROW_MIN = 'min-h-[2.75rem]'
+
 export function PeerLongRunAnalysisTable({
   data,
   horizons: horizonsOverride,
   compact = false,
 }: PeerLongRunAnalysisTableProps) {
+  const isSmall = useIsSmallScreen()
   const analysis = data.longRunAnalysis
   const allHorizons = analysis?.horizonLabels?.length ? analysis.horizonLabels : DEFAULT_HORIZONS
   const baseHorizons = horizonsOverride?.length ? horizonsOverride : allHorizons
@@ -82,7 +89,51 @@ export function PeerLongRunAnalysisTable({
   }
 
   const asOfSuffix = analysis?.asOfDate ? ` (as on ${analysis.asOfDate})` : ''
-  const tableMinWidth = compact ? 720 : 960
+  const asOfHeader = isSmall ? 'Scheme' : `Scheme${asOfSuffix}`
+  const metricsMinWidth = compact ? (isSmall ? 420 : 560) : 800
+
+  const schemePane = (
+    <table className={FI_TABLE}>
+      <thead>
+        <tr>
+          <th
+            className={cn(fiHeaderCell(), SCHEME_COL, 'normal-case')}
+            title={asOfSuffix ? `Scheme${asOfSuffix}` : 'Scheme'}
+          >
+            {asOfHeader}
+          </th>
+        </tr>
+        <tr>
+          <th className={cn(fiSubHeaderCell(), SCHEME_COL)} aria-hidden="true">
+            &nbsp;
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.peers.map((peer, index) => {
+          const stripe = fiStickyStripeBg(index)
+          const schemeLabel = shortSchemeLabel(peer.scheme, isSmall)
+          return (
+            <tr
+              key={peer.scheme}
+              className={cn(stripe, peer.selected && 'ring-1 ring-inset ring-brand/40')}
+            >
+              <td className={cn(SCHEME_COL, ROW_MIN, stripe, 'text-[11px] font-semibold leading-snug sm:text-sm')} title={peer.scheme}>
+                <span className="line-clamp-2">
+                  {schemeLabel}
+                  {peer.selected ? (
+                    <span className="mt-0.5 block text-[10px] font-medium text-brand sm:text-xs">
+                      Selected
+                    </span>
+                  ) : null}
+                </span>
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
 
   return (
     <ReportInsightCard
@@ -108,18 +159,19 @@ export function PeerLongRunAnalysisTable({
       }
       footer="Horizons show the average rolling return from investt.in for each holding period. Money multiplied is derived from that average CAGR."
     >
-      <ScrollTable minWidth={tableMinWidth} className={INSIDE_CARD_TABLE_CLASS}>
+      <ScrollTable
+        pinnedLeading={schemePane}
+        minWidth={metricsMinWidth}
+        className={INSIDE_CARD_TABLE_CLASS}
+      >
         <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th rowSpan={2} className={fiStickyYearCell('min-w-[240px] align-middle')}>
-                Scheme{asOfSuffix}
-              </th>
               <th colSpan={horizons.length} className={fiHeaderCell()}>
-                Compounded Annualized Returns (%)
+                {isSmall ? 'CAGR (%)' : 'Compounded Annualized Returns (%)'}
               </th>
               <th colSpan={horizons.length} className={fiMultiplyHeaderCell()}>
-                No of Times Your Money Multiplied
+                {isSmall ? 'Money ×' : 'No of Times Your Money Multiplied'}
               </th>
             </tr>
             <tr>
@@ -152,15 +204,12 @@ export function PeerLongRunAnalysisTable({
           <tbody>
             {data.peers.map((peer, index) => {
               const byLabel = new Map(peer.horizonReturns.map((row) => [row.label, row]))
-              const stripe = index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+              const stripe = fiStickyStripeBg(index)
               return (
-                <tr key={peer.scheme} className={cn(stripe, peer.selected && 'ring-1 ring-inset ring-brand/40')}>
-                  <td className={cn(fiStickyYearCell(), stripe)}>
-                    <div className="text-sm font-semibold leading-snug">{peer.scheme}</div>
-                    {peer.selected ? (
-                      <div className="mt-1 text-xs font-medium text-brand">Selected fund</div>
-                    ) : null}
-                  </td>
+                <tr
+                  key={peer.scheme}
+                  className={cn(stripe, peer.selected && 'ring-1 ring-inset ring-brand/40')}
+                >
                   {horizons.map((label) => {
                     const row = byLabel.get(label)
                     const value = row?.cagrPercent
@@ -169,6 +218,7 @@ export function PeerLongRunAnalysisTable({
                         key={`${peer.scheme}-cagr-${label}`}
                         className={cn(
                           fiBodyCell(),
+                          ROW_MIN,
                           cagrCellClass(label, value),
                           isPrimaryHorizon(label) && 'bg-brand/5 font-semibold',
                           isTwentyYearColumn(label) && 'ring-2 ring-inset ring-sky-400/50',
@@ -186,6 +236,7 @@ export function PeerLongRunAnalysisTable({
                         key={`${peer.scheme}-mult-${label}`}
                         className={cn(
                           fiBodyCell('font-medium text-emerald-800 dark:text-emerald-300'),
+                          ROW_MIN,
                           isPrimaryHorizon(label) && 'bg-emerald-50/80 font-semibold dark:bg-emerald-950/20',
                           (label === '15 Year' || label === '20 Year') && 'font-bold',
                           isTwentyYearColumn(label) && 'ring-2 ring-inset ring-sky-400/50',

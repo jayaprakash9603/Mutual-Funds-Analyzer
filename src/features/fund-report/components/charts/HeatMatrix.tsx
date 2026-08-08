@@ -34,7 +34,7 @@ export function HeatMatrixSkeleton() {
         <tbody>
           {Array.from({ length: 3 }, (_, r) => (
             <tr key={`summary-${r}`} className={cn('border-b', GRID_LINE)}>
-              <td className={cn('sticky left-0 z-10 border-r bg-muted/40 px-3 py-2', GRID_LINE)}>
+              <td className={cn('sticky left-0 z-30 isolate border-r bg-muted px-3 py-2', GRID_LINE)}>
                 <Skeleton className="h-6 w-20 rounded-full" />
               </td>
               {Array.from({ length: SKELETON_YEARS }, (_, c) => (
@@ -45,7 +45,7 @@ export function HeatMatrixSkeleton() {
             </tr>
           ))}
           <tr className={cn('border-b', GRID_LINE)}>
-            <td className={cn('sticky left-0 z-10 border-r px-3 py-2.5', GRID_LINE)}>
+            <td className={cn('sticky left-0 z-30 isolate border-r bg-muted px-3 py-2.5', GRID_LINE)}>
               <Skeleton className="h-4 w-12" />
             </td>
             {Array.from({ length: SKELETON_YEARS }, (_, i) => (
@@ -56,7 +56,7 @@ export function HeatMatrixSkeleton() {
           </tr>
           {Array.from({ length: SKELETON_ROWS }, (_, r) => (
             <tr key={`row-${r}`} className={cn('border-b', GRID_LINE)}>
-              <td className={cn('sticky left-0 z-10 border-r bg-white px-3 py-2 dark:bg-card', GRID_LINE)}>
+              <td className={cn('sticky left-0 z-30 isolate border-r bg-card px-3 py-2', GRID_LINE)}>
                 <Skeleton className="h-4 w-14" />
               </td>
               {Array.from({ length: SKELETON_YEARS }, (_, c) => {
