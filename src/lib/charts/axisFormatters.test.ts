@@ -16,19 +16,26 @@ describe('formatAxisMonthYearTick', () => {
   it('shortens month-year on compact screens', () => {
     expect(formatAxisMonthYearTick('Jan 2020', true)).toBe("Jan '20")
     expect(formatAxisMonthYearTick('May-2024', true)).toBe("May '24")
-    expect(formatAxisMonthYearTick('2022-06-15', true)).toBe("Jun '22")
+    expect(formatAxisMonthYearTick('2022-06-15', true)).toBe('15 Jun')
   })
 })
 
 describe('createYearChangeTickFormatter', () => {
   it('shows the year only when it changes', () => {
     const formatTick = createYearChangeTickFormatter()
-    expect(formatTick('2025-07-29')).toBe("Jul '25")
-    expect(formatTick('2025-10-15')).toBe('Oct')
-    expect(formatTick('2025-12-01')).toBe('Dec')
-    expect(formatTick('2026-02-01')).toBe("Feb '26")
-    expect(formatTick('2026-05-01')).toBe('May')
-    expect(formatTick('2026-07-24')).toBe('Jul')
+    expect(formatTick('2025-07-29')).toBe("29 Jul '25")
+    expect(formatTick('2025-10-15')).toBe('15 Oct')
+    expect(formatTick('2025-12-01')).toBe('1 Dec')
+    expect(formatTick('2026-02-01')).toBe("1 Feb '26")
+    expect(formatTick('2026-05-01')).toBe('1 May')
+    expect(formatTick('2026-07-24')).toBe('24 Jul')
+  })
+
+  it('uses month-year labels when the tick has no day', () => {
+    const formatTick = createYearChangeTickFormatter()
+    expect(formatTick('Jul 2025')).toBe("Jul '25")
+    expect(formatTick('Oct 2025')).toBe('Oct')
+    expect(formatTick('Feb 2026')).toBe("Feb '26")
   })
 })
 

@@ -26,8 +26,7 @@ type RollingReturns = FundReport['rollingReturns']
 const FUND_COLOR = CHART_COLORS.fund
 
 const YEAR_COL =
-  'min-w-[2.75rem] max-w-[3.5rem] border-r px-1 py-1.5 text-center align-middle text-[11px] font-bold sm:min-w-[4.5rem] sm:max-w-none sm:px-2.5 sm:py-2 sm:text-xs'
-const ROW_MIN = 'min-h-[2.5rem]'
+  'min-w-[2.75rem] max-w-[3.5rem] px-1 text-center align-middle text-[11px] font-bold sm:min-w-[4.5rem] sm:max-w-none sm:px-2.5 sm:text-xs'
 
 interface FundRollingReturnsTableProps {
   rollingReturns: RollingReturns
@@ -46,37 +45,35 @@ export function FundRollingReturnsTable({
   )
 
   const yearPane = (
-    <div className="h-full bg-card">
-      <table className={cn(FI_TABLE, 'bg-card')}>
-        <thead>
-          <tr>
-            <th className={cn(fiHeaderCell(), YEAR_COL, 'normal-case')}>
-              {isSmall ? 'Yr' : 'Year'}
-            </th>
-          </tr>
-          <tr>
-            <th className={cn(fiSubHeaderCell(), YEAR_COL)} aria-hidden="true">
-              &nbsp;
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {MATRIX_PERIODS.map((periodLabel, index) => {
-            const stripe = fiStickyStripeBg(index)
-            return (
-              <tr key={periodLabel} className={cn(stripe, 'border-b-2 border-border')}>
-                <td
-                  className={cn(YEAR_COL, ROW_MIN, stripe, 'text-foreground')}
-                  title={periodLabel}
-                >
-                  {shortPeriodLabel(periodLabel, isSmall)}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <table className={cn(FI_TABLE, 'bg-card')}>
+      <thead>
+        <tr>
+          <th className={cn(fiHeaderCell(), YEAR_COL, 'normal-case')}>
+            {isSmall ? 'Yr' : 'Year'}
+          </th>
+        </tr>
+        <tr>
+          <th className={cn(fiSubHeaderCell(), YEAR_COL)} aria-hidden="true">
+            &nbsp;
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {MATRIX_PERIODS.map((periodLabel, index) => {
+          const stripe = fiStickyStripeBg(index)
+          return (
+            <tr key={periodLabel} className={stripe}>
+              <td
+                className={cn(fiMatrixDataCell(), YEAR_COL, stripe, 'text-foreground')}
+                title={periodLabel}
+              >
+                {shortPeriodLabel(periodLabel, isSmall)}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 
   return (
@@ -144,7 +141,7 @@ export function FundRollingReturnsTable({
                   <tr key={periodLabel} className={stripe}>
                     <td
                       colSpan={6}
-                      className={cn(fiMatrixDataCell(), ROW_MIN, 'text-left text-muted-foreground')}
+                      className={cn(fiMatrixDataCell(), 'text-left text-muted-foreground')}
                     >
                       Insufficient NAV history for this window
                     </td>
@@ -153,35 +150,35 @@ export function FundRollingReturnsTable({
               }
 
               return (
-                <tr key={periodLabel} className={cn(stripe, 'border-b-2 border-border')}>
+                <tr key={periodLabel} className={stripe}>
                   <td
-                    className={cn(fiMatrixDataCell(), ROW_MIN, 'font-semibold')}
+                    className={cn(fiMatrixDataCell(), 'font-semibold')}
                     style={{ color: FUND_COLOR }}
                   >
                     {formatPercent(row.average)}
                   </td>
                   <td
-                    className={cn(fiMatrixDataCell(), ROW_MIN, 'font-medium')}
+                    className={cn(fiMatrixDataCell(), 'font-medium')}
                     style={{ color: FUND_COLOR }}
                   >
                     {formatPercent(row.maximum)}
                   </td>
                   <td
-                    className={cn(fiMatrixDataCell(), ROW_MIN, 'font-medium')}
+                    className={cn(fiMatrixDataCell(), 'font-medium')}
                     style={{ color: FUND_COLOR }}
                   >
                     {formatPercent(row.minimum)}
                   </td>
                   <td
-                    className={cn(fiMatrixDataCell(), ROW_MIN, 'font-medium')}
+                    className={cn(fiMatrixDataCell(), 'font-medium')}
                     style={{ color: FUND_COLOR }}
                   >
                     {formatPercent(row.stdDev)}
                   </td>
-                  <td className={cn(fiMatrixDataCell(), ROW_MIN, 'font-bold text-brand')}>
+                  <td className={cn(fiMatrixDataCell(), 'font-bold text-brand')}>
                     {formatPercent(row.percentAbove10)}
                   </td>
-                  <td className={cn(fiMatrixDataCell(), ROW_MIN, 'font-bold')}>
+                  <td className={cn(fiMatrixDataCell(), 'font-bold')}>
                     {row.count.toLocaleString()}
                   </td>
                 </tr>

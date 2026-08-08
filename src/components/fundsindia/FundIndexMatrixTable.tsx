@@ -31,7 +31,7 @@ const DATA_COLUMNS = 4
 const METRIC_COLUMNS = 6
 
 const YEAR_COL =
-  'min-w-[2.75rem] max-w-[3.5rem] border-r px-1 py-1.5 text-center align-middle text-[11px] font-bold sm:min-w-[4.5rem] sm:max-w-none sm:px-2.5 sm:py-2 sm:text-xs'
+  'min-w-[2.75rem] max-w-[3.5rem] text-center align-middle text-[11px] font-bold sm:min-w-[4.5rem] sm:max-w-none sm:text-xs'
 
 interface FundIndexMatrixTableProps {
   data: FundIndexComparison | null
@@ -52,7 +52,7 @@ export function FundIndexMatrixTable({
   const benchmarkLabel = data?.benchmarkName
 
   const labelPane = !loading && !error ? (
-    <table className={FI_TABLE}>
+    <table className={cn(FI_TABLE, 'bg-card')}>
       <thead>
         <tr>
           <th className={cn(fiHeaderCell(), YEAR_COL, 'normal-case')}>
@@ -61,7 +61,7 @@ export function FundIndexMatrixTable({
           <th
             className={cn(
               fiHeaderCell(),
-              'min-w-[7.5rem] max-w-[11rem] border-r border-white/25 text-left normal-case sm:min-w-[10rem] sm:max-w-[16rem]',
+              'min-w-[7.5rem] max-w-[11rem] text-left normal-case sm:min-w-[10rem] sm:max-w-[16rem]',
             )}
           >
             {isSmall ? 'Series' : 'Fund / Index'}
@@ -85,13 +85,14 @@ export function FundIndexMatrixTable({
           if (!row) {
             const missing = data?.missingPeriods.includes(period)
             return [
-              <tr key={`${period}-missing`} className={cn(stripe, 'border-b-2 border-border')}>
-                <td className={cn(YEAR_COL, stripe)} title={period}>
+              <tr key={`${period}-missing`} className={stripe}>
+                <td className={cn(fiMatrixDataCell(), YEAR_COL, stripe)} title={period}>
                   {periodText}
                 </td>
                 <td
                   className={cn(
                     fiMatrixSchemeCell(),
+                    'border',
                     stripe,
                     'text-left text-muted-foreground',
                   )}
@@ -103,13 +104,12 @@ export function FundIndexMatrixTable({
           }
 
           const benchmarkName = row.benchmarkName || data?.benchmarkName || 'Index'
-          const isLastPeriod = periodIndex === MATRIX_PERIODS.length - 1
 
           return [
             <tr key={`${period}-fund`} className={stripe}>
               <td
                 rowSpan={2}
-                className={cn(YEAR_COL, stripe, 'border-b-2 border-border text-foreground')}
+                className={cn(fiMatrixDataCell(), YEAR_COL, stripe, 'text-foreground')}
                 title={period}
               >
                 {periodText}
@@ -117,6 +117,7 @@ export function FundIndexMatrixTable({
               <td
                 className={cn(
                   fiMatrixSchemeCell(),
+                  'border',
                   stripe,
                   'border-b border-dashed border-border/70',
                 )}
@@ -124,12 +125,8 @@ export function FundIndexMatrixTable({
                 <SeriesName name={row.fundName} variant="fund" compact={isSmall} />
               </td>
             </tr>,
-            <tr
-              key={`${period}-index`}
-              className={cn(stripe, !isLastPeriod && 'border-b-2 border-border')}
-              aria-label={`${period} ${benchmarkName}`}
-            >
-              <td className={cn(fiMatrixSchemeCell(), stripe)}>
+            <tr key={`${period}-index`} className={stripe} aria-label={`${period} ${benchmarkName}`}>
+              <td className={cn(fiMatrixSchemeCell(), 'border', stripe)}>
                 <SeriesName name={benchmarkName} variant="benchmark" compact={isSmall} />
               </td>
             </tr>,
@@ -208,7 +205,7 @@ export function FundIndexMatrixTable({
 
                 if (!row) {
                   return [
-                    <tr key={`${period}-missing`} className={cn(stripe, 'border-b-2 border-border')}>
+                    <tr key={`${period}-missing`} className={stripe}>
                       <td
                         colSpan={METRIC_COLUMNS}
                         className={cn(fiMatrixDataCell(), 'text-left text-muted-foreground')}
@@ -220,7 +217,6 @@ export function FundIndexMatrixTable({
                 }
 
                 const avgColor = outperformanceColor(row.fund.avg >= row.benchmark.avg)
-                const isLastPeriod = periodIndex === MATRIX_PERIODS.length - 1
 
                 return [
                   <tr key={`${period}-fund`} className={stripe}>
@@ -265,7 +261,6 @@ export function FundIndexMatrixTable({
                       className={cn(
                         fiMatrixDataCell(),
                         'align-middle text-sm font-bold text-brand sm:text-base',
-                        !isLastPeriod && 'border-b-2 border-border',
                       )}
                     >
                       {formatPercent(row.cob)}
@@ -275,16 +270,12 @@ export function FundIndexMatrixTable({
                       className={cn(
                         fiMatrixDataCell(),
                         'align-middle text-sm font-bold text-foreground sm:text-base',
-                        !isLastPeriod && 'border-b-2 border-border',
                       )}
                     >
                       {row.fund.count.toLocaleString()}
                     </td>
                   </tr>,
-                  <tr
-                    key={`${period}-index`}
-                    className={cn(stripe, !isLastPeriod && 'border-b-2 border-border')}
-                  >
+                  <tr key={`${period}-index`} className={stripe}>
                     <td className={fiMatrixDataCell()} style={{ color: BENCHMARK_COLOR }}>
                       {formatPercent(row.benchmark.avg)}
                     </td>

@@ -13,7 +13,7 @@ import { cn, formatPercent } from '@/lib/utils'
 type Volatility = FundReportRisk['volatility']
 
 const FREQ_COL =
-  'min-w-[3.5rem] max-w-[5rem] border-r px-1.5 py-1.5 text-left align-middle font-medium sm:min-w-[5.5rem] sm:max-w-none sm:px-2.5'
+  'min-w-[3.5rem] max-w-[5rem] text-left align-middle font-medium sm:min-w-[5.5rem] sm:max-w-none'
 
 function shortFrequency(label: string, compact: boolean): string {
   if (!compact) return label
@@ -38,7 +38,7 @@ export function VolatilityFrequencyTable({
   }
 
   const frequencyPane = (
-    <table className={FI_TABLE}>
+    <table className={cn(FI_TABLE, 'bg-card')}>
       <thead>
         <tr>
           <th className={cn(fiHeaderCell(), FREQ_COL, 'normal-case')}>
@@ -50,7 +50,7 @@ export function VolatilityFrequencyTable({
         {volatility.periods.map((period, index) => (
           <tr key={period.frequency} className={fiStickyStripeBg(index)}>
             <td
-              className={cn(FREQ_COL, fiStickyStripeBg(index), 'text-[11px] sm:text-sm')}
+              className={cn(fiBodyCell(), FREQ_COL, fiStickyStripeBg(index))}
               title={period.frequency}
             >
               {shortFrequency(period.frequency, isSmall)}

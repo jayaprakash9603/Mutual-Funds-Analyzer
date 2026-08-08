@@ -29,21 +29,21 @@ function PeriodColumn({
   compact: boolean
 }) {
   return (
-    <table className={FI_TABLE}>
+    <table className={cn(FI_TABLE, 'bg-card')}>
       <thead>
         <tr>
           <th
             className={cn(
               fiHeaderCell(),
               'whitespace-nowrap text-left normal-case',
-              compact ? 'min-w-[2.75rem] px-1.5' : 'min-w-[6.5rem]',
+              compact ? 'min-w-[2.75rem]' : 'min-w-[6.5rem]',
             )}
           >
             {compact ? 'Per.' : 'Period'}
           </th>
         </tr>
         <tr>
-          <th className={fiSubHeaderCell(compact ? 'px-1.5' : undefined)} aria-hidden="true">
+          <th className={fiSubHeaderCell()} aria-hidden="true">
             &nbsp;
           </th>
         </tr>
@@ -55,8 +55,7 @@ function PeriodColumn({
               className={cn(
                 fiBodyCell('font-semibold'),
                 fiStickyStripeBg(index),
-                'whitespace-nowrap text-left',
-                compact && 'px-1.5 text-[11px]',
+                'whitespace-nowrap text-left align-middle',
               )}
               title={period.label}
             >
