@@ -6,7 +6,6 @@ import { ReportInsightCard } from '../layout/ReportInsightCard'
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
   CHART_TOOLTIP_CURSOR,
 } from '@/components/ui/chart'
 import {
@@ -18,7 +17,14 @@ import {
   yLabel,
 } from '@/lib/charts/chartAxes'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
+import { cn } from '@/lib/utils'
 import type { FundReportRisk } from '../../schemas'
+import {
+  athYearTicks,
+  formatAthChartDate,
+  toAthChartRows,
+  type AthChartRow,
+} from '../../lib/risk/athChartSeries'
 
 type AllTimeHighs = FundReportRisk['allTimeHighs']
 
@@ -27,24 +33,65 @@ const chartConfig = {
   athNav: { label: 'All-time high', color: CHART_COLORS.fund },
 }
 
-function downsampleSeries(
-  rows: AllTimeHighs['series'],
-  maxPoints = 900,
-): AllTimeHighs['series'] {
-  if (rows.length <= maxPoints) {
-    return rows
-  }
-  const stride = Math.ceil(rows.length / maxPoints)
-  const sampled: AllTimeHighs['series'] = []
-  for (let i = 0; i < rows.length; i += stride) {
-    sampled.push(rows[i]!)
-  }
-  for (const row of rows) {
-    if (row.allTimeHigh && !sampled.includes(row)) {
-      sampled.push(row)
-    }
-  }
-  return sampled.sort((a, b) => a.date.localeCompare(b.date))
+function AthActiveDot({
+  cx,
+  cy,
+  value,
+  fill,
+  r = 6,
+}: {
+  cx?: number
+  cy?: number
+  value?: number | null
+  fill: string
+  r?: number
+}) {
+  if (value == null || cx == null || cy == null) return null
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={fill}
+      stroke="var(--background)"
+      strokeWidth={2}
+      className="drop-shadow-sm"
+    />
+  )
+}
+
+function AthTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: ReadonlyArray<{ payload?: AthChartRow }>
+}) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]?.payload
+  if (!point) return null
+
+  return (
+    <div className="z-50 min-w-[11rem] rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+      <p className="mb-1.5 font-semibold text-foreground">{formatAthChartDate(point.date)}</p>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">NAV</span>
+          <span className="font-mono font-semibold tabular-nums">{point.nav.toFixed(2)}</span>
+        </div>
+        <div
+          className={cn(
+            'mt-1 rounded-md px-2 py-1 font-medium',
+            point.allTimeHigh
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+              : 'bg-muted/60 text-muted-foreground',
+          )}
+        >
+          {point.allTimeHigh ? 'All-time high day' : 'Below prior peak'}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 type AllTimeHighsChartProps = {
@@ -54,24 +101,8 @@ type AllTimeHighsChartProps = {
 
 export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartProps) {
   const axis = useResponsiveAxis()
-  const chartRows = useMemo(
-    () =>
-      downsampleSeries(allTimeHighs.series).map((point) => ({
-        ...point,
-        athNav: point.allTimeHigh ? point.nav : null,
-        year: point.date.slice(0, 4),
-      })),
-    [allTimeHighs.series],
-  )
-
-  const yearTicks = useMemo(() => {
-    const years = [...new Set(chartRows.map((row) => row.year))]
-    if (years.length <= 12) {
-      return years
-    }
-    const step = Math.ceil(years.length / 12)
-    return years.filter((_, index) => index % step === 0)
-  }, [chartRows])
+  const chartRows = useMemo(() => toAthChartRows(allTimeHighs.series), [allTimeHighs.series])
+  const yearTicks = useMemo(() => athYearTicks(chartRows), [chartRows])
 
   if (chartRows.length === 0) {
     return (
@@ -97,14 +128,16 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
           <LineChart data={chartRows} margin={{ ...MARGIN_LEFT, top: 12, right: 24, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
             <XAxis
-              dataKey="year"
+              dataKey="date"
+              type="category"
+              allowDuplicatedCategory={false}
               ticks={yearTicks}
               tickLine={TICK_LINE}
               axisLine={AXIS_LINE}
               tick={axis.tick}
               interval="preserveStartEnd"
-              tickFormatter={(value) =>
-                axis.compact ? `'${String(value).slice(-2)}` : String(value)
+              tickFormatter={(value: string) =>
+                axis.compact ? `'${String(value).slice(2, 4)}` : String(value).slice(0, 4)
               }
             >
               {axis.showXLabel ? <Label {...xLabel('Year')} /> : null}
@@ -120,7 +153,8 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
             </YAxis>
             <ChartTooltip
               cursor={CHART_TOOLTIP_CURSOR}
-              content={<ChartTooltipContent />}
+              shared
+              content={<AthTooltip />}
             />
             <Line
               type="monotone"
@@ -128,13 +162,31 @@ export function AllTimeHighsChart({ allTimeHighs, fundName }: AllTimeHighsChartP
               stroke={CHART_COLORS.muted}
               strokeWidth={1.5}
               dot={false}
+              activeDot={{
+                r: 4,
+                fill: CHART_COLORS.muted,
+                stroke: 'var(--background)',
+                strokeWidth: 2,
+              }}
               isAnimationActive={false}
             />
             <Line
               type="monotone"
               dataKey="athNav"
+              name="All-time high"
               stroke="transparent"
+              strokeWidth={0}
+              legendType="none"
               dot={{ r: 3.5, fill: CHART_COLORS.fund, strokeWidth: 0 }}
+              activeDot={(props) => (
+                <AthActiveDot
+                  cx={props.cx}
+                  cy={props.cy}
+                  value={typeof props.value === 'number' ? props.value : null}
+                  fill={CHART_COLORS.fund}
+                  r={7}
+                />
+              )}
               connectNulls={false}
               isAnimationActive={false}
             />
