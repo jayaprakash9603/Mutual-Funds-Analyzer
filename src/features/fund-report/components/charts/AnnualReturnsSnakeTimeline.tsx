@@ -375,7 +375,7 @@ export function AnnualReturnsSnakeTimeline({
       {/* Main Serpentine Snake Grid Container */}
       <div
         ref={containerRef}
-        className="relative min-h-[300px] py-6 px-6 sm:px-10 md:px-14 bg-muted/10 dark:bg-muted/5 rounded-2xl border border-border/40 overflow-hidden"
+        className="relative min-h-[300px] py-6 px-6 sm:px-10 md:px-14 bg-muted/10 dark:bg-muted/5 rounded-2xl border border-border/40 overflow-visible"
       >
         {/* SVG Connecting Path Overlay */}
         <svg className="absolute inset-0 size-full pointer-events-none z-0 overflow-visible" aria-hidden="true">
@@ -444,128 +444,150 @@ export function AnnualReturnsSnakeTimeline({
           })}
         </svg>
 
-        {/* Serpentine Grid Nodes */}
-        <div className="relative z-10 flex flex-col gap-10 sm:gap-12">
-          {serpentineGrid.map((row, rowIndex) => (
-            <div
-              key={`row-${rowIndex}`}
-              className="grid gap-x-4 sm:gap-x-8 gap-y-6 items-center justify-items-center"
-              style={{
-                gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-              }}
-            >
-              {row.map(({ item, originalIndex }) => {
-                const val = selectedSeries === 'fund' ? item.fund : item.benchmark
-                const otherVal = selectedSeries === 'fund' ? item.benchmark : item.fund
-                const lead = item.fund - item.benchmark
-                const isProfit = val >= 0
-                const isHovered = hoveredIndex === originalIndex
-                const isActive = activeIndex === originalIndex
+        {/* Serpentine Grid Nodes — overflow-visible so popovers are not clipped */}
+        <div className="relative z-10 flex flex-col gap-10 sm:gap-12 overflow-visible">
+          {serpentineGrid.map((row, rowIndex) => {
+            const rowHasFocus = row.some(
+              ({ originalIndex }) => originalIndex === activeIndex || originalIndex === hoveredIndex,
+            )
 
-                return (
-                  <div
-                    key={`node-${item.year}`}
-                    ref={(el) => {
-                      if (el) cardRefs.current.set(originalIndex, el)
-                      else cardRefs.current.delete(originalIndex)
-                    }}
-                    onMouseEnter={() => setHoveredIndex(originalIndex)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    onClick={() => setActiveIndex(originalIndex)}
-                    className="relative group transition-all duration-300 transform"
-                  >
-                    {/* Year Tag Tab resting on top border */}
+            return (
+              <div
+                key={`row-${rowIndex}`}
+                className={`relative grid gap-x-4 sm:gap-x-8 gap-y-6 items-center justify-items-center overflow-visible ${
+                  rowHasFocus ? 'z-50' : 'z-0'
+                }`}
+                style={{
+                  gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                }}
+              >
+                {row.map(({ item, originalIndex }) => {
+                  const val = selectedSeries === 'fund' ? item.fund : item.benchmark
+                  const otherVal = selectedSeries === 'fund' ? item.benchmark : item.fund
+                  const lead = item.fund - item.benchmark
+                  const isProfit = val >= 0
+                  const isHovered = hoveredIndex === originalIndex
+                  const isActive = activeIndex === originalIndex
+                  const showPopover = isHovered || isActive
+                  // Top row: place popover below to avoid clipping; else above the card
+                  const popoverBelow = rowIndex === 0
+
+                  return (
                     <div
-                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-all ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-md ring-2 ring-primary/40'
-                          : isProfit
-                            ? 'bg-background text-emerald-700 border-emerald-500/50 dark:bg-background dark:text-emerald-400 dark:border-emerald-500/60'
-                            : 'bg-background text-rose-700 border-rose-500/50 dark:bg-background dark:text-rose-400 dark:border-rose-500/60'
+                      key={`node-${item.year}`}
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(originalIndex, el)
+                        else cardRefs.current.delete(originalIndex)
+                      }}
+                      onMouseEnter={() => setHoveredIndex(originalIndex)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      onClick={() => setActiveIndex(originalIndex)}
+                      className={`relative group transition-all duration-300 transform overflow-visible ${
+                        showPopover ? 'z-[60]' : 'z-10'
                       }`}
                     >
-                      {item.year}
-                    </div>
+                      {/* Year Tag Tab resting on top border */}
+                      <div
+                        className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-all ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-md ring-2 ring-primary/40'
+                            : isProfit
+                              ? 'bg-background text-emerald-700 border-emerald-500/50 dark:bg-background dark:text-emerald-400 dark:border-emerald-500/60'
+                              : 'bg-background text-rose-700 border-rose-500/50 dark:bg-background dark:text-rose-400 dark:border-rose-500/60'
+                        }`}
+                      >
+                        {item.year}
+                      </div>
 
-                    {/* Main Year Card Box */}
-                    <div
-                      className={`w-28 sm:w-32 md:w-36 pt-4 pb-2.5 px-2.5 rounded-xl border shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer ${
-                        isActive
-                          ? 'scale-112 -translate-y-2 shadow-2xl ring-4 ring-primary/50 dark:ring-primary/60 z-40'
-                          : isHovered
-                            ? 'scale-108 -translate-y-1 shadow-xl ring-2 ring-primary/40 z-30'
-                            : 'z-10'
-                      } ${
-                        isProfit
-                          ? 'bg-emerald-600 dark:bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20'
-                          : 'bg-rose-600 dark:bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
-                      }`}
-                    >
-                      {/* Return Percentage */}
-                      <span className="text-base sm:text-lg font-black tracking-tight tabular-nums drop-shadow-xs flex items-center justify-center gap-1">
-                        {val >= 0 ? '+' : ''}
-                        {val.toFixed(1)}%
-                        {isActive ? <Sparkles className="size-3.5 text-amber-200 animate-spin" /> : null}
-                      </span>
+                      {/* Main Year Card Box */}
+                      <div
+                        className={`w-28 sm:w-32 md:w-36 pt-4 pb-2.5 px-2.5 rounded-xl border shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer ${
+                          isActive
+                            ? 'scale-112 -translate-y-2 shadow-2xl ring-4 ring-primary/50 dark:ring-primary/60'
+                            : isHovered
+                              ? 'scale-108 -translate-y-1 shadow-xl ring-2 ring-primary/40'
+                              : ''
+                        } ${
+                          isProfit
+                            ? 'bg-emerald-600 dark:bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20'
+                            : 'bg-rose-600 dark:bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
+                        }`}
+                      >
+                        {/* Return Percentage */}
+                        <span className="text-base sm:text-lg font-black tracking-tight tabular-nums drop-shadow-xs flex items-center justify-center gap-1">
+                          {val >= 0 ? '+' : ''}
+                          {val.toFixed(1)}%
+                          {isActive ? <Sparkles className="size-3.5 text-amber-200 animate-spin" /> : null}
+                        </span>
 
-                      {/* Sub-label comparison */}
-                      <span className="mt-1 text-[10px] sm:text-[11px] font-medium opacity-90 truncate max-w-full px-1.5 py-0.5 rounded bg-black/20">
-                        {selectedSeries === 'fund'
-                          ? `Bench: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`
-                          : `Fund: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`}
-                      </span>
-                    </div>
+                        {/* Sub-label comparison */}
+                        <span className="mt-1 text-[10px] sm:text-[11px] font-medium opacity-90 truncate max-w-full px-1.5 py-0.5 rounded bg-black/20">
+                          {selectedSeries === 'fund'
+                            ? `Bench: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`
+                            : `Fund: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`}
+                        </span>
+                      </div>
 
-                    {/* Rich Tooltip on Hover or Active */}
-                    {isHovered || isActive ? (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 rounded-lg border border-border bg-popover text-popover-foreground text-xs shadow-xl z-50 pointer-events-none animate-in fade-in-50 zoom-in-95">
-                        <p className="font-bold text-foreground border-b border-border/60 pb-1 mb-1.5 flex items-center justify-between">
-                          <span>{item.year} Calendar Return</span>
-                          <span
-                            className={`font-semibold px-1.5 py-0.2 rounded text-[10px] ${
-                              isProfit ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                            }`}
-                          >
-                            {isProfit ? 'Profit' : 'Loss'}
-                          </span>
-                        </p>
-
-                        <div className="space-y-1 text-[11px]">
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground truncate">{fundName}:</span>
-                            <span className="font-mono font-bold tabular-nums text-foreground">
-                              {item.fund >= 0 ? '+' : ''}
-                              {item.fund.toFixed(2)}%
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground truncate">{benchmarkName}:</span>
-                            <span className="font-mono font-bold tabular-nums text-foreground">
-                              {item.benchmark >= 0 ? '+' : ''}
-                              {item.benchmark.toFixed(2)}%
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between border-t border-border/50 pt-1 mt-1">
-                            <span className="text-muted-foreground">Fund Lead:</span>
+                      {/* Rich Tooltip — elevated above sibling year cards */}
+                      {showPopover ? (
+                        <div
+                          className={`absolute left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-lg border border-border bg-popover text-popover-foreground text-xs shadow-xl pointer-events-none animate-in fade-in-50 zoom-in-95 ${
+                            popoverBelow ? 'top-full mt-3' : 'bottom-full mb-2'
+                          }`}
+                          style={{ zIndex: 100 }}
+                        >
+                          <p className="font-bold text-foreground border-b border-border/60 pb-1 mb-1.5 flex items-center justify-between">
+                            <span>{item.year} Calendar Return</span>
                             <span
-                              className={`font-mono font-bold tabular-nums ${
-                                lead >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                              className={`font-semibold px-1.5 py-0.2 rounded text-[10px] ${
+                                isProfit
+                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                               }`}
                             >
-                              {lead >= 0 ? '+' : ''}
-                              {lead.toFixed(2)}%
+                              {isProfit ? 'Profit' : 'Loss'}
                             </span>
+                          </p>
+
+                          <div className="space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground truncate">{fundName}:</span>
+                              <span className="font-mono font-bold tabular-nums text-foreground">
+                                {item.fund >= 0 ? '+' : ''}
+                                {item.fund.toFixed(2)}%
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground truncate">{benchmarkName}:</span>
+                              <span className="font-mono font-bold tabular-nums text-foreground">
+                                {item.benchmark >= 0 ? '+' : ''}
+                                {item.benchmark.toFixed(2)}%
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-border/50 pt-1 mt-1">
+                              <span className="text-muted-foreground">Fund Lead:</span>
+                              <span
+                                className={`font-mono font-bold tabular-nums ${
+                                  lead >= 0
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-rose-600 dark:text-rose-400'
+                                }`}
+                              >
+                                {lead >= 0 ? '+' : ''}
+                                {lead.toFixed(2)}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
       </div>
 
