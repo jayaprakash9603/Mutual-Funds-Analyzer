@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ScrollTable } from '@/components/ui/scroll-table'
 import { returnHeatColor } from '@/lib/charts/chartColors'
 import { cn } from '@/lib/utils'
 import { useCalendarReturns } from '../../hooks/useCalendarReturns'
@@ -22,6 +23,42 @@ function cellTitle(cell: MonthCell | undefined, yearRow: YearRow | undefined, ki
   }
   if (!cell) return 'No data'
   return `${MONTH_LABELS[cell.month - 1]} ${cell.year}: ${cell.returnPercent.toFixed(2)}% · ${cell.startDate} (${cell.startNav.toFixed(2)}) → ${cell.endDate} (${cell.endNav.toFixed(2)})`
+}
+
+/** Opaque pinned leading pane containing only the Year column */
+function YearColumn({ years }: { years: YearRow[] }) {
+  return (
+    <table className="border-separate border-spacing-x-1 border-spacing-y-1.5 text-left text-[11px] sm:text-xs">
+      <thead>
+        <tr className="bg-slate-100 dark:bg-slate-800">
+          <th
+            scope="col"
+            className="px-3 py-2 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap min-w-[3.5rem] sm:min-w-[4rem]"
+          >
+            Year
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {years.map((yearRow, rowIndex) => (
+          <tr
+            key={yearRow.year}
+            className={rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-100/30 dark:bg-slate-800/20'}
+          >
+            <th
+              scope="row"
+              className="px-3 py-1.5 font-bold tabular-nums text-slate-800 dark:text-slate-200 text-xs sm:text-sm whitespace-nowrap"
+            >
+              {yearRow.year}
+              {yearRow.partial ? (
+                <span className="ml-0.5 text-[10px] font-normal text-slate-500 dark:text-slate-400">*</span>
+              ) : null}
+            </th>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 export function CalendarReturnsHeatmap({
@@ -100,93 +137,81 @@ export function CalendarReturnsHeatmap({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 p-2.5 sm:p-3.5 md:p-4 shadow-2xs">
-        <table className="w-full border-separate border-spacing-x-1 border-spacing-y-1.5 text-center text-[11px] sm:text-xs">
-          <thead>
-            <tr className="border-b border-slate-200/80 dark:border-slate-700/80 bg-slate-100/90 dark:bg-slate-800/70">
-              <th
-                scope="col"
-                className="sticky left-0 z-20 bg-slate-100/95 dark:bg-slate-800/95 px-3 py-2 text-left font-bold text-slate-800 dark:text-slate-200 backdrop-blur-md rounded-l-lg"
-              >
-                Year
-              </th>
-              {MONTH_LABELS.map((label) => (
-                <th key={label} scope="col" className="px-1.5 py-2 font-bold text-slate-700 dark:text-slate-300">
-                  {label}
-                </th>
-              ))}
-              <th
-                scope="col"
-                className="border-l border-slate-200/80 dark:border-slate-700/80 px-3 py-2 font-bold text-slate-900 dark:text-slate-100 rounded-r-lg"
-              >
-                Yearly
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {years.map((yearRow, rowIndex) => (
-              <tr
-                key={yearRow.year}
-                className={cn(
-                  'transition-colors',
-                  rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-100/30 dark:bg-slate-800/20',
-                )}
-              >
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 p-2 sm:p-3 shadow-2xs">
+        <ScrollTable
+          pinnedLeading={<YearColumn years={years} />}
+          minWidth={680}
+          hint="Swipe sideways to see all monthly returns"
+        >
+          <table className="w-full border-separate border-spacing-x-1 border-spacing-y-1.5 text-center text-[11px] sm:text-xs">
+            <thead>
+              <tr className="bg-slate-100 dark:bg-slate-800">
+                {MONTH_LABELS.map((label) => (
+                  <th key={label} scope="col" className="px-1.5 py-2 font-bold text-slate-700 dark:text-slate-300">
+                    {label}
+                  </th>
+                ))}
                 <th
-                  scope="row"
+                  scope="col"
+                  className="border-l border-slate-200 dark:border-slate-700 px-3 py-2 font-bold text-slate-900 dark:text-slate-100"
+                >
+                  Yearly
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {years.map((yearRow, rowIndex) => (
+                <tr
+                  key={yearRow.year}
                   className={cn(
-                    'sticky left-0 z-10 px-3 py-1.5 text-left font-bold tabular-nums text-slate-800 dark:text-slate-200 backdrop-blur-md text-xs sm:text-sm rounded-l-lg',
-                    rowIndex % 2 === 0 ? 'bg-slate-50/95 dark:bg-slate-900/95' : 'bg-slate-100/95 dark:bg-slate-800/95',
+                    'transition-colors',
+                    rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-100/30 dark:bg-slate-800/20',
                   )}
                 >
-                  {yearRow.year}
-                  {yearRow.partial ? (
-                    <span className="ml-1 text-[10px] font-normal text-slate-500 dark:text-slate-400">*</span>
-                  ) : null}
-                </th>
-                {MONTH_LABELS.map((_, monthIndex) => {
-                  const month = monthIndex + 1
-                  const cell = monthByKey.get(`${yearRow.year}-${month}`)
-                  if (!cell) {
+                  {MONTH_LABELS.map((_, monthIndex) => {
+                    const month = monthIndex + 1
+                    const cell = monthByKey.get(`${yearRow.year}-${month}`)
+                    if (!cell) {
+                      return (
+                        <td
+                          key={month}
+                          className="px-0.5 py-0.5"
+                          title="No data"
+                          aria-label={`${MONTH_LABELS[monthIndex]} ${yearRow.year}: no data`}
+                        >
+                          <span className="inline-block h-8 w-full min-w-[3.25rem] sm:min-w-[3.75rem] rounded-lg bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/30" />
+                        </td>
+                      )
+                    }
+                    const style = returnHeatColor(cell.returnPercent, maxMonthlyAbs)
                     return (
                       <td
                         key={month}
                         className="px-0.5 py-0.5"
-                        title="No data"
-                        aria-label={`${MONTH_LABELS[monthIndex]} ${yearRow.year}: no data`}
+                        title={cellTitle(cell, undefined, 'month')}
                       >
-                        <span className="inline-block h-8 w-full min-w-[3.25rem] sm:min-w-[3.75rem] rounded-lg bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/30" />
+                        <span
+                          className="inline-flex h-8 w-full min-w-[3.25rem] sm:min-w-[3.75rem] items-center justify-center rounded-lg font-mono text-[11px] sm:text-xs font-semibold tabular-nums shadow-2xs transition-transform hover:scale-105"
+                          style={style}
+                        >
+                          {formatReturn(cell.returnPercent)}
+                        </span>
                       </td>
                     )
-                  }
-                  const style = returnHeatColor(cell.returnPercent, maxMonthlyAbs)
-                  return (
-                    <td
-                      key={month}
-                      className="px-0.5 py-0.5"
-                      title={cellTitle(cell, undefined, 'month')}
+                  })}
+                  <td className="border-l border-slate-200 dark:border-slate-700 pl-1.5 px-0.5 py-0.5" title={cellTitle(undefined, yearRow, 'year')}>
+                    <span
+                      className="inline-flex h-8 w-full min-w-[3.75rem] sm:min-w-[4.25rem] items-center justify-center rounded-lg font-mono text-[11px] sm:text-xs font-bold tabular-nums shadow-2xs transition-transform hover:scale-105"
+                      style={returnHeatColor(yearRow.returnPercent, maxYearlyAbs)}
                     >
-                      <span
-                        className="inline-flex h-8 w-full min-w-[3.25rem] sm:min-w-[3.75rem] items-center justify-center rounded-lg font-mono text-[11px] sm:text-xs font-semibold tabular-nums shadow-2xs transition-transform hover:scale-105"
-                        style={style}
-                      >
-                        {formatReturn(cell.returnPercent)}
-                      </span>
-                    </td>
-                  )
-                })}
-                <td className="border-l border-slate-200/80 dark:border-slate-700/80 pl-1.5 px-0.5 py-0.5" title={cellTitle(undefined, yearRow, 'year')}>
-                  <span
-                    className="inline-flex h-8 w-full min-w-[3.75rem] sm:min-w-[4.25rem] items-center justify-center rounded-lg font-mono text-[11px] sm:text-xs font-bold tabular-nums shadow-2xs transition-transform hover:scale-105"
-                    style={returnHeatColor(yearRow.returnPercent, maxYearlyAbs)}
-                  >
-                    {formatReturn(yearRow.returnPercent)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {formatReturn(yearRow.returnPercent)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollTable>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 sm:text-xs">
