@@ -10,7 +10,31 @@ public record CalendarReturnsReport(
         double bestYear,
         double worstYear,
         int positiveMonths,
-        int totalMonths) {
+        int totalMonths,
+        List<MonthlyReturn> benchmarkMonths,
+        List<YearlyReturn> benchmarkYears) {
+
+    public CalendarReturnsReport(
+            List<MonthlyReturn> months,
+            List<YearlyReturn> years,
+            double bestMonth,
+            double worstMonth,
+            double bestYear,
+            double worstYear,
+            int positiveMonths,
+            int totalMonths) {
+        this(
+                months,
+                years,
+                bestMonth,
+                worstMonth,
+                bestYear,
+                worstYear,
+                positiveMonths,
+                totalMonths,
+                List.of(),
+                List.of());
+    }
 
     public record MonthlyReturn(
             int year,

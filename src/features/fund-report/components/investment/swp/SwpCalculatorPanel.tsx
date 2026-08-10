@@ -12,6 +12,7 @@ import { InvestmentSummaryMetrics } from '../InvestmentSummaryMetrics'
 import { fetchSwpSimulation } from '../../../api'
 import type { SwpScenario, SwpTimelinePoint } from '../../../schemas'
 import { SwpCorpusChart } from './SwpCorpusChart'
+import { SwpSequenceRiskChart } from '../SwpSequenceRiskChart'
 
 const CORPUS_PRESETS = [10_00_000, 25_00_000, 50_00_000, 1_00_00_000] as const
 const WITHDRAWAL_PRESETS = [5_000, 10_000, 25_000, 50_000] as const
@@ -171,6 +172,14 @@ export function SwpCalculatorPanel({ scheme, startDate, isSharedView = false }: 
           scheduleDay={scheduleDay}
         />
       )}
+
+      <SwpSequenceRiskChart
+        scheme={scheme}
+        initialCorpus={initialCorpus}
+        monthlyWithdrawal={monthlyWithdrawal}
+        scheduleDay={scheduleDay}
+        isSharedView={isSharedView}
+      />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>

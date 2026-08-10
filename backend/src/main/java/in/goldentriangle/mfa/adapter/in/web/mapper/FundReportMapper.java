@@ -415,7 +415,11 @@ public class FundReportMapper {
                                 b.label(), b.lowerPercent(), b.upperPercent(), b.count(), b.sharePercent()))
                         .toList(),
                 report.volatilityBand() == null ? "" : report.volatilityBand(),
-                report.headline() == null ? "" : report.headline());
+                report.headline() == null ? "" : report.headline(),
+                nullSafe(report.rollingSharpeSeries()).stream()
+                        .map(p -> new VolatilityReportDto.RollingSharpePointDto(
+                                p.date(), p.fundSharpe(), p.benchmarkSharpe()))
+                        .toList());
     }
 
     private static VolatilityReportDto emptyVolatilityDto() {
@@ -427,7 +431,8 @@ public class FundReportMapper {
                 emptyRollingVolatilitySummaryDto(),
                 List.of(),
                 "",
-                "");
+                "",
+                List.of());
     }
 
     private static VolatilityReportDto.RollingVolatilitySummaryDto emptyRollingVolatilitySummaryDto() {
@@ -618,7 +623,26 @@ public class FundReportMapper {
                 report.bestYear(),
                 report.worstYear(),
                 report.positiveMonths(),
-                report.totalMonths());
+                report.totalMonths(),
+                nullSafe(report.benchmarkMonths()).stream()
+                        .map(m -> new CalendarReturnsDto.MonthlyReturnDto(
+                                m.year(),
+                                m.month(),
+                                m.returnPercent(),
+                                m.startNav(),
+                                m.endNav(),
+                                m.startDate(),
+                                m.endDate()))
+                        .toList(),
+                nullSafe(report.benchmarkYears()).stream()
+                        .map(y -> new CalendarReturnsDto.YearlyReturnDto(
+                                y.year(),
+                                y.returnPercent(),
+                                y.startNav(),
+                                y.endNav(),
+                                y.monthsCovered(),
+                                y.partial()))
+                        .toList());
     }
 
     private SipReportDto toDto(SipReport report) {

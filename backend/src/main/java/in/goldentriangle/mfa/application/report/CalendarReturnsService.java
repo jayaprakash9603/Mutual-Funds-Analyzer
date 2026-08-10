@@ -5,6 +5,7 @@ import in.goldentriangle.mfa.config.feature.FeatureKeys;
 import in.goldentriangle.mfa.config.properties.ReportProperties;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarReturnsCalculator;
 import in.goldentriangle.mfa.domain.exception.NoDataFoundException;
+import in.goldentriangle.mfa.domain.model.NavPoint;
 import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.returns.CalendarReturnsReport;
 import in.goldentriangle.mfa.domain.port.in.GetCalendarReturnsUseCase;
@@ -12,10 +13,12 @@ import in.goldentriangle.mfa.domain.port.out.CachePort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class CalendarReturnsService implements GetCalendarReturnsUseCase {
 
-    static final String CACHE_PREFIX = "calendar-returns:v1:";
+    static final String CACHE_PREFIX = "calendar-returns:v2:";
 
     private final NavHistoryPort navHistoryPort;
     private final CalendarReturnsCalculator calendarReturnsCalculator;
@@ -49,7 +52,9 @@ public class CalendarReturnsService implements GetCalendarReturnsUseCase {
         if (history.fundNav() == null || history.fundNav().isEmpty()) {
             throw new NoDataFoundException("No NAV history available for " + scheme);
         }
-        return calendarReturnsCalculator.compute(history.fundNav());
+        List<NavPoint> benchmarkNav =
+                history.benchmarkNav() == null ? List.of() : history.benchmarkNav();
+        return calendarReturnsCalculator.compute(history.fundNav(), benchmarkNav);
     }
 
     private String resolveStartDate(String startDate) {

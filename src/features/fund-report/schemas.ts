@@ -379,6 +379,11 @@ export const fundReportSchema = z.object({
     })),
     volatilityBand: z.string(),
     headline: z.string(),
+    rollingSharpeSeries: z.array(z.object({
+      date: z.string(),
+      fundSharpe: z.number(),
+      benchmarkSharpe: z.number(),
+    })).optional().default([]),
   }).optional().default({
     periodLabel: '',
     benchmarkAvailable: false,
@@ -398,6 +403,7 @@ export const fundReportSchema = z.object({
     dailyDistribution: [],
     volatilityBand: '',
     headline: '',
+    rollingSharpeSeries: [],
   }),
   allTimeHighs: z.object({
     periodLabel: z.string(),
@@ -883,30 +889,36 @@ export const drawdownPeersSchema = z.object({
 
 export type DrawdownPeers = z.infer<typeof drawdownPeersSchema>
 
+const calendarMonthSchema = z.object({
+  year: z.number(),
+  month: z.number(),
+  returnPercent: z.number(),
+  startNav: z.number(),
+  endNav: z.number(),
+  startDate: z.string(),
+  endDate: z.string(),
+})
+
+const calendarYearSchema = z.object({
+  year: z.number(),
+  returnPercent: z.number(),
+  startNav: z.number(),
+  endNav: z.number(),
+  monthsCovered: z.number(),
+  partial: z.boolean(),
+})
+
 export const calendarReturnsSchema = z.object({
-  months: z.array(z.object({
-    year: z.number(),
-    month: z.number(),
-    returnPercent: z.number(),
-    startNav: z.number(),
-    endNav: z.number(),
-    startDate: z.string(),
-    endDate: z.string(),
-  })),
-  years: z.array(z.object({
-    year: z.number(),
-    returnPercent: z.number(),
-    startNav: z.number(),
-    endNav: z.number(),
-    monthsCovered: z.number(),
-    partial: z.boolean(),
-  })),
+  months: z.array(calendarMonthSchema),
+  years: z.array(calendarYearSchema),
   bestMonth: z.number(),
   worstMonth: z.number(),
   bestYear: z.number(),
   worstYear: z.number(),
   positiveMonths: z.number(),
   totalMonths: z.number(),
+  benchmarkMonths: z.array(calendarMonthSchema).optional().default([]),
+  benchmarkYears: z.array(calendarYearSchema).optional().default([]),
 })
 
 export type CalendarReturns = z.infer<typeof calendarReturnsSchema>

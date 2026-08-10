@@ -18,6 +18,29 @@ import java.util.Map;
 public class CalendarReturnsCalculator {
 
     public CalendarReturnsReport compute(List<NavPoint> nav) {
+        return compute(nav, List.of());
+    }
+
+    public CalendarReturnsReport compute(List<NavPoint> fundNav, List<NavPoint> benchmarkNav) {
+        CalendarReturnsReport fund = computeSeries(fundNav);
+        if (benchmarkNav == null || benchmarkNav.isEmpty()) {
+            return fund;
+        }
+        CalendarReturnsReport benchmark = computeSeries(benchmarkNav);
+        return new CalendarReturnsReport(
+                fund.months(),
+                fund.years(),
+                fund.bestMonth(),
+                fund.worstMonth(),
+                fund.bestYear(),
+                fund.worstYear(),
+                fund.positiveMonths(),
+                fund.totalMonths(),
+                benchmark.months(),
+                benchmark.years());
+    }
+
+    private CalendarReturnsReport computeSeries(List<NavPoint> nav) {
         List<NavPoint> series = NavSeriesOrder.dedupeAndSort(nav);
         if (series.isEmpty()) {
             return empty();
@@ -70,7 +93,9 @@ public class CalendarReturnsCalculator {
                 bestYear,
                 worstYear,
                 positiveMonths,
-                months.size());
+                months.size(),
+                List.of(),
+                List.of());
     }
 
     /**
@@ -108,7 +133,7 @@ public class CalendarReturnsCalculator {
     }
 
     private static CalendarReturnsReport empty() {
-        return new CalendarReturnsReport(List.of(), List.of(), 0, 0, 0, 0, 0, 0);
+        return new CalendarReturnsReport(List.of(), List.of(), 0, 0, 0, 0, 0, 0, List.of(), List.of());
     }
 
     private record YearMonthKey(int year, int month) {

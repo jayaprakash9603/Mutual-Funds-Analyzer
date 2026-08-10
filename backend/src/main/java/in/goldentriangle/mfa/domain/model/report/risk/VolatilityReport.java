@@ -10,7 +10,8 @@ public record VolatilityReport(
         RollingVolatilitySummary rollingSummary,
         List<ReturnBucket> dailyDistribution,
         String volatilityBand,
-        String headline) {
+        String headline,
+        List<RollingSharpePoint> rollingSharpeSeries) {
 
     public record PeriodVolatility(
             String frequency,
@@ -34,6 +35,12 @@ public record VolatilityReport(
             String date,
             double fundVolatilityPercent,
             double benchmarkVolatilityPercent) {
+    }
+
+    public record RollingSharpePoint(
+            String date,
+            double fundSharpe,
+            double benchmarkSharpe) {
     }
 
     public record RollingVolatilitySummary(

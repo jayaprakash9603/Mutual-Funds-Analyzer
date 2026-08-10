@@ -10,7 +10,9 @@ public record CalendarReturnsDto(
         double bestYear,
         double worstYear,
         int positiveMonths,
-        int totalMonths) {
+        int totalMonths,
+        List<MonthlyReturnDto> benchmarkMonths,
+        List<YearlyReturnDto> benchmarkYears) {
 
     public record MonthlyReturnDto(
             int year,

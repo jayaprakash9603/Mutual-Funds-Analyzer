@@ -4,8 +4,10 @@ import { SectionShell } from '../layout/SectionShell'
 import { buildLumpsumHeadline } from '../../lib/headlines/sectionHeadlines'
 import type { ReportSectionState } from '../../hooks/useReportSection'
 import type { FundReportInvestment } from '../../schemas'
+import { EntryTimingFanPanel } from '../charts/EntryTimingFanPanel'
 import { InvestmentMatrixPanel } from './InvestmentMatrixPanel'
 import { LumpsumCalculatorPanel } from './lumpsum/LumpsumCalculatorPanel'
+import { StrategyComparisonChart } from './StrategyComparisonChart'
 
 type LumpsumSectionProps = {
   scheme: string
@@ -30,6 +32,12 @@ export function LumpsumSection({
               One-time investment at fund inception. Corpus growth follows NAV from the first available
               trading day through the latest NAV.
             </p>
+            <StrategyComparisonChart
+              scheme={scheme}
+              startDate={startDate}
+              principal={data.lumpsum.chartAmount}
+              isSharedView={isSharedView}
+            />
             <LumpsumCalculatorPanel
               scheme={scheme}
               lumpsum={data.lumpsum}
@@ -39,6 +47,8 @@ export function LumpsumSection({
           </>
         )}
       </ReportGroupBoundary>
+
+      <EntryTimingFanPanel scheme={scheme} startDate={startDate} isSharedView={isSharedView} />
 
       <InvestmentMatrixPanel
         scheme={scheme}

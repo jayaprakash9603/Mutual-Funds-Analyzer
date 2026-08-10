@@ -44,7 +44,7 @@ import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { FundAnnualReturnsChart } from '../charts/FundAnnualReturnsChart'
 import { FundBenchmarkAnalysisCharts } from '../charts/FundBenchmarkAnalysisCharts'
-import { CalendarReturnsHeatmap } from '../charts/CalendarReturnsHeatmap'
+import { CalendarReturnsViews } from '../charts/CalendarReturnsViews'
 import { FundGrowthTrendChart } from '../charts/FundGrowthTrendChart'
 import { FundRollingTrendChart } from '../charts/FundRollingTrendChart'
 import { PerformanceTimelinePanel } from '../charts/PerformanceTimelinePanel'
@@ -59,8 +59,12 @@ import { AthDeclineOutlookChart } from '../charts/AthDeclineOutlookChart'
 import { PostAthReturnsTable } from '../charts/PostAthReturnsTable'
 import { AnnualReturnDistributionChart } from '../charts/AnnualReturnDistributionChart'
 import { RollingHorizonProbabilityCharts } from '../charts/RollingHorizonProbabilityCharts'
+import { PatiencePremiumChart } from '../charts/PatiencePremiumChart'
+import { ConsistencyMonthlyHeatmap } from '../charts/ConsistencyMonthlyHeatmap'
+import { UnderwaterDurationChart } from '../charts/UnderwaterDurationChart'
 import { ReturnDistributionHistogram } from '../charts/ReturnDistributionHistogram'
 import { RollingVolatilityChart } from '../charts/RollingVolatilityChart'
+import { RollingSharpeChart } from '../charts/RollingSharpeChart'
 import { VolatilitySwingChart } from '../charts/VolatilitySwingChart'
 import { SortedCalendarReturnsChart } from '../charts/SortedCalendarReturnsChart'
 import { ProfitBookingComparisonTable } from '../charts/ProfitBookingComparisonTable'
@@ -243,9 +247,9 @@ export function FundReportSections({
         {scheme ? (
           <ReportInsightCard
             title="Calendar returns"
-            subtitle="Month-end to month-end NAV returns by year — each Yearly cell compounds the twelve monthly cells in that row."
+            subtitle="Month-end to month-end NAV returns by year — toggle Alpha vs benchmark to see fund − index for each cell."
           >
-            <CalendarReturnsHeatmap
+            <CalendarReturnsViews
               scheme={scheme}
               startDate={startDate}
               offlineView={isSharedView}
@@ -443,6 +447,13 @@ export function FundReportSections({
                   Need at least 5 years of history to show multiply probability.
                 </p>
               )}
+              <ReportInsightCard
+                title="Patience premium"
+                subtitle="How holding longer shrinks the chance of a loss and the spread of outcomes"
+                className="mt-6"
+              >
+                <PatiencePremiumChart rollingReturns={data.rollingReturns} />
+              </ReportInsightCard>
             </>
           )}
         </ReportGroupBoundary>
@@ -536,6 +547,17 @@ export function FundReportSections({
                   />
                 </ReportInsightCard>
 
+                <ReportInsightCard
+                  title="Risk-adjusted return trend"
+                  subtitle="Rolling 1-year Sharpe ratio (fund vs benchmark)"
+                >
+                  <RollingSharpeChart
+                    volatility={data.volatility}
+                    fundName={fundName}
+                    benchmarkName={overview.data?.profile.benchmarkName}
+                  />
+                </ReportInsightCard>
+
                 <ReportInsightCard title="Volatility by time frame">
                   <VolatilityFrequencyTable
                     volatility={data.volatility}
@@ -579,6 +601,13 @@ export function FundReportSections({
                 </Badge>
                 <Badge variant="outline">Rating: {data.consistency.consistencyRating}</Badge>
               </div>
+              <ReportInsightCard
+                title="Monthly returns heatmap"
+                subtitle="Snapshot monthly calendar from this report — streaks and extremes called out above the grid"
+                className="mb-4"
+              >
+                <ConsistencyMonthlyHeatmap consistency={data.consistency} />
+              </ReportInsightCard>
               <AnnualStressAnalysis
                 calendarYears={data.consistency.calendarYears}
                 fundName={fundName}
@@ -638,6 +667,13 @@ export function FundReportSections({
               </AppMetricGrid>
               <AnnotatedDrawdownChart drawdown={data.drawdown} fundName={fundName} />
               <DrawdownEpisodesTable drawdown={data.drawdown} />
+              <ReportInsightCard
+                title="Underwater duration"
+                subtitle="How long past drawdowns took to recover to the prior peak"
+                className="mt-4"
+              >
+                <UnderwaterDurationChart drawdown={data.drawdown} />
+              </ReportInsightCard>
             </>
           )}
         </ReportGroupBoundary>

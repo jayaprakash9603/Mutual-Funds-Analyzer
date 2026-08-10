@@ -41,6 +41,16 @@ public class VolatilityCalculator {
     private static final DateTimeFormatter DAY_FMT =
             DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
+    private final RollingSharpeCalculator rollingSharpeCalculator;
+
+    public VolatilityCalculator() {
+        this(new RollingSharpeCalculator());
+    }
+
+    public VolatilityCalculator(RollingSharpeCalculator rollingSharpeCalculator) {
+        this.rollingSharpeCalculator = rollingSharpeCalculator;
+    }
+
     private record PeriodReturn(String date, double returnFraction) {
     }
 
@@ -81,6 +91,8 @@ public class VolatilityCalculator {
         List<RollingVolatilityPoint> rollingSeries = buildRollingSeries(fundSeries, benchmarkSeries, benchmarkAvailable);
         RollingVolatilitySummary rollingSummary = buildRollingSummary(rollingSeries);
         List<ReturnBucket> distribution = buildDistribution(dailyReturns);
+        List<VolatilityReport.RollingSharpePoint> rollingSharpeSeries =
+                rollingSharpeCalculator.compute(fundSeries, benchmarkSeries);
 
         double dailyAnnualised = periods.get(0).annualisedVolatilityPercent();
         String volatilityBand = RiskLevel.forVolatility(dailyAnnualised).label();
@@ -94,7 +106,8 @@ public class VolatilityCalculator {
                 rollingSummary,
                 distribution,
                 volatilityBand,
-                headline);
+                headline,
+                rollingSharpeSeries);
     }
 
     private static PeriodVolatility buildPeriodVolatility(
@@ -385,6 +398,7 @@ public class VolatilityCalculator {
                 new RollingVolatilitySummary(ROLLING_WINDOW, 0, 0, 0, "", 0, "", 0, 0),
                 List.of(),
                 RiskLevel.MEDIUM.label(),
-                "Insufficient history for volatility analysis");
+                "Insufficient history for volatility analysis",
+                List.of());
     }
 }

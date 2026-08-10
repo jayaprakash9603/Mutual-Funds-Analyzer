@@ -23,6 +23,7 @@ import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsight
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.MissingBestQuarterCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.risk.RollingSharpeCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.risk.VolatilityCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.TrailingReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.core.VerdictEngine;
@@ -50,8 +51,13 @@ public class ReportConfig {
     }
 
     @Bean
-    VolatilityCalculator volatilityCalculator() {
-        return new VolatilityCalculator();
+    RollingSharpeCalculator rollingSharpeCalculator(AnalyticsProperties analyticsProperties) {
+        return new RollingSharpeCalculator(analyticsProperties.riskFreeRate());
+    }
+
+    @Bean
+    VolatilityCalculator volatilityCalculator(RollingSharpeCalculator rollingSharpeCalculator) {
+        return new VolatilityCalculator(rollingSharpeCalculator);
     }
 
     @Bean
