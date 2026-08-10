@@ -53,7 +53,7 @@ public class DailyUpstreamSyncService {
             return;
         }
         try {
-            navHistoryPort.fetch(meta.getScheme(), reportProperties.earliestStartDate());
+            navHistoryPort.fetchFresh(meta.getScheme(), reportProperties.earliestStartDate());
         } catch (RuntimeException ex) {
             log.warn("Daily sync failed for {}: {}", meta.getScheme(), ex.getMessage());
         }

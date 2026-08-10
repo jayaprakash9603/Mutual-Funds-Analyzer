@@ -1,7 +1,6 @@
 package in.goldentriangle.mfa.adapter.in.web.mapper;
 
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
-import in.goldentriangle.mfa.domain.model.RiskLevel;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarReturnsDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarYearInsightsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
@@ -251,6 +250,9 @@ public class FundReportMapper {
     }
 
     private RiskReportDto toDto(RiskReport report) {
+        if (report == null) {
+            return new RiskReportDto(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
+        }
         return new RiskReportDto(
                 report.volatility(), report.standardDeviation(), report.sharpeRatio(), report.sortinoRatio(),
                 report.treynorRatio(), report.beta(), report.alpha(), report.rSquared(), report.maxDrawdown(),
@@ -260,11 +262,14 @@ public class FundReportMapper {
     }
 
     private ConsistencyDto toDto(ConsistencyReport report) {
+        if (report == null) {
+            return new ConsistencyDto(List.of(), List.of(), 0, 0, 0, 0, 0, 0, "");
+        }
         return new ConsistencyDto(
-                report.calendarYears().stream()
+                nullSafe(report.calendarYears()).stream()
                         .map(y -> new ConsistencyDto.CalendarYearDto(y.year(), y.returnPercent(), y.intraYearDrawdown()))
                         .toList(),
-                report.monthlyHeatmap().stream()
+                nullSafe(report.monthlyHeatmap()).stream()
                         .map(c -> new ConsistencyDto.HeatmapCellDto(c.year(), c.month(), c.returnPercent()))
                         .toList(),
                 report.worstYear(), report.bestYear(), report.worstMonth(), report.bestMonth(),
@@ -272,35 +277,39 @@ public class FundReportMapper {
     }
 
     private DrawdownReportDto toDto(DrawdownReport report) {
+        if (report == null) {
+            return new DrawdownReportDto(
+                    0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        }
         return new DrawdownReportDto(
                 report.biggestCrash(), report.recoveryTimeYears(), report.maximumLoss(), report.averageRecoveryYears(),
                 report.currentDrawdown(),
-                report.series().stream()
+                nullSafe(report.series()).stream()
                         .map(p -> new DrawdownReportDto.DrawdownPointDto(p.date(), p.drawdownPercent()))
                         .toList(),
-                report.episodes().stream()
+                nullSafe(report.episodes()).stream()
                         .map(e -> new DrawdownReportDto.DrawdownEpisodeDto(
                                 e.peakDate(), e.troughDate(), e.recoveryDate(), e.fallPercent(), e.recoveryYears(),
                                 e.recovered()))
                         .toList(),
-                report.bearMarketDecades().stream()
+                nullSafe(report.bearMarketDecades()).stream()
                         .map(d -> new DrawdownReportDto.BearMarketDecadeDto(
                                 d.decadeLabel(), d.percentOfDays(), d.daysInBearMarket(), d.totalDays(), d.partial()))
                         .toList(),
-                report.thresholdRows().stream()
+                nullSafe(report.thresholdRows()).stream()
                         .map(r -> new DrawdownReportDto.DrawdownThresholdRowDto(
                                 r.thresholdPercent(), r.fundPercentOfDays(), r.fundDaysBelow(),
                                 r.benchmarkPercentOfDays()))
                         .toList(),
-                report.phases().stream()
+                nullSafe(report.phases()).stream()
                         .map(p -> new DrawdownReportDto.DrawdownPhaseDto(
                                 p.type(), p.startDate(), p.endDate(), p.changePercent(), p.durationLabel(),
                                 p.durationYears(), p.ongoing()))
                         .toList(),
-                report.indexedNav().stream()
+                nullSafe(report.indexedNav()).stream()
                         .map(p -> new DrawdownReportDto.NavIndexPointDto(p.date(), p.indexValue(), p.nav()))
                         .toList(),
-                report.thresholdRecoveries().stream()
+                nullSafe(report.thresholdRecoveries()).stream()
                         .map(r -> new DrawdownReportDto.ThresholdRecoveryDto(
                                 r.thresholdPercent(),
                                 r.sequence(),
@@ -312,6 +321,10 @@ public class FundReportMapper {
                                 r.usesCagr(),
                                 r.recovered()))
                         .toList());
+    }
+
+    private static <T> List<T> nullSafe(List<T> values) {
+        return values == null ? List.of() : values;
     }
 
     private MultiplyOddsReportDto toDto(MultiplyOddsReport report) {
@@ -335,9 +348,12 @@ public class FundReportMapper {
     }
 
     private MissingBestQuarterReportDto toDto(MissingBestQuarterReport report) {
+        if (report == null) {
+            return new MissingBestQuarterReportDto("", List.of(), 0, 0, "", "");
+        }
         return new MissingBestQuarterReportDto(
                 report.periodLabel(),
-                report.series().stream()
+                nullSafe(report.series()).stream()
                         .map(point -> new MissingBestQuarterReportDto.QuarterPointDto(
                                 point.quarterLabel(),
                                 point.quarterEndDate(),
@@ -353,10 +369,14 @@ public class FundReportMapper {
     }
 
     private VolatilityReportDto toDto(VolatilityReport report) {
+        if (report == null) {
+            return emptyVolatilityDto();
+        }
+        VolatilityReport.RollingVolatilitySummary summary = report.rollingSummary();
         return new VolatilityReportDto(
                 report.periodLabel(),
                 report.benchmarkAvailable(),
-                report.periods().stream()
+                nullSafe(report.periods()).stream()
                         .map(p -> new VolatilityReportDto.PeriodVolatilityDto(
                                 p.frequency(),
                                 p.observations(),
@@ -374,60 +394,92 @@ public class FundReportMapper {
                                 p.benchmarkBestReturnPercent(),
                                 p.benchmarkWorstReturnPercent()))
                         .toList(),
-                report.rollingSeries().stream()
+                nullSafe(report.rollingSeries()).stream()
                         .map(p -> new VolatilityReportDto.RollingVolatilityPointDto(
                                 p.date(), p.fundVolatilityPercent(), p.benchmarkVolatilityPercent()))
                         .toList(),
-                new VolatilityReportDto.RollingVolatilitySummaryDto(
-                        report.rollingSummary().windowDays(),
-                        report.rollingSummary().currentPercent(),
-                        report.rollingSummary().averagePercent(),
-                        report.rollingSummary().maxPercent(),
-                        report.rollingSummary().maxDate(),
-                        report.rollingSummary().minPercent(),
-                        report.rollingSummary().minDate(),
-                        report.rollingSummary().benchmarkAveragePercent(),
-                        report.rollingSummary().timeAboveBenchmarkPercent()),
-                report.dailyDistribution().stream()
+                summary == null
+                        ? emptyRollingVolatilitySummaryDto()
+                        : new VolatilityReportDto.RollingVolatilitySummaryDto(
+                                summary.windowDays(),
+                                summary.currentPercent(),
+                                summary.averagePercent(),
+                                summary.maxPercent(),
+                                summary.maxDate(),
+                                summary.minPercent(),
+                                summary.minDate(),
+                                summary.benchmarkAveragePercent(),
+                                summary.timeAboveBenchmarkPercent()),
+                nullSafe(report.dailyDistribution()).stream()
                         .map(b -> new VolatilityReportDto.ReturnBucketDto(
                                 b.label(), b.lowerPercent(), b.upperPercent(), b.count(), b.sharePercent()))
                         .toList(),
-                report.volatilityBand(),
-                report.headline());
+                report.volatilityBand() == null ? "" : report.volatilityBand(),
+                report.headline() == null ? "" : report.headline());
+    }
+
+    private static VolatilityReportDto emptyVolatilityDto() {
+        return new VolatilityReportDto(
+                "",
+                false,
+                List.of(),
+                List.of(),
+                emptyRollingVolatilitySummaryDto(),
+                List.of(),
+                "",
+                "");
+    }
+
+    private static VolatilityReportDto.RollingVolatilitySummaryDto emptyRollingVolatilitySummaryDto() {
+        return new VolatilityReportDto.RollingVolatilitySummaryDto(0, 0, 0, 0, "", 0, "", 0, 0);
     }
 
     private BestDaysReportDto toDto(BestDaysReport report) {
+        if (report == null) {
+            return new BestDaysReportDto(
+                    0,
+                    "",
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    new BestDaysReportDto.BestWorstProximityInsightDto(0, 0, 0, ""),
+                    "");
+        }
+        BestDaysReport.BestWorstProximityInsight proximity = report.proximityInsight();
         return new BestDaysReportDto(
                 report.initialInvestment(),
                 report.periodLabel(),
-                report.missingScenarios().stream()
+                nullSafe(report.missingScenarios()).stream()
                         .map(s -> new BestDaysReportDto.MissingBestDaysScenarioDto(
                                 s.missCount(), s.label(), s.finalValue(), s.cagrPercent(), s.lowerByPercent()))
                         .toList(),
-                report.topBestDays().stream()
+                nullSafe(report.topBestDays()).stream()
                         .map(d -> new BestDaysReportDto.BestDayEntryDto(d.rank(), d.date(), d.returnPercent()))
                         .toList(),
-                report.crashPeriods().stream()
+                nullSafe(report.crashPeriods()).stream()
                         .map(p -> new BestDaysReportDto.CrashPeriodBestDaysDto(
                                 p.periodLabel(),
                                 p.marketFallLabel(),
                                 p.topDaysInPeriod(),
                                 p.topRankLimit(),
-                                p.bestDays().stream()
+                                nullSafe(p.bestDays()).stream()
                                         .map(d -> new BestDaysReportDto.BestDayInPeriodDto(
                                                 d.rank(), d.date(), d.returnPercent()))
                                         .toList()))
                         .toList(),
-                report.topDaysCumulative().stream()
+                nullSafe(report.topDaysCumulative()).stream()
                         .map(c -> new BestDaysReportDto.TopDaysCumulativeDto(
                                 c.topCount(), c.cumulativeReturnPercent()))
                         .toList(),
-                new BestDaysReportDto.BestWorstProximityInsightDto(
-                        report.proximityInsight().bestDaysNearWorst(),
-                        report.proximityInsight().worstDaysConsidered(),
-                        report.proximityInsight().topRankLimit(),
-                        report.proximityInsight().exampleText()),
-                report.headlineSummary());
+                proximity == null
+                        ? new BestDaysReportDto.BestWorstProximityInsightDto(0, 0, 0, "")
+                        : new BestDaysReportDto.BestWorstProximityInsightDto(
+                                proximity.bestDaysNearWorst(),
+                                proximity.worstDaysConsidered(),
+                                proximity.topRankLimit(),
+                                proximity.exampleText()),
+                report.headlineSummary() == null ? "" : report.headlineSummary());
     }
 
     private CalendarYearInsightsReportDto toDto(CalendarYearInsightsReport report) {
@@ -474,46 +526,61 @@ public class FundReportMapper {
     }
 
     private AllTimeHighsReportDto toDto(AllTimeHighsReport report) {
+        if (report == null) {
+            return new AllTimeHighsReportDto(
+                    "",
+                    List.of(),
+                    List.of(),
+                    new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, ""),
+                    new AllTimeHighsReportDto.PostAthReturnsDto(List.of(), ""),
+                    new AllTimeHighsReportDto.AthDeclineOutlookDto(0, 0, 0, 0, 0, 0, ""));
+        }
         return new AllTimeHighsReportDto(
                 report.periodLabel(),
-                report.series().stream()
+                nullSafe(report.series()).stream()
                         .map(p -> new AllTimeHighsReportDto.NavPointDto(
                                 p.date(), p.nav(), p.allTimeHigh(), p.fellBelowThreshold()))
                         .toList(),
-                report.yearlyMaxLevels().stream()
+                nullSafe(report.yearlyMaxLevels()).stream()
                         .map(y -> new AllTimeHighsReportDto.YearlyMaxNavDto(
                                 y.year(), y.yearLabel(), y.maxNav(), y.allTimeHighYear()))
                         .toList(),
-                new AllTimeHighsReportDto.AllTimeHighsSummaryDto(
-                        report.summary().totalAllTimeHighDays(),
-                        report.summary().calendarYears(),
-                        report.summary().yearsWithNewHigh(),
-                        report.summary().yearsWithNewHighPercent(),
-                        report.summary().headline()),
-                new AllTimeHighsReportDto.PostAthReturnsDto(
-                        report.postAthReturns().horizons().stream()
-                                .map(h -> new AllTimeHighsReportDto.PostAthHorizonDto(
-                                        h.label(),
-                                        h.years(),
-                                        h.sampleCount(),
-                                        h.averageCagrPercent(),
-                                        h.thresholds().stream()
-                                                .map(t -> new AllTimeHighsReportDto.PostAthThresholdDto(
-                                                        t.label(),
-                                                        t.boundPercent(),
-                                                        t.above(),
-                                                        t.shareOfTimesPercent()))
-                                                .toList()))
-                                .toList(),
-                        report.postAthReturns().headline()),
-                new AllTimeHighsReportDto.AthDeclineOutlookDto(
-                        report.athDeclineOutlook().declineThresholdPercent(),
-                        report.athDeclineOutlook().totalAthInstances(),
-                        report.athDeclineOutlook().neverFellCount(),
-                        report.athDeclineOutlook().neverFellPercent(),
-                        report.athDeclineOutlook().fellCount(),
-                        report.athDeclineOutlook().fellPercent(),
-                        report.athDeclineOutlook().headline()));
+                report.summary() == null
+                        ? new AllTimeHighsReportDto.AllTimeHighsSummaryDto(0, 0, 0, 0, "")
+                        : new AllTimeHighsReportDto.AllTimeHighsSummaryDto(
+                                report.summary().totalAllTimeHighDays(),
+                                report.summary().calendarYears(),
+                                report.summary().yearsWithNewHigh(),
+                                report.summary().yearsWithNewHighPercent(),
+                                report.summary().headline()),
+                report.postAthReturns() == null
+                        ? new AllTimeHighsReportDto.PostAthReturnsDto(List.of(), "")
+                        : new AllTimeHighsReportDto.PostAthReturnsDto(
+                                nullSafe(report.postAthReturns().horizons()).stream()
+                                        .map(h -> new AllTimeHighsReportDto.PostAthHorizonDto(
+                                                h.label(),
+                                                h.years(),
+                                                h.sampleCount(),
+                                                h.averageCagrPercent(),
+                                                nullSafe(h.thresholds()).stream()
+                                                        .map(t -> new AllTimeHighsReportDto.PostAthThresholdDto(
+                                                                t.label(),
+                                                                t.boundPercent(),
+                                                                t.above(),
+                                                                t.shareOfTimesPercent()))
+                                                        .toList()))
+                                        .toList(),
+                                report.postAthReturns().headline()),
+                report.athDeclineOutlook() == null
+                        ? new AllTimeHighsReportDto.AthDeclineOutlookDto(0, 0, 0, 0, 0, 0, "")
+                        : new AllTimeHighsReportDto.AthDeclineOutlookDto(
+                                report.athDeclineOutlook().declineThresholdPercent(),
+                                report.athDeclineOutlook().totalAthInstances(),
+                                report.athDeclineOutlook().neverFellCount(),
+                                report.athDeclineOutlook().neverFellPercent(),
+                                report.athDeclineOutlook().fellCount(),
+                                report.athDeclineOutlook().fellPercent(),
+                                report.athDeclineOutlook().headline()));
     }
 
     public DrawdownPeersDto toDto(DrawdownPeersReport report) {

@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface NavSeriesMetaJpaRepository extends JpaRepository<NavSeriesMetaEntity, Long> {
     Optional<NavSeriesMetaEntity> findBySchemeCode(int schemeCode);
+
+    Optional<NavSeriesMetaEntity> findBySchemeIgnoreCase(String scheme);
 }

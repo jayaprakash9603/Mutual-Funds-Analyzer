@@ -6,6 +6,7 @@ import in.goldentriangle.mfa.application.platform.FeatureGuard;
 import in.goldentriangle.mfa.application.report.FundReportSectionExtractor;
 import in.goldentriangle.mfa.application.report.FundReportSectionService;
 import in.goldentriangle.mfa.application.report.ReportDataCoordinator;
+import in.goldentriangle.mfa.application.report.ReportRefreshEventHub;
 import in.goldentriangle.mfa.config.concurrency.SingleFlightCoordinator;
 import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.ReportFreshness;
@@ -98,7 +99,8 @@ class FundReportSectionServiceTest {
                 featureGuard,
                 objectMapper,
                 Runnable::run,
-                new SingleFlightCoordinator());
+                new SingleFlightCoordinator(),
+                new ReportRefreshEventHub());
     }
 
     @Test
@@ -129,7 +131,7 @@ class FundReportSectionServiceTest {
     }
 
     @Test
-    void refreshesSnapshotSynchronouslyWhenUpstreamCheckIsDue() {
+    void servesStoredSnapshotImmediatelyWhenUpstreamCheckIsDue() {
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         FundReportOverviewSection overview = (FundReportOverviewSection) FundReportSectionExtractor.extract(
                 ReportSectionGroup.OVERVIEW,
@@ -143,16 +145,15 @@ class FundReportSectionServiceTest {
                 COMPUTED,
                 ReportDataCoordinator.REPORT_SCHEMA_VERSION,
                 0L));
-        Instant refreshedWatermark = Instant.parse("2026-07-27T00:00:00Z");
         when(navHistoryPort.navFreshness("Test Fund"))
-                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true))
-                .thenReturn(new NavFreshness(Optional.of(refreshedWatermark), false));
+                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true));
 
         ReportSectionEnvelope<FundReportOverviewSection> envelope =
                 service.getOverview("Test Fund", null);
 
-        assertEquals(ReportFreshness.FRESH, envelope.freshness());
-        assertEquals(refreshedWatermark, envelope.watermarkNavDate());
+        // Immediate response keeps the stored watermark; refresh runs async (inline executor here).
+        assertEquals(ReportFreshness.REFRESHING, envelope.freshness());
+        assertEquals(WATERMARK, envelope.watermarkNavDate());
         verify(reportDataCoordinator).prepareRefreshed("Test Fund", "inception");
     }
 
@@ -176,6 +177,43 @@ class FundReportSectionServiceTest {
                 service.getOverview("Test Fund", null);
 
         assertEquals(ReportFreshness.FRESH, envelope.freshness());
+    }
+
+    @Test
+    void servesOlderSchemaSnapshotImmediatelyAndSchedulesRefresh() {
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        FundReportOverviewSection overview = (FundReportOverviewSection) FundReportSectionExtractor.extract(
+                ReportSectionGroup.OVERVIEW,
+                sampleReport());
+        snapshotStore.save(new FundReportSectionSnapshot(
+                "Test Fund",
+                "inception",
+                ReportSectionGroup.OVERVIEW,
+                FundReportSectionSnapshotMapper.writePayload(overview, objectMapper),
+                WATERMARK,
+                COMPUTED,
+                ReportDataCoordinator.REPORT_SCHEMA_VERSION - 1,
+                0L));
+
+        ReportSectionEnvelope<FundReportOverviewSection> envelope =
+                service.getOverview("Test Fund", null);
+
+        assertEquals(ReportFreshness.REFRESHING, envelope.freshness());
+        assertEquals(WATERMARK, envelope.watermarkNavDate());
+        verify(reportDataCoordinator).prepareRefreshed("Test Fund", "inception");
+    }
+
+    @Test
+    void coldPathSchedulesRefreshWhenUpstreamCheckIsDue() {
+        when(navHistoryPort.navFreshness("Test Fund"))
+                .thenReturn(new NavFreshness(Optional.of(WATERMARK), true));
+
+        ReportSectionEnvelope<FundReportOverviewSection> envelope =
+                service.getOverview("Test Fund", null);
+
+        assertEquals(ReportFreshness.REFRESHING, envelope.freshness());
+        verify(reportDataCoordinator).prepare("Test Fund", "inception");
+        verify(reportDataCoordinator).prepareRefreshed("Test Fund", "inception");
     }
 
     private static FundReport sampleReport() {

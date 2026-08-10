@@ -24,6 +24,9 @@ export default defineConfig(({ mode }) => ({
         // when Spring Boot is only bound on IPv4.
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
+        // Keep SSE (/fund-report/events) streams open through the dev proxy.
+        timeout: 0,
+        proxyTimeout: 0,
       },
     },
   },

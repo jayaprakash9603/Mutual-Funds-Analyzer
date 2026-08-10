@@ -39,6 +39,16 @@ public class FailSoftNavStore implements NavStorePort {
     }
 
     @Override
+    public Optional<NavSeriesMeta> findMetaByScheme(String scheme) {
+        try {
+            return delegate.findMetaByScheme(scheme);
+        } catch (Exception ex) {
+            log.warn("NAV meta lookup failed for scheme {}: {}", scheme, ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public List<NavPoint> loadPoints(int schemeCode, NavSeries series) {
         try {
             return delegate.loadPoints(schemeCode, series);

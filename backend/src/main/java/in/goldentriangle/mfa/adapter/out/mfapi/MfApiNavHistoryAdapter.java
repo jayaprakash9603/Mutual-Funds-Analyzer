@@ -94,17 +94,20 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
     @Override
     public NavFreshness navFreshness(String scheme) {
         try {
-            int code = schemeResolver.resolveCode(scheme);
-            Optional<NavSeriesMeta> metaOpt = navStore.findMeta(code);
+            // Meta-only path: avoid MFAPI scheme search + full NAV point loads on every section hit.
+            Optional<NavSeriesMeta> metaOpt = navStore.findMetaByScheme(scheme);
+            if (metaOpt.isEmpty()) {
+                int code = schemeResolver.resolveCode(scheme);
+                metaOpt = navStore.findMeta(code);
+            }
             if (metaOpt.isEmpty()) {
                 return new NavFreshness(Optional.empty(), true);
             }
             NavSeriesMeta meta = metaOpt.get();
-            List<NavPoint> benchmarkNav = navStore.loadPoints(code, NavSeries.BENCHMARK);
             boolean mfapiDue = shouldRefreshUpstream(meta, clock.instant());
-            boolean investtDue = needsBenchmarkRepair(meta, benchmarkNav);
-            boolean checkDue = syncGate.upstreamCheckDue(code, UpstreamSyncSource.MFAPI, mfapiDue)
-                    || syncGate.upstreamCheckDue(code, UpstreamSyncSource.INVESTT, investtDue);
+            boolean investtDue = needsBenchmarkRepair(meta);
+            boolean checkDue = syncGate.upstreamCheckDue(meta.schemeCode(), UpstreamSyncSource.MFAPI, mfapiDue)
+                    || syncGate.upstreamCheckDue(meta.schemeCode(), UpstreamSyncSource.INVESTT, investtDue);
             return new NavFreshness(
                     Optional.ofNullable(meta.watermarkNavDate()),
                     checkDue);
@@ -178,11 +181,22 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
         }
 
         NavSeriesMeta meta = metaOpt.get();
-        boolean legacyDue = forceUpstream || shouldRefreshUpstream(meta, now);
-        boolean fetchMfapi = legacyDue && syncGate.shouldFetchFromUpstream(code, UpstreamSyncSource.MFAPI);
-
         List<NavPoint> fundNav = navStore.loadPoints(code, NavSeries.FUND);
         List<NavPoint> benchmarkNav = navStore.loadPoints(code, NavSeries.BENCHMARK);
+
+        // fetch() is local-only when series already exists. Upstream delta belongs in fetchFresh().
+        if (!forceUpstream) {
+            if (!fundNav.isEmpty()) {
+                return new LoadedSeries(meta, fundNav, benchmarkNav);
+            }
+            if (syncGate.shouldFetchFromUpstream(code, UpstreamSyncSource.MFAPI)) {
+                return fullRefresh(scheme, code, startDateUsed, now, meta.version(), meta);
+            }
+            throw new NoDataFoundException("No NAV history available for " + scheme);
+        }
+
+        boolean legacyDue = shouldRefreshUpstream(meta, now);
+        boolean fetchMfapi = legacyDue && syncGate.shouldFetchFromUpstream(code, UpstreamSyncSource.MFAPI);
         boolean repairBenchmark = needsBenchmarkRepair(meta, benchmarkNav)
                 && syncGate.shouldFetchFromUpstream(code, UpstreamSyncSource.INVESTT);
 
@@ -204,6 +218,11 @@ public class MfApiNavHistoryAdapter implements NavHistoryPort {
 
     private static boolean needsBenchmarkRepair(NavSeriesMeta meta, List<NavPoint> benchmarkNav) {
         return benchmarkNav.isEmpty()
+                || BenchmarkNavResolver.UNAVAILABLE_LABEL.equals(meta.benchmarkName());
+    }
+
+    private static boolean needsBenchmarkRepair(NavSeriesMeta meta) {
+        return meta.benchmarkWatermarkNavDate() == null
                 || BenchmarkNavResolver.UNAVAILABLE_LABEL.equals(meta.benchmarkName());
     }
 

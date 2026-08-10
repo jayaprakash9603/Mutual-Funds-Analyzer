@@ -40,6 +40,14 @@ public class JpaNavStore implements NavStorePort {
     }
 
     @Override
+    public Optional<NavSeriesMeta> findMetaByScheme(String scheme) {
+        if (scheme == null || scheme.isBlank()) {
+            return Optional.empty();
+        }
+        return metaRepository.findBySchemeIgnoreCase(scheme.trim()).map(NavStoreMapper::toDomain);
+    }
+
+    @Override
     public List<NavPoint> loadPoints(int schemeCode, NavSeries series) {
         return pointReader.loadAll(schemeCode, series);
     }

@@ -184,7 +184,11 @@ export function FundReportSections({
                 latestNav={data.profile.latestNav}
                 dataTo={data.profile.dataTo}
                 indexedNav={risk.data?.drawdown.indexedNav ?? []}
-                loading={risk.loading && (risk.data?.drawdown.indexedNav?.length ?? 0) === 0}
+                loading={
+                  (risk.data?.drawdown.indexedNav?.length ?? 0) === 0
+                  && !risk.error
+                  && (risk.loading || risk.refreshing || risk.data == null)
+                }
               />
             </div>
           )}

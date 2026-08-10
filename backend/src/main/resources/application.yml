@@ -8,6 +8,10 @@ server:
 spring:
   application:
     name: mutual-funds-analyzer
+  mvc:
+    async:
+      # Long-lived SSE connections for report-ready notifications.
+      request-timeout: 1800000
   profiles:
     default: mysql
     # Every relational profile also activates "relational", which carries the JPA settings and the

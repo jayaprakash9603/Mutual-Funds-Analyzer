@@ -11,6 +11,10 @@ import java.util.Optional;
 public interface NavStorePort {
     Optional<NavSeriesMeta> findMeta(int schemeCode);
 
+    default Optional<NavSeriesMeta> findMetaByScheme(String scheme) {
+        return Optional.empty();
+    }
+
     List<NavPoint> loadPoints(int schemeCode, NavSeries series);
 
     List<NavPoint> loadPoints(int schemeCode, NavSeries series, Instant fromDateInclusive);

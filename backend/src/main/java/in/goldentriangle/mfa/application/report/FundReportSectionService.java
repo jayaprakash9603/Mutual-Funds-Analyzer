@@ -10,7 +10,6 @@ import in.goldentriangle.mfa.domain.model.NavFreshness;
 import in.goldentriangle.mfa.domain.model.ReportFreshness;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
 import in.goldentriangle.mfa.domain.model.ReportSectionGroup;
-import in.goldentriangle.mfa.domain.model.report.NavHistory;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportAssessmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportInvestmentSection;
 import in.goldentriangle.mfa.domain.model.report.section.FundReportOverviewSection;
@@ -19,6 +18,8 @@ import in.goldentriangle.mfa.domain.model.report.section.FundReportRiskSection;
 import in.goldentriangle.mfa.domain.port.in.GetFundReportSectionUseCase;
 import in.goldentriangle.mfa.domain.port.out.FundReportSectionSnapshotPort;
 import in.goldentriangle.mfa.domain.port.out.NavHistoryPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +28,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 @Service
 public class FundReportSectionService implements GetFundReportSectionUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(FundReportSectionService.class);
     private static final String BENCHMARK_UNAVAILABLE = "Benchmark unavailable";
 
     private final ReportDataCoordinator reportDataCoordinator;
@@ -40,6 +43,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
     private final ObjectMapper objectMapper;
     private final Executor computeExecutor;
     private final SingleFlightCoordinator singleFlightCoordinator;
+    private final ReportRefreshEventHub refreshEventHub;
     private final Set<String> refreshingKeys = ConcurrentHashMap.newKeySet();
 
     public FundReportSectionService(
@@ -49,7 +53,8 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             FeatureGuard featureGuard,
             ObjectMapper objectMapper,
             @Qualifier("computeExecutor") Executor computeExecutor,
-            SingleFlightCoordinator singleFlightCoordinator) {
+            SingleFlightCoordinator singleFlightCoordinator,
+            ReportRefreshEventHub refreshEventHub) {
         this.reportDataCoordinator = reportDataCoordinator;
         this.sectionSnapshotPort = sectionSnapshotPort;
         this.navHistoryPort = navHistoryPort;
@@ -57,6 +62,7 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         this.objectMapper = objectMapper;
         this.computeExecutor = computeExecutor;
         this.singleFlightCoordinator = singleFlightCoordinator;
+        this.refreshEventHub = refreshEventHub;
     }
 
     @Override
@@ -89,36 +95,152 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
             String scheme,
             String startDate,
             Class<T> payloadType) {
+        long startedAt = System.nanoTime();
         featureGuard.require(FeatureKeys.ANALYSIS_FUND_REPORT);
         String resolvedStart = reportDataCoordinator.resolveStartDate(startDate);
+        long afterResolve = System.nanoTime();
         NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
+        long afterFreshness = System.nanoTime();
 
         Optional<FundReportSectionSnapshot> stored =
                 sectionSnapshotPort.find(scheme, resolvedStart, group);
-
-        if (stored.isPresent() && isUsableSectionSnapshot(stored.get(), group, payloadType)) {
-            T payload = FundReportSectionSnapshotMapper.readPayload(
-                    stored.get().payloadJson(), payloadType, objectMapper);
-            if (isFresh(stored.get().watermarkNavDate(), navFreshness)
-                    && !storedOverviewBenchmarkStale(group, payload, scheme, resolvedStart)) {
-                return envelope(payload, ReportFreshness.FRESH, stored.get());
+        long afterFind = System.nanoTime();
+        if (stored.isPresent()) {
+            Optional<T> payload = readServablePayload(stored.get(), group, payloadType);
+            if (payload.isPresent()) {
+                ReportSectionEnvelope<T> envelope = respondFromStored(
+                        group, scheme, resolvedStart, payload.get(), stored.get(), navFreshness);
+                logSectionTiming(
+                        group,
+                        scheme,
+                        startedAt,
+                        afterResolve,
+                        afterFreshness,
+                        afterFind,
+                        envelope.freshness().name());
+                return envelope;
             }
-            if (navFreshness.upstreamCheckDue() || storedOverviewBenchmarkStale(group, payload, scheme, resolvedStart)) {
-                return reloadSectionAfterRefresh(group, scheme, resolvedStart, payloadType);
-            }
-            scheduleRefresh(scheme, resolvedStart);
-            ReportFreshness freshness = refreshingKeys.contains(refreshKey(scheme, resolvedStart))
-                    ? ReportFreshness.REFRESHING
-                    : ReportFreshness.STALE;
-            return envelope(payload, freshness, stored.get());
         }
 
+        ReportSectionEnvelope<T> envelope =
+                respondFromCold(group, scheme, resolvedStart, payloadType, navFreshness);
+        logSectionTiming(
+                group,
+                scheme,
+                startedAt,
+                afterResolve,
+                afterFreshness,
+                afterFind,
+                "COLD-" + envelope.freshness().name());
+        return envelope;
+    }
+
+    private static void logSectionTiming(
+            ReportSectionGroup group,
+            String scheme,
+            long startedAtNanos,
+            long afterResolveNanos,
+            long afterFreshnessNanos,
+            long afterFindNanos,
+            String path) {
+        long elapsedMs = (System.nanoTime() - startedAtNanos) / 1_000_000L;
+        if (elapsedMs < 500) {
+            return;
+        }
+        log.info(
+                "Section slow path={} group={} scheme='{}' elapsedMs={} freshnessMs={} findMs={}",
+                path,
+                group,
+                scheme,
+                elapsedMs,
+                (afterFreshnessNanos - afterResolveNanos) / 1_000_000L,
+                (afterFindNanos - afterFreshnessNanos) / 1_000_000L);
+    }
+
+    private <T> ReportSectionEnvelope<T> respondFromStored(
+            ReportSectionGroup group,
+            String scheme,
+            String resolvedStart,
+            T payload,
+            FundReportSectionSnapshot stored,
+            NavFreshness navFreshness) {
+        boolean needsRefresh = needsBackgroundRefresh(group, payload, stored, navFreshness);
+        if (!needsRefresh) {
+            log.info(
+                    "Section FRESH group={} scheme='{}' watermark={}",
+                    group,
+                    scheme,
+                    stored.watermarkNavDate());
+            return envelope(payload, ReportFreshness.FRESH, stored);
+        }
+
+        scheduleRefresh(scheme, resolvedStart);
+        log.info(
+                "Section STALE-SERVE group={} scheme='{}' schema={} watermark={} upstreamDue={}",
+                group,
+                scheme,
+                stored.schemaVersion(),
+                stored.watermarkNavDate(),
+                navFreshness.upstreamCheckDue());
+        return envelope(payload, ReportFreshness.REFRESHING, stored);
+    }
+
+    private <T> ReportSectionEnvelope<T> respondFromCold(
+            ReportSectionGroup group,
+            String scheme,
+            String resolvedStart,
+            Class<T> payloadType,
+            NavFreshness navFreshness) {
+        log.info(
+                "Section COLD group={} scheme='{}' — local prepare then async refresh if due",
+                group,
+                scheme);
         ReportDataCoordinator.PreparedReport prepared =
                 reportDataCoordinator.prepare(scheme, resolvedStart);
         T payload = materializeSection(group, scheme, resolvedStart, prepared, payloadType);
         FundReportSectionSnapshot saved = sectionSnapshotPort.find(scheme, resolvedStart, group)
                 .orElseThrow(() -> new IllegalStateException("Section snapshot missing after save"));
+
+        if (navFreshness.upstreamCheckDue()) {
+            scheduleRefresh(scheme, resolvedStart);
+            return envelope(payload, ReportFreshness.REFRESHING, saved);
+        }
         return envelope(payload, ReportFreshness.FRESH, saved);
+    }
+
+    private <T> boolean needsBackgroundRefresh(
+            ReportSectionGroup group,
+            T payload,
+            FundReportSectionSnapshot stored,
+            NavFreshness navFreshness) {
+        boolean schemaStale = stored.schemaVersion() != ReportDataCoordinator.REPORT_SCHEMA_VERSION;
+        boolean watermarkFresh = isFresh(stored.watermarkNavDate(), navFreshness);
+        boolean overviewBenchmarkStale = storedOverviewBenchmarkStale(group, payload);
+        return schemaStale
+                || !watermarkFresh
+                || overviewBenchmarkStale
+                || navFreshness.upstreamCheckDue();
+    }
+
+    private <T> Optional<T> readServablePayload(
+            FundReportSectionSnapshot stored,
+            ReportSectionGroup group,
+            Class<T> payloadType) {
+        try {
+            T payload = FundReportSectionSnapshotMapper.readPayload(
+                    stored.payloadJson(), payloadType, objectMapper);
+            if (!hasRequiredSectionFields(group, payload)) {
+                return Optional.empty();
+            }
+            return Optional.of(payload);
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Section snapshot unreadable group={} scheme='{}': {}",
+                    group,
+                    stored.scheme(),
+                    ex.getMessage());
+            return Optional.empty();
+        }
     }
 
     private <T> boolean isUsableSectionSnapshot(
@@ -128,24 +250,34 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         if (stored.schemaVersion() != ReportDataCoordinator.REPORT_SCHEMA_VERSION) {
             return false;
         }
-        T payload = FundReportSectionSnapshotMapper.readPayload(
-                stored.payloadJson(), payloadType, objectMapper);
+        return readServablePayload(stored, group, payloadType).isPresent();
+    }
+
+    private <T> boolean hasRequiredSectionFields(ReportSectionGroup group, T payload) {
+        if (payload == null) {
+            return false;
+        }
         if (group == ReportSectionGroup.RISK && payload instanceof FundReportRiskSection riskSection) {
             return riskSection.bestDays() != null
                     && riskSection.allTimeHighs() != null
                     && riskSection.allTimeHighs().postAthReturns() != null
                     && riskSection.allTimeHighs().athDeclineOutlook() != null;
         }
-        if (group == ReportSectionGroup.PERFORMANCE && payload instanceof FundReportPerformanceSection performanceSection) {
+        if (group == ReportSectionGroup.PERFORMANCE
+                && payload instanceof FundReportPerformanceSection performanceSection) {
             return performanceSection.calendarYearInsights() != null;
         }
-        return payload != null;
+        return true;
     }
 
     private static boolean isFresh(
             java.time.Instant storedWatermark,
             NavFreshness navFreshness) {
-        return navFreshness.matchesSnapshot(storedWatermark);
+        if (storedWatermark == null) {
+            return false;
+        }
+        return navFreshness.watermark().isEmpty()
+                || Objects.equals(storedWatermark, navFreshness.watermark().get());
     }
 
     private boolean storedOverviewBenchmarkStale(
@@ -157,22 +289,16 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         }
         FundReportOverviewSection overview = FundReportSectionSnapshotMapper.readPayload(
                 stored.payloadJson(), FundReportOverviewSection.class, objectMapper);
-        return overviewBenchmarkRepairDue(overview.profile().benchmarkName(), prepared.report().profile().benchmarkName());
+        return overviewBenchmarkRepairDue(
+                overview.profile().benchmarkName(),
+                prepared.report().profile().benchmarkName());
     }
 
-    private <T> boolean storedOverviewBenchmarkStale(
-            ReportSectionGroup group,
-            T payload,
-            String scheme,
-            String startDate) {
+    private <T> boolean storedOverviewBenchmarkStale(ReportSectionGroup group, T payload) {
         if (group != ReportSectionGroup.OVERVIEW || !(payload instanceof FundReportOverviewSection overview)) {
             return false;
         }
-        if (!BENCHMARK_UNAVAILABLE.equals(overview.profile().benchmarkName())) {
-            return false;
-        }
-        NavHistory history = navHistoryPort.fetch(scheme, startDate);
-        return overviewBenchmarkRepairDue(overview.profile().benchmarkName(), history.benchmarkName());
+        return BENCHMARK_UNAVAILABLE.equals(overview.profile().benchmarkName());
     }
 
     private static boolean overviewBenchmarkRepairDue(String storedBenchmark, String currentBenchmark) {
@@ -233,49 +359,48 @@ public class FundReportSectionService implements GetFundReportSectionUseCase {
         };
     }
 
-    private <T> ReportSectionEnvelope<T> reloadSectionAfterRefresh(
-            ReportSectionGroup group,
-            String scheme,
-            String startDate,
-            Class<T> payloadType) {
-        String key = refreshKey(scheme, startDate);
-        singleFlightCoordinator.run(key, () -> {
-            ReportDataCoordinator.PreparedReport prepared =
-                    reportDataCoordinator.prepareRefreshed(scheme, startDate);
-            materializeAllSections(scheme, startDate, prepared);
-            reportDataCoordinator.evictReportCaches(scheme, startDate);
-            return null;
-        });
-
-        FundReportSectionSnapshot saved = sectionSnapshotPort.find(scheme, startDate, group)
-                .orElseThrow(() -> new IllegalStateException("Section snapshot missing after refresh"));
-        T payload = FundReportSectionSnapshotMapper.readPayload(
-                saved.payloadJson(), payloadType, objectMapper);
-        NavFreshness navFreshness = navHistoryPort.navFreshness(scheme);
-        ReportFreshness freshness = isFresh(saved.watermarkNavDate(), navFreshness)
-                ? ReportFreshness.FRESH
-                : ReportFreshness.STALE;
-        return envelope(payload, freshness, saved);
-    }
-
     private void scheduleRefresh(String scheme, String startDate) {
         String key = refreshKey(scheme, startDate);
         if (!refreshingKeys.add(key)) {
+            log.info("Async report refresh already in-flight scheme='{}' startDate={}", scheme, startDate);
             return;
         }
-        computeExecutor.execute(() -> {
-            try {
-                singleFlightCoordinator.run(key, () -> {
-                    ReportDataCoordinator.PreparedReport prepared =
-                            reportDataCoordinator.prepareRefreshed(scheme, startDate);
-                    materializeAllSections(scheme, startDate, prepared);
-                    reportDataCoordinator.evictReportCaches(scheme, startDate);
-                    return null;
-                });
-            } finally {
-                refreshingKeys.remove(key);
-            }
-        });
+        log.info("Async report refresh scheduled scheme='{}' startDate={}", scheme, startDate);
+        try {
+            computeExecutor.execute(() -> runRefresh(scheme, startDate, key));
+        } catch (RejectedExecutionException ex) {
+            refreshingKeys.remove(key);
+            log.warn(
+                    "Async report refresh rejected (compute pool full) scheme='{}' startDate={}",
+                    scheme,
+                    startDate);
+        }
+    }
+
+    private void runRefresh(String scheme, String startDate, String key) {
+        try {
+            ReportDataCoordinator.PreparedReport prepared = singleFlightCoordinator.run(key, () -> {
+                log.info("Async report refresh started scheme='{}' startDate={}", scheme, startDate);
+                ReportDataCoordinator.PreparedReport refreshed =
+                        reportDataCoordinator.prepareRefreshed(scheme, startDate);
+                materializeAllSections(scheme, startDate, refreshed);
+                reportDataCoordinator.evictReportCaches(scheme, startDate);
+                log.info(
+                        "Async report refresh completed scheme='{}' watermark={} computedAt={}",
+                        scheme,
+                        refreshed.lastNavDate(),
+                        refreshed.computedAt());
+                return refreshed;
+            });
+            refreshEventHub.publishReportReady(
+                    scheme,
+                    prepared.lastNavDate(),
+                    prepared.computedAt());
+        } catch (RuntimeException ex) {
+            log.warn("Async report refresh failed for {}: {}", scheme, ex.getMessage());
+        } finally {
+            refreshingKeys.remove(key);
+        }
     }
 
     private void persistSection(

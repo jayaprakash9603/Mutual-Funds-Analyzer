@@ -246,18 +246,22 @@ public class FundReportService implements GetFundReportUseCase {
         if (!refreshingKeys.add(key)) {
             return;
         }
-        computeExecutor.execute(() -> {
-            try {
-                singleFlightCoordinator.run(key, () -> {
-                    materializeMatrix(scheme, startDate, mode, Optional.empty(), true);
-                    evictMatrixCache(scheme, startDate, mode);
-                    reportDataCoordinator.evictReportCaches(scheme, startDate);
-                    return null;
-                });
-            } finally {
-                refreshingKeys.remove(key);
-            }
-        });
+        try {
+            computeExecutor.execute(() -> {
+                try {
+                    singleFlightCoordinator.run(key, () -> {
+                        materializeMatrix(scheme, startDate, mode, Optional.empty(), true);
+                        evictMatrixCache(scheme, startDate, mode);
+                        reportDataCoordinator.evictReportCaches(scheme, startDate);
+                        return null;
+                    });
+                } finally {
+                    refreshingKeys.remove(key);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException ex) {
+            refreshingKeys.remove(key);
+        }
     }
 
     private void evictMatrixCache(String scheme, String startDate, MatrixMode mode) {

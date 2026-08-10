@@ -119,7 +119,7 @@ export function FundLongTermStoryChart({
   if (!stats || chartData.length === 0) {
     return (
       <p className="mt-6 rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
-        Long-term NAV history is not available yet for this chart.
+        Long-term NAV history could not be loaded for this chart.
       </p>
     )
   }

@@ -59,7 +59,7 @@ export function useReportSection<T>({
   enabled = true,
 }: UseReportSectionOptions<T>): ReportSectionState<T> {
   const [data, setData] = useState<T | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => Boolean(scheme && enabled))
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [freshness, setFreshness] = useState<ReportFreshness | null>(null)
@@ -68,6 +68,10 @@ export function useReportSection<T>({
 
   const fetchSectionRef = useRef(fetchSection)
   fetchSectionRef.current = fetchSection
+  const dataRef = useRef(data)
+  dataRef.current = data
+  const prevSchemeRef = useRef<string | null>(null)
+  const prevStartDateRef = useRef<string | undefined>(undefined)
 
   const retry = useCallback(() => {
     setRetryToken((value) => value + 1)
@@ -75,6 +79,8 @@ export function useReportSection<T>({
 
   useEffect(() => {
     if (!scheme || !enabled) {
+      prevSchemeRef.current = null
+      prevStartDateRef.current = undefined
       setData(null)
       setLoading(false)
       setError(null)
@@ -83,6 +89,13 @@ export function useReportSection<T>({
       setUnavailable(false)
       return
     }
+
+    const softRefresh =
+      prevSchemeRef.current === scheme
+      && prevStartDateRef.current === startDate
+      && dataRef.current != null
+    prevSchemeRef.current = scheme
+    prevStartDateRef.current = startDate
 
     const controller = new AbortController()
     let requestId = 0
@@ -152,7 +165,7 @@ export function useReportSection<T>({
 
     requestId += 1
     const activeRequestId = requestId
-    void runFetch(activeRequestId, false)
+    void runFetch(activeRequestId, softRefresh)
 
     return () => {
       cancelled = true

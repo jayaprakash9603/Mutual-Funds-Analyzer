@@ -20,6 +20,7 @@ export const API_ROUTES = {
   fundReportPeers: '/api/fund-report/peers',
   fundReportDrawdownPeers: '/api/fund-report/drawdown-peers',
   fundReportCalendarReturns: '/api/fund-report/calendar-returns',
+  fundReportEvents: '/api/fund-report/events',
 } as const
 
 export type ApiRoute = (typeof API_ROUTES)[keyof typeof API_ROUTES]

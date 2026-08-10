@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFeature } from '@/context/FeatureFlagProvider'
 import {
   fetchFundReportAssessment,
@@ -17,6 +17,7 @@ import {
   type ReportFreshness,
 } from '../schemas'
 import { useFundReport } from './useFundReport'
+import { useReportRefreshEvents } from './useReportRefreshEvents'
 import { useReportSection, type ReportSectionState } from './useReportSection'
 
 export type ProgressiveFundReportGroups = {
@@ -125,7 +126,8 @@ export function useProgressiveFundReport(
   const risk = useReportSection({
     scheme,
     startDate,
-    enabled: progressiveActive && groupEnabled('risk') && (lazyMode || secondaryWave),
+    // Fetch with overview — long-term chart on Overview needs drawdown.indexedNav.
+    enabled: progressiveActive && groupEnabled('risk'),
     fetchSection: (s, d, signal) => fetchFundReportRisk(s, { startDate: d, signal }),
   })
 
@@ -141,6 +143,30 @@ export function useProgressiveFundReport(
     startDate,
     enabled: progressiveActive && groupEnabled('assessment'),
     fetchSection: (s, d, signal) => fetchFundReportAssessment(s, { startDate: d, signal }),
+  })
+
+  const overviewRetry = overview.retry
+  const performanceRetry = performance.retry
+  const riskRetry = risk.retry
+  const investmentRetry = investment.retry
+  const assessmentRetry = assessment.retry
+  const lastSseRefetchAt = useRef(0)
+
+  const refetchAllSections = useCallback(() => {
+    const now = Date.now()
+    if (now - lastSseRefetchAt.current < 1500) return
+    lastSseRefetchAt.current = now
+    overviewRetry()
+    performanceRetry()
+    riskRetry()
+    investmentRetry()
+    assessmentRetry()
+  }, [overviewRetry, performanceRetry, riskRetry, investmentRetry, assessmentRetry])
+
+  useReportRefreshEvents({
+    scheme: progressiveActive ? scheme : null,
+    enabled: progressiveActive,
+    onReportReady: refetchAllSections,
   })
 
   const legacy = useFundReport(progressiveActive ? null : scheme, startDate)
