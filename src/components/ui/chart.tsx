@@ -45,8 +45,13 @@ const ChartContainer = React.forwardRef<
       <div
         data-chart={chartId}
         ref={ref}
+        {...props}
         className={cn(
           'flex aspect-video justify-center rounded-lg bg-[var(--chart-surface)] text-xs text-foreground min-w-0 w-full',
+          'outline-none focus:outline-none focus-visible:outline-none',
+          '[&_.recharts-wrapper]:outline-none [&_.recharts-wrapper]:focus:outline-none [&_.recharts-wrapper]:focus-visible:outline-none',
+          '[&_svg]:outline-none [&_svg]:focus:outline-none [&_svg]:focus-visible:outline-none',
+          '[&_.recharts-surface]:outline-none [&_.recharts-surface]:focus:outline-none',
           '[&_.recharts-cartesian-axis-tick_text]:fill-[var(--chart-axis)]',
           '[&_.recharts-cartesian-grid_line]:stroke-[var(--chart-grid-stroke)]',
           '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[var(--chart-tooltip-cursor)]',
@@ -55,7 +60,6 @@ const ChartContainer = React.forwardRef<
           '[&_.recharts-default-tooltip_.recharts-tooltip-item]:!text-popover-foreground',
           className,
         )}
-        {...props}
       >
         <style
           dangerouslySetInnerHTML={{

@@ -161,7 +161,28 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+
+  /* Keep keyboard focus rings on real controls — never on chart SVGs (they use tabindex). */
+  :where(a, button, input, textarea, select, summary, [role='button'], [role='tab']):focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring/50;
+  }
+
+  .recharts-wrapper,
+  .recharts-wrapper:focus,
+  .recharts-wrapper:focus-visible,
+  .recharts-surface,
+  .recharts-surface:focus,
+  .recharts-surface:focus-visible,
+  .recharts-wrapper svg,
+  .recharts-wrapper svg:focus,
+  .recharts-wrapper svg:focus-visible,
+  [data-chart],
+  [data-chart]:focus,
+  [data-chart]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   html {
