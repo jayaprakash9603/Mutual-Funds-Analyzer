@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown, BarChart2, GitCommit } from 'lucide-react'
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart2,
+  GitCommit,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
 
 export type AnnualReturnRow = {
   year: string
@@ -26,10 +37,13 @@ export function AnnualReturnsSnakeTimeline({
 }: AnnualReturnsSnakeTimelineProps) {
   const [selectedSeries, setSelectedSeries] = useState<'fund' | 'benchmark'>('fund')
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [cols, setCols] = useState<number>(5)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
+  const pathRefs = useRef<Map<number, SVGPathElement>>(new Map())
   const [pathPoints, setPathPoints] = useState<Point[]>([])
 
   // Responsive column count calculation
@@ -85,6 +99,57 @@ export function AnnualReturnsSnakeTimeline({
     }
   }, [updatePaths, cols, selectedSeries, data])
 
+  // Auto-play timeline step controller
+  useEffect(() => {
+    if (!isPlaying) return
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => {
+        if (prev === null || prev >= data.length - 1) {
+          return 0
+        }
+        return prev + 1
+      })
+    }, 1600)
+
+    return () => clearInterval(interval)
+  }, [isPlaying, data.length])
+
+  // Auto-scroll focused card into view smoothly
+  useEffect(() => {
+    if (activeIndex === null) return
+    const el = cardRefs.current.get(activeIndex)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [activeIndex])
+
+  const handleTogglePlay = () => {
+    if (isPlaying) {
+      setIsPlaying(false)
+    } else {
+      if (activeIndex === null || activeIndex >= data.length - 1) {
+        setActiveIndex(0)
+      }
+      setIsPlaying(true)
+    }
+  }
+
+  const handleNextStep = () => {
+    setIsPlaying(false)
+    setActiveIndex((prev) => (prev === null || prev >= data.length - 1 ? 0 : prev + 1))
+  }
+
+  const handlePrevStep = () => {
+    setIsPlaying(false)
+    setActiveIndex((prev) => (prev === null || prev <= 0 ? data.length - 1 : prev - 1))
+  }
+
+  const handleResetTimeline = () => {
+    setIsPlaying(false)
+    setActiveIndex(null)
+  }
+
   // Calculate summary stats
   const summary = useMemo(() => {
     if (!data.length) return null
@@ -127,7 +192,7 @@ export function AnnualReturnsSnakeTimeline({
   // Generate SVG path string connecting consecutive nodes
   const svgPaths = useMemo(() => {
     if (pathPoints.length < 2) return []
-    const paths: { d: string; isProfit: boolean; key: string }[] = []
+    const paths: { d: string; isProfit: boolean; key: string; index: number; p1: Point; p2: Point }[] = []
 
     for (let i = 0; i < pathPoints.length - 1; i++) {
       const p1 = pathPoints[i]
@@ -147,6 +212,9 @@ export function AnnualReturnsSnakeTimeline({
           d: `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`,
           isProfit,
           key: `path-${i}`,
+          index: i,
+          p1,
+          p2,
         })
       } else {
         // Different rows: U-turn loop
@@ -159,12 +227,13 @@ export function AnnualReturnsSnakeTimeline({
             d: `M ${p1.x} ${p1.y} C ${controlX} ${p1.y}, ${controlX} ${p2.y}, ${p2.x} ${p2.y}`,
             isProfit,
             key: `path-${i}`,
+            index: i,
+            p1,
+            p2,
           })
         } else {
           // Multi-column grid layout: U-turn at edge
           const isEvenRow = r1 % 2 === 0
-          // Even row (0, 2...) goes L -> R, U-turn curves to the RIGHT
-          // Odd row (1, 3...) goes R -> L, U-turn curves to the LEFT
           const curveOffset = isEvenRow ? 65 : -65
           const edgeX = isEvenRow ? Math.max(p1.x, p2.x) : Math.min(p1.x, p2.x)
           const controlX = edgeX + curveOffset
@@ -173,6 +242,9 @@ export function AnnualReturnsSnakeTimeline({
             d: `M ${p1.x} ${p1.y} C ${controlX} ${p1.y}, ${controlX} ${p2.y}, ${p2.x} ${p2.y}`,
             isProfit,
             key: `path-${i}`,
+            index: i,
+            p1,
+            p2,
           })
         }
       }
@@ -184,25 +256,103 @@ export function AnnualReturnsSnakeTimeline({
 
   return (
     <div className="space-y-5">
+      {/* Dynamic Keyframes for Path Dash Animation */}
+      <style>{`
+        @keyframes dashFlow {
+          from {
+            stroke-dashoffset: 32;
+          }
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+        .animate-dash-flow {
+          animation: dashFlow 1.5s linear infinite;
+        }
+        @keyframes pulseGlow {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+          }
+          50% {
+            transform: scale(1.35);
+            opacity: 1;
+          }
+        }
+        .animate-pulse-glow {
+          animation: pulseGlow 2s ease-in-out infinite;
+        }
+      `}</style>
+
       {/* Top Header Controls & Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-border/60 pb-3">
         {/* Left: Legend Indicators */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
           <div className="flex items-center gap-1.5 font-medium text-foreground bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded-full">
             <span className="size-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shadow-xs" />
-            <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Returns in Profit</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Profit</span>
             <span className="text-muted-foreground text-[11px]">(≥ 0%)</span>
           </div>
 
           <div className="flex items-center gap-1.5 font-medium text-foreground bg-rose-500/10 dark:bg-rose-950/40 border border-rose-500/30 px-2.5 py-1 rounded-full">
             <span className="size-2.5 rounded-full bg-rose-600 dark:bg-rose-500 shadow-xs" />
-            <span className="text-rose-700 dark:text-rose-300 font-semibold">Returns in Loss</span>
+            <span className="text-rose-700 dark:text-rose-300 font-semibold">Loss</span>
             <span className="text-muted-foreground text-[11px]">(&lt; 0%)</span>
           </div>
         </div>
 
+        {/* Center: Play/Pause Timeline Controller */}
+        <div className="flex items-center gap-1.5 bg-muted/60 dark:bg-muted/30 p-1 rounded-xl border border-border/70 text-xs self-start lg:self-auto shadow-xs">
+          <button
+            type="button"
+            onClick={handleTogglePlay}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all shadow-xs ${
+              isPlaying
+                ? 'bg-rose-600 text-white hover:bg-rose-700'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+            }`}
+            title={isPlaying ? 'Pause Timeline Motion' : 'Play Timeline Journey Animation'}
+          >
+            {isPlaying ? <Pause className="size-3.5 fill-current" /> : <Play className="size-3.5 fill-current ml-0.5" />}
+            <span>{isPlaying ? 'Pause' : 'Play Flow'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+            title="Previous Year"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+
+          <span className="px-1 font-mono font-bold text-foreground text-[11px]">
+            {activeIndex !== null ? data[activeIndex]?.year : 'All Years'}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleNextStep}
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+            title="Next Year"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+
+          {activeIndex !== null ? (
+            <button
+              type="button"
+              onClick={handleResetTimeline}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors ml-0.5"
+              title="Reset Timeline Selection"
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          ) : null}
+        </div>
+
         {/* Right: Series Selector & View Mode Switcher */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end lg:self-auto">
           {/* Fund / Benchmark Selector */}
           <div className="inline-flex items-center p-0.5 rounded-lg border border-border bg-muted/50 text-xs">
             <button
@@ -268,29 +418,69 @@ export function AnnualReturnsSnakeTimeline({
       >
         {/* SVG Connecting Path Overlay */}
         <svg className="absolute inset-0 size-full pointer-events-none z-0 overflow-visible" aria-hidden="true">
-          {svgPaths.map((p) => (
-            <g key={p.key}>
-              {/* Background Guide Track */}
-              <path
-                d={p.d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={6}
-                strokeLinecap="round"
-                className="text-muted-foreground/15 dark:text-muted-foreground/25"
-              />
-              {/* Foreground Solid Return Line */}
-              <path
-                d={p.d}
-                fill="none"
-                stroke={p.isProfit ? '#10b981' : '#f43f5e'}
-                strokeWidth={3.5}
-                strokeDasharray="8 4"
-                strokeLinecap="round"
-                className="transition-all duration-300 opacity-90 dark:opacity-95"
-              />
-            </g>
-          ))}
+          {svgPaths.map((p) => {
+            const isStepActive = activeIndex !== null && (activeIndex === p.index || activeIndex === p.index + 1)
+            const isSegmentHighlighted = activeIndex !== null && activeIndex > p.index
+
+            return (
+              <g key={p.key}>
+                {/* Background Guide Track */}
+                <path
+                  d={p.d}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={isStepActive ? 8 : 6}
+                  strokeLinecap="round"
+                  className={`transition-all duration-300 ${
+                    isStepActive
+                      ? 'text-primary/25'
+                      : 'text-muted-foreground/15 dark:text-muted-foreground/25'
+                  }`}
+                />
+
+                {/* Animated Moving Dashed Flow Return Line */}
+                <path
+                  ref={(el) => {
+                    if (el) pathRefs.current.set(p.index, el)
+                    else pathRefs.current.delete(p.index)
+                  }}
+                  d={p.d}
+                  fill="none"
+                  stroke={
+                    isStepActive
+                      ? p.isProfit
+                        ? '#059669'
+                        : '#e11d48'
+                      : p.isProfit
+                        ? '#10b981'
+                        : '#f43f5e'
+                  }
+                  strokeWidth={isStepActive ? 4.5 : 3.5}
+                  strokeDasharray="8 4"
+                  strokeLinecap="round"
+                  className={`animate-dash-flow transition-all duration-300 ${
+                    isSegmentHighlighted || activeIndex === null ? 'opacity-90 dark:opacity-95' : 'opacity-40'
+                  }`}
+                />
+
+                {/* Traveling Glow Orb along active line segment */}
+                {isStepActive ? (
+                  <circle
+                    r={6}
+                    fill={p.isProfit ? '#10b981' : '#f43f5e'}
+                    className="animate-pulse-glow shadow-lg"
+                  >
+                    <animateMotion
+                      path={p.d}
+                      dur="1.5s"
+                      repeatCount="indefinite"
+                      rotate="auto"
+                    />
+                  </circle>
+                ) : null}
+              </g>
+            )
+          })}
         </svg>
 
         {/* Serpentine Grid Nodes */}
@@ -309,6 +499,7 @@ export function AnnualReturnsSnakeTimeline({
                 const lead = item.fund - item.benchmark
                 const isProfit = val >= 0
                 const isHovered = hoveredIndex === originalIndex
+                const isActive = activeIndex === originalIndex
 
                 return (
                   <div
@@ -319,14 +510,20 @@ export function AnnualReturnsSnakeTimeline({
                     }}
                     onMouseEnter={() => setHoveredIndex(originalIndex)}
                     onMouseLeave={() => setHoveredIndex(null)}
+                    onClick={() => {
+                      setIsPlaying(false)
+                      setActiveIndex(originalIndex)
+                    }}
                     className="relative group transition-all duration-300 transform"
                   >
                     {/* Year Tag Tab resting on top border */}
                     <div
-                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-colors ${
-                        isProfit
-                          ? 'bg-background text-emerald-700 border-emerald-500/50 dark:bg-background dark:text-emerald-400 dark:border-emerald-500/60'
-                          : 'bg-background text-rose-700 border-rose-500/50 dark:bg-background dark:text-rose-400 dark:border-rose-500/60'
+                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-all ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-md ring-2 ring-primary/40'
+                          : isProfit
+                            ? 'bg-background text-emerald-700 border-emerald-500/50 dark:bg-background dark:text-emerald-400 dark:border-emerald-500/60'
+                            : 'bg-background text-rose-700 border-rose-500/50 dark:bg-background dark:text-rose-400 dark:border-rose-500/60'
                       }`}
                     >
                       {item.year}
@@ -334,8 +531,12 @@ export function AnnualReturnsSnakeTimeline({
 
                     {/* Main Year Card Box */}
                     <div
-                      className={`w-28 sm:w-32 md:w-36 pt-4 pb-2.5 px-2.5 rounded-xl border shadow-md transition-all duration-200 flex flex-col items-center justify-center text-center cursor-pointer ${
-                        isHovered ? 'scale-108 -translate-y-1 shadow-xl ring-2 ring-primary/40 z-30' : 'z-10'
+                      className={`w-28 sm:w-32 md:w-36 pt-4 pb-2.5 px-2.5 rounded-xl border shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer ${
+                        isActive
+                          ? 'scale-112 -translate-y-2 shadow-2xl ring-4 ring-primary/50 dark:ring-primary/60 z-40'
+                          : isHovered
+                            ? 'scale-108 -translate-y-1 shadow-xl ring-2 ring-primary/40 z-30'
+                            : 'z-10'
                       } ${
                         isProfit
                           ? 'bg-emerald-600 dark:bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20'
@@ -343,9 +544,10 @@ export function AnnualReturnsSnakeTimeline({
                       }`}
                     >
                       {/* Return Percentage */}
-                      <span className="text-base sm:text-lg font-black tracking-tight tabular-nums drop-shadow-xs">
+                      <span className="text-base sm:text-lg font-black tracking-tight tabular-nums drop-shadow-xs flex items-center justify-center gap-1">
                         {val >= 0 ? '+' : ''}
                         {val.toFixed(1)}%
+                        {isActive ? <Sparkles className="size-3.5 text-amber-200 animate-spin" /> : null}
                       </span>
 
                       {/* Sub-label comparison */}
@@ -356,14 +558,14 @@ export function AnnualReturnsSnakeTimeline({
                       </span>
                     </div>
 
-                    {/* Rich Tooltip on Hover */}
-                    {isHovered ? (
+                    {/* Rich Tooltip on Hover or Active */}
+                    {isHovered || isActive ? (
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 rounded-lg border border-border bg-popover text-popover-foreground text-xs shadow-xl z-50 pointer-events-none animate-in fade-in-50 zoom-in-95">
                         <p className="font-bold text-foreground border-b border-border/60 pb-1 mb-1.5 flex items-center justify-between">
                           <span>{item.year} Calendar Return</span>
                           <span
                             className={`font-semibold px-1.5 py-0.2 rounded text-[10px] ${
-                              isProfit ? 'bg-emerald-500/20 text-emerald-600' : 'bg-rose-500/20 text-rose-600'
+                              isProfit ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                             }`}
                           >
                             {isProfit ? 'Profit' : 'Loss'}
