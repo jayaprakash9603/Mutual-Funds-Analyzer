@@ -4,8 +4,6 @@ import {
   TrendingDown,
   BarChart2,
   GitCommit,
-  Play,
-  Pause,
   RotateCcw,
   ChevronLeft,
   ChevronRight,
@@ -37,8 +35,7 @@ export function AnnualReturnsSnakeTimeline({
 }: AnnualReturnsSnakeTimelineProps) {
   const [selectedSeries, setSelectedSeries] = useState<'fund' | 'benchmark'>('fund')
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
+  const [activeIndex, setActiveIndex] = useState<number>(0)
   const [cols, setCols] = useState<number>(5)
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -99,55 +96,35 @@ export function AnnualReturnsSnakeTimeline({
     }
   }, [updatePaths, cols, selectedSeries, data])
 
-  // Auto-play timeline step controller
+  // Infinite default continuous timeline animation (loops continuously year-to-year)
   useEffect(() => {
-    if (!isPlaying) return
+    if (!data.length) return
 
     const interval = setInterval(() => {
-      setActiveIndex((prev) => {
-        if (prev === null || prev >= data.length - 1) {
-          return 0
-        }
-        return prev + 1
-      })
+      setActiveIndex((prev) => (prev >= data.length - 1 ? 0 : prev + 1))
     }, 1600)
 
     return () => clearInterval(interval)
-  }, [isPlaying, data.length])
+  }, [data.length])
 
-  // Auto-scroll focused card into view smoothly
+  // Auto-scroll focused active card into view smoothly
   useEffect(() => {
-    if (activeIndex === null) return
     const el = cardRefs.current.get(activeIndex)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
   }, [activeIndex])
 
-  const handleTogglePlay = () => {
-    if (isPlaying) {
-      setIsPlaying(false)
-    } else {
-      if (activeIndex === null || activeIndex >= data.length - 1) {
-        setActiveIndex(0)
-      }
-      setIsPlaying(true)
-    }
-  }
-
   const handleNextStep = () => {
-    setIsPlaying(false)
-    setActiveIndex((prev) => (prev === null || prev >= data.length - 1 ? 0 : prev + 1))
+    setActiveIndex((prev) => (prev >= data.length - 1 ? 0 : prev + 1))
   }
 
   const handlePrevStep = () => {
-    setIsPlaying(false)
-    setActiveIndex((prev) => (prev === null || prev <= 0 ? data.length - 1 : prev - 1))
+    setActiveIndex((prev) => (prev <= 0 ? data.length - 1 : prev - 1))
   }
 
   const handleResetTimeline = () => {
-    setIsPlaying(false)
-    setActiveIndex(null)
+    setActiveIndex(0)
   }
 
   // Calculate summary stats
@@ -301,22 +278,8 @@ export function AnnualReturnsSnakeTimeline({
           </div>
         </div>
 
-        {/* Center: Play/Pause Timeline Controller */}
+        {/* Center: Stepping & Reset Controller (Play/Pause removed) */}
         <div className="flex items-center gap-1.5 bg-muted/60 dark:bg-muted/30 p-1 rounded-xl border border-border/70 text-xs self-start lg:self-auto shadow-xs">
-          <button
-            type="button"
-            onClick={handleTogglePlay}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all shadow-xs ${
-              isPlaying
-                ? 'bg-rose-600 text-white hover:bg-rose-700'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
-            }`}
-            title={isPlaying ? 'Pause Timeline Motion' : 'Play Timeline Journey Animation'}
-          >
-            {isPlaying ? <Pause className="size-3.5 fill-current" /> : <Play className="size-3.5 fill-current ml-0.5" />}
-            <span>{isPlaying ? 'Pause' : 'Play Flow'}</span>
-          </button>
-
           <button
             type="button"
             onClick={handlePrevStep}
@@ -326,8 +289,8 @@ export function AnnualReturnsSnakeTimeline({
             <ChevronLeft className="size-4" />
           </button>
 
-          <span className="px-1 font-mono font-bold text-foreground text-[11px]">
-            {activeIndex !== null ? data[activeIndex]?.year : 'All Years'}
+          <span className="px-2 font-mono font-bold text-foreground text-[11px]">
+            {data[activeIndex]?.year ?? 'Timeline'}
           </span>
 
           <button
@@ -339,16 +302,14 @@ export function AnnualReturnsSnakeTimeline({
             <ChevronRight className="size-4" />
           </button>
 
-          {activeIndex !== null ? (
-            <button
-              type="button"
-              onClick={handleResetTimeline}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors ml-0.5"
-              title="Reset Timeline Selection"
-            >
-              <RotateCcw className="size-3.5" />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleResetTimeline}
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors ml-0.5"
+            title="Restart Timeline Flow"
+          >
+            <RotateCcw className="size-3.5" />
+          </button>
         </div>
 
         {/* Right: Series Selector & View Mode Switcher */}
@@ -419,8 +380,8 @@ export function AnnualReturnsSnakeTimeline({
         {/* SVG Connecting Path Overlay */}
         <svg className="absolute inset-0 size-full pointer-events-none z-0 overflow-visible" aria-hidden="true">
           {svgPaths.map((p) => {
-            const isStepActive = activeIndex !== null && (activeIndex === p.index || activeIndex === p.index + 1)
-            const isSegmentHighlighted = activeIndex !== null && activeIndex > p.index
+            const isStepActive = activeIndex === p.index || activeIndex === p.index + 1
+            const isSegmentHighlighted = activeIndex > p.index
 
             return (
               <g key={p.key}>
@@ -459,7 +420,7 @@ export function AnnualReturnsSnakeTimeline({
                   strokeDasharray="8 4"
                   strokeLinecap="round"
                   className={`animate-dash-flow transition-all duration-300 ${
-                    isSegmentHighlighted || activeIndex === null ? 'opacity-90 dark:opacity-95' : 'opacity-40'
+                    isSegmentHighlighted || isStepActive ? 'opacity-90 dark:opacity-95' : 'opacity-40'
                   }`}
                 />
 
@@ -510,10 +471,7 @@ export function AnnualReturnsSnakeTimeline({
                     }}
                     onMouseEnter={() => setHoveredIndex(originalIndex)}
                     onMouseLeave={() => setHoveredIndex(null)}
-                    onClick={() => {
-                      setIsPlaying(false)
-                      setActiveIndex(originalIndex)
-                    }}
+                    onClick={() => setActiveIndex(originalIndex)}
                     className="relative group transition-all duration-300 transform"
                   >
                     {/* Year Tag Tab resting on top border */}
