@@ -35,7 +35,8 @@ export function AnnualReturnsSnakeTimeline({
 }: AnnualReturnsSnakeTimelineProps) {
   const [selectedSeries, setSelectedSeries] = useState<'fund' | 'benchmark'>('fund')
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [isGraphFocused, setIsGraphFocused] = useState(false)
   const [cols, setCols] = useState<number>(5)
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -96,31 +97,43 @@ export function AnnualReturnsSnakeTimeline({
     }
   }, [updatePaths, cols, selectedSeries, data])
 
-  // Infinite default continuous timeline animation (loops continuously year-to-year)
+  // Animate year-to-year only while the user is over the graph (no page scroll hijacking)
   useEffect(() => {
-    if (!data.length) return
+    if (!isGraphFocused || !data.length) return
 
     const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev >= data.length - 1 ? 0 : prev + 1))
+      setActiveIndex((prev) => {
+        if (prev === null || prev >= data.length - 1) return 0
+        return prev + 1
+      })
     }, 1600)
 
     return () => clearInterval(interval)
-  }, [data.length])
+  }, [isGraphFocused, data.length])
 
-  // Auto-scroll focused active card into view smoothly
-  useEffect(() => {
-    const el = cardRefs.current.get(activeIndex)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-    }
-  }, [activeIndex])
+  const handleGraphEnter = () => {
+    setIsGraphFocused(true)
+    setActiveIndex((prev) => (prev === null ? 0 : prev))
+  }
+
+  const handleGraphLeave = () => {
+    setIsGraphFocused(false)
+    setActiveIndex(null)
+    setHoveredIndex(null)
+  }
 
   const handleNextStep = () => {
-    setActiveIndex((prev) => (prev >= data.length - 1 ? 0 : prev + 1))
+    setActiveIndex((prev) => {
+      if (prev === null || prev >= data.length - 1) return 0
+      return prev + 1
+    })
   }
 
   const handlePrevStep = () => {
-    setActiveIndex((prev) => (prev <= 0 ? data.length - 1 : prev - 1))
+    setActiveIndex((prev) => {
+      if (prev === null || prev <= 0) return data.length - 1
+      return prev - 1
+    })
   }
 
   const handleResetTimeline = () => {
@@ -290,7 +303,7 @@ export function AnnualReturnsSnakeTimeline({
           </button>
 
           <span className="px-2 font-mono font-bold text-foreground text-[11px]">
-            {data[activeIndex]?.year ?? 'Timeline'}
+            {activeIndex !== null ? (data[activeIndex]?.year ?? 'Timeline') : 'Hover graph'}
           </span>
 
           <button
@@ -372,16 +385,20 @@ export function AnnualReturnsSnakeTimeline({
         </div>
       </div>
 
-      {/* Main Serpentine Snake Grid Container */}
+      {/* Main Serpentine Snake Grid Container — animation runs only while pointer is over it */}
       <div
         ref={containerRef}
+        onMouseEnter={handleGraphEnter}
+        onMouseLeave={handleGraphLeave}
         className="relative min-h-[300px] py-6 px-6 sm:px-10 md:px-14 bg-muted/10 dark:bg-muted/5 rounded-2xl border border-border/40 overflow-visible"
       >
         {/* SVG Connecting Path Overlay */}
         <svg className="absolute inset-0 size-full pointer-events-none z-0 overflow-visible" aria-hidden="true">
           {svgPaths.map((p) => {
-            const isStepActive = activeIndex === p.index || activeIndex === p.index + 1
-            const isSegmentHighlighted = activeIndex > p.index
+            const isStepActive =
+              activeIndex !== null && (activeIndex === p.index || activeIndex === p.index + 1)
+            const isSegmentHighlighted = activeIndex !== null && activeIndex > p.index
+            const idleAllVisible = activeIndex === null
 
             return (
               <g key={p.key}>
@@ -419,8 +436,12 @@ export function AnnualReturnsSnakeTimeline({
                   strokeWidth={isStepActive ? 4.5 : 3.5}
                   strokeDasharray="8 4"
                   strokeLinecap="round"
-                  className={`animate-dash-flow transition-all duration-300 ${
-                    isSegmentHighlighted || isStepActive ? 'opacity-90 dark:opacity-95' : 'opacity-40'
+                  className={`transition-all duration-300 ${
+                    isGraphFocused ? 'animate-dash-flow' : ''
+                  } ${
+                    idleAllVisible || isSegmentHighlighted || isStepActive
+                      ? 'opacity-90 dark:opacity-95'
+                      : 'opacity-40'
                   }`}
                 />
 
