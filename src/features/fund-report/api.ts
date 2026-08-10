@@ -6,6 +6,7 @@ import {
   withFundReportDefaults,
 } from './sectionDefaults'
 import {
+  calendarReturnsSchema,
   drawdownPeersSchema,
   fundReportAssessmentEnvelopeSchema,
   fundReportAssessmentSchema,
@@ -25,6 +26,7 @@ import {
   stepUpSipSimulationSchema,
   swpSimulationSchema,
   stpSimulationSchema,
+  type CalendarReturns,
   type DrawdownPeers,
   type FundReport,
   type FundReportAssessment,
@@ -48,6 +50,7 @@ import {
 } from './schemas'
 
 export type {
+  CalendarReturns,
   DrawdownPeers,
   FundReport,
   FundReportAssessment,
@@ -190,6 +193,18 @@ export async function fetchDrawdownPeers(
     label: 'Drawdown peers',
   })
   return drawdownPeersSchema.parse(data)
+}
+
+export async function fetchCalendarReturns(
+  scheme: string,
+  options?: FetchOptions,
+): Promise<CalendarReturns> {
+  const data = await requestJson<unknown>(API_ROUTES.fundReportCalendarReturns, {
+    params: reportParams(scheme, options),
+    signal: options?.signal,
+    label: 'Calendar returns',
+  })
+  return calendarReturnsSchema.parse(data)
 }
 
 export async function fetchSipSimulation(

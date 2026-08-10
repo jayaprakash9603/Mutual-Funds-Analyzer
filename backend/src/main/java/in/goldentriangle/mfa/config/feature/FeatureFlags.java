@@ -97,7 +97,7 @@ public class FeatureFlags {
         private boolean insightsPanel = true;
         private boolean performanceTimeline = true;
         private boolean additionalCharts = true;
-        private boolean exportPdf = true;
+        private boolean exportPdf = false;
         private boolean share = true;
         private boolean fundReportPage = true;
 

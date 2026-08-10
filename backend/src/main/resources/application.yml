@@ -58,7 +58,7 @@ features:
     insightsPanel: true
     performanceTimeline: true
     additionalCharts: true
-    exportPdf: true
+    exportPdf: false
     share: true
     fundReportPage: true
   platform:

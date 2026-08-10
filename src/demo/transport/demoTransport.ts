@@ -233,6 +233,119 @@ async function handleDrawdownPeers(request: DemoRequest, manifest: DemoManifest)
   return loadDemoFixture(fund.files.drawdownPeers, request.signal)
 }
 
+type IndexedNavPoint = { date: string; indexValue: number; nav?: number }
+
+type DemoMonthBucket = { firstDate: string; firstNav: number; lastDate: string; lastNav: number }
+
+function absoluteReturnPercent(startNav: number, endNav: number): number {
+  if (startNav <= 0) return 0
+  return ((endNav / startNav) - 1) * 100
+}
+
+/** Mirrors backend CalendarReturnsCalculator — month-end to month-end chaining. */
+function computeCalendarReturnsFromIndexedNav(indexedNav: IndexedNavPoint[]) {
+  const buckets = new Map<string, DemoMonthBucket>()
+  for (const point of indexedNav) {
+    if (!point.date) continue
+    const value = point.nav ?? point.indexValue
+    if (!(value > 0)) continue
+    const [yearStr, monthStr] = point.date.split('-')
+    const year = Number(yearStr)
+    const month = Number(monthStr)
+    if (!year || !month) continue
+    const key = `${year}-${month}`
+    const existing = buckets.get(key)
+    if (!existing) {
+      buckets.set(key, {
+        firstDate: point.date,
+        firstNav: value,
+        lastDate: point.date,
+        lastNav: value,
+      })
+    } else {
+      existing.lastDate = point.date
+      existing.lastNav = value
+    }
+  }
+
+  const keys = Array.from(buckets.keys()).sort((a, b) => {
+    const [ay, am] = a.split('-').map(Number)
+    const [by, bm] = b.split('-').map(Number)
+    return ay === by ? am - bm : ay - by
+  })
+
+  const months: Array<{
+    year: number
+    month: number
+    returnPercent: number
+    startNav: number
+    endNav: number
+    startDate: string
+    endDate: string
+  }> = []
+
+  let previousMonthEnd: { date: string; nav: number } | null = null
+  for (const key of keys) {
+    const bucket = buckets.get(key)!
+    const [year, month] = key.split('-').map(Number)
+    const startNav = previousMonthEnd?.nav ?? bucket.firstNav
+    const startDate = previousMonthEnd?.date ?? bucket.firstDate
+    const returnPercent = absoluteReturnPercent(startNav, bucket.lastNav)
+    months.push({
+      year,
+      month,
+      returnPercent,
+      startNav,
+      endNav: bucket.lastNav,
+      startDate,
+      endDate: bucket.lastDate,
+    })
+    previousMonthEnd = { date: bucket.lastDate, nav: bucket.lastNav }
+  }
+
+  const byYear = new Map<number, typeof months>()
+  for (const month of months) {
+    const list = byYear.get(month.year) ?? []
+    list.push(month)
+    byYear.set(month.year, list)
+  }
+
+  const years = Array.from(byYear.entries()).map(([year, yearMonths]) => {
+    const first = yearMonths[0]
+    const last = yearMonths[yearMonths.length - 1]
+    return {
+      year,
+      returnPercent: absoluteReturnPercent(first.startNav, last.endNav),
+      startNav: first.startNav,
+      endNav: last.endNav,
+      monthsCovered: yearMonths.length,
+      partial: yearMonths.length < 12 || first.month !== 1 || last.month !== 12,
+    }
+  })
+
+  const monthReturns = months.map((m) => m.returnPercent)
+  const yearReturns = years.map((y) => y.returnPercent)
+  return {
+    months,
+    years,
+    bestMonth: monthReturns.length ? Math.max(...monthReturns) : 0,
+    worstMonth: monthReturns.length ? Math.min(...monthReturns) : 0,
+    bestYear: yearReturns.length ? Math.max(...yearReturns) : 0,
+    worstYear: yearReturns.length ? Math.min(...yearReturns) : 0,
+    positiveMonths: months.filter((m) => m.returnPercent > 0).length,
+    totalMonths: months.length,
+  }
+}
+
+async function handleCalendarReturns(request: DemoRequest, manifest: DemoManifest): Promise<unknown> {
+  const report = await loadEnrichedFundReport(request, manifest)
+  const indexedNav = (report.drawdown?.indexedNav ?? []) as IndexedNavPoint[]
+  if (indexedNav.length === 0) {
+    throw new ApiError('Demo mode has no indexed NAV history for calendar returns.', NOT_FOUND)
+  }
+  return computeCalendarReturnsFromIndexedNav(indexedNav)
+}
+
 type SimTimelinePoint = {
   date: string
   invested?: number
@@ -577,6 +690,7 @@ const DEMO_HANDLERS: Record<string, DemoHandler | undefined> = {
   [API_ROUTES.fundReportStpSimulate]: handleStpSimulate,
   [API_ROUTES.fundReportPeers]: handlePeers,
   [API_ROUTES.fundReportDrawdownPeers]: handleDrawdownPeers,
+  [API_ROUTES.fundReportCalendarReturns]: handleCalendarReturns,
 }
 
 export function hasDemoHandler(path: string): boolean {

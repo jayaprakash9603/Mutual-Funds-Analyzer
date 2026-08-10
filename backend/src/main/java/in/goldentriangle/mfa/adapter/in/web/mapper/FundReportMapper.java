@@ -2,6 +2,7 @@ package in.goldentriangle.mfa.adapter.in.web.mapper;
 
 import in.goldentriangle.mfa.domain.analytics.report.sip.Xirr;
 import in.goldentriangle.mfa.domain.model.RiskLevel;
+import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarReturnsDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.CalendarYearInsightsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.AllTimeHighsReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.BenchmarkComparisonDto;
@@ -44,6 +45,7 @@ import in.goldentriangle.mfa.adapter.in.web.dto.report.SwpTimelinePointDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TaxReportDto;
 import in.goldentriangle.mfa.adapter.in.web.dto.report.TrailingReturnsDto;
 import in.goldentriangle.mfa.domain.model.ReportSectionEnvelope;
+import in.goldentriangle.mfa.domain.model.report.returns.CalendarReturnsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.CalendarYearInsightsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.AllTimeHighsReport;
 import in.goldentriangle.mfa.domain.model.report.returns.BenchmarkComparisonReport;
@@ -521,6 +523,35 @@ public class FundReportMapper {
                                 r.thresholdPercent(), r.peerMedianPercentOfDays()))
                         .toList(),
                 report.peerCount());
+    }
+
+    public CalendarReturnsDto toDto(CalendarReturnsReport report) {
+        return new CalendarReturnsDto(
+                report.months().stream()
+                        .map(m -> new CalendarReturnsDto.MonthlyReturnDto(
+                                m.year(),
+                                m.month(),
+                                m.returnPercent(),
+                                m.startNav(),
+                                m.endNav(),
+                                m.startDate(),
+                                m.endDate()))
+                        .toList(),
+                report.years().stream()
+                        .map(y -> new CalendarReturnsDto.YearlyReturnDto(
+                                y.year(),
+                                y.returnPercent(),
+                                y.startNav(),
+                                y.endNav(),
+                                y.monthsCovered(),
+                                y.partial()))
+                        .toList(),
+                report.bestMonth(),
+                report.worstMonth(),
+                report.bestYear(),
+                report.worstYear(),
+                report.positiveMonths(),
+                report.totalMonths());
     }
 
     private SipReportDto toDto(SipReport report) {

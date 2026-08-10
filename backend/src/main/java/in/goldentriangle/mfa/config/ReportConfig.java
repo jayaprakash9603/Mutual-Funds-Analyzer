@@ -18,6 +18,7 @@ import in.goldentriangle.mfa.domain.analytics.report.sip.StepUpSipCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.StpCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.sip.SwpCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.tax.TaxCalculator;
+import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarReturnsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.CalendarYearInsightsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.AllTimeHighsCalculator;
 import in.goldentriangle.mfa.domain.analytics.report.returns.BestDaysCalculator;
@@ -141,6 +142,11 @@ public class ReportConfig {
     @Bean
     CalendarYearInsightsCalculator calendarYearInsightsCalculator() {
         return new CalendarYearInsightsCalculator();
+    }
+
+    @Bean
+    CalendarReturnsCalculator calendarReturnsCalculator() {
+        return new CalendarReturnsCalculator();
     }
 
     @Bean

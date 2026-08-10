@@ -26,7 +26,8 @@ export const featureDefaults: Record<string, boolean> = {
   'ui.insightsPanel': true,
   'ui.performanceTimeline': true,
   'ui.additionalCharts': true,
-  'ui.exportPdf': true,
+  // PDF download is dormant in demo and live until re-enabled.
+  'ui.exportPdf': false,
   'ui.share': true,
   'ui.fundReportPage': true,
 }

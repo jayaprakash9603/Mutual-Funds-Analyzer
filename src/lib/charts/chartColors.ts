@@ -49,6 +49,59 @@ export function signedReturnColor(value: number) {
   return value < 0 ? CHART_COLORS.red : CHART_COLORS.fund
 }
 
+/** Seaborn-style RdYlGn stops for calendar-return heatmaps. */
+const RETURN_HEAT_STOPS: ReadonlyArray<{ t: number; r: number; g: number; b: number }> = [
+  { t: -1.0, r: 165, g: 0, b: 38 }, // #a50026 Deep Crimson Red
+  { t: -0.6, r: 215, g: 48, b: 39 }, // #d73027 Vivid Red
+  { t: -0.3, r: 244, g: 109, b: 67 }, // #f46d43 Orange-Red
+  { t: -0.15, r: 253, g: 174, b: 97 }, // #fdae61 Soft Orange
+  { t: 0.0, r: 254, g: 224, b: 139 }, // #fee08b Soft Cream Yellow
+  { t: 0.15, r: 217, g: 239, b: 139 }, // #d9ef8b Soft Yellow-Green
+  { t: 0.3, r: 166, g: 217, b: 106 }, // #a6d96a Light Bright Green
+  { t: 0.5, r: 102, g: 189, b: 99 }, // #66bd63 Vibrant Green
+  { t: 0.75, r: 26, g: 152, b: 80 }, // #1a9850 Rich Green
+  { t: 1.0, r: 0, g: 104, b: 55 }, // #006837 Dark Forest Green
+]
+
+function lerpChannel(a: number, b: number, u: number) {
+  return Math.round(a + (b - a) * u)
+}
+
+function interpolateHeatStop(t: number): { r: number; g: number; b: number } {
+  const clamped = Math.max(-1, Math.min(1, t))
+  for (let i = 1; i < RETURN_HEAT_STOPS.length; i++) {
+    const left = RETURN_HEAT_STOPS[i - 1]
+    const right = RETURN_HEAT_STOPS[i]
+    if (clamped <= right.t) {
+      const span = right.t - left.t || 1
+      const u = (clamped - left.t) / span
+      return {
+        r: lerpChannel(left.r, right.r, u),
+        g: lerpChannel(left.g, right.g, u),
+        b: lerpChannel(left.b, right.b, u),
+      }
+    }
+  }
+  const last = RETURN_HEAT_STOPS[RETURN_HEAT_STOPS.length - 1]
+  return { r: last.r, g: last.g, b: last.b }
+}
+
+/**
+ * Diverging red→cream→green fill for calendar return cells.
+ * `maxAbs` normalises intensity; near-zero values stay pale cream.
+ */
+export function returnHeatColor(value: number, maxAbs: number): { backgroundColor: string; color: string } {
+  if (!Number.isFinite(value) || !(maxAbs > 0)) {
+    return { backgroundColor: 'transparent', color: 'inherit' }
+  }
+  const { r, g, b } = interpolateHeatStop(value / maxAbs)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return {
+    backgroundColor: `rgb(${r}, ${g}, ${b})`,
+    color: luminance < 0.55 ? '#ffffff' : '#1c1917',
+  }
+}
+
 /**
  * Heatmap bands tuned for readable contrast in light + dark UI.
  * Pair each fill with {@link bandTextColor} (never white-on-light-gray).

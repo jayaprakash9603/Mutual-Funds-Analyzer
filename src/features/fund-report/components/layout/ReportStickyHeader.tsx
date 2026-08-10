@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { FundSelector } from '@/components/dashboard/search/FundSelector'
 import { FundReportToolbar } from '@/features/fund-report/components/layout/FundReportToolbar'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useFeature } from '@/context/FeatureFlagProvider'
 
 type ReportStickyHeaderProps = {
   scheme: string
@@ -35,6 +36,10 @@ export function ReportStickyHeader({
   onShareLink,
   onCopyLink,
 }: ReportStickyHeaderProps) {
+  const pdfExportEnabled = useFeature('ui.exportPdf')
+  const shareEnabled = useFeature('ui.share')
+  const showToolbar = pdfExportEnabled || shareEnabled
+
   return (
     <TooltipProvider>
       <div
@@ -75,21 +80,24 @@ export function ReportStickyHeader({
             )}
           </div>
 
-          <div className="hidden h-7 w-px shrink-0 bg-border/70 sm:block" aria-hidden="true" />
-
-          <FundReportToolbar
-            variant="compact"
-            exportActionsEnabled={exportActionsEnabled}
-            exportReady={exportReady}
-            exporting={exporting}
-            sharing={sharing}
-            fundLabel={fundLabel}
-            isSharedView={isSharedView}
-            isDemoBuild={isDemoBuild}
-            onDownloadPdf={onDownloadPdf}
-            onShareLink={onShareLink}
-            onCopyLink={onCopyLink}
-          />
+          {showToolbar ? (
+            <>
+              <div className="hidden h-7 w-px shrink-0 bg-border/70 sm:block" aria-hidden="true" />
+              <FundReportToolbar
+                variant="compact"
+                exportActionsEnabled={exportActionsEnabled}
+                exportReady={exportReady}
+                exporting={exporting}
+                sharing={sharing}
+                fundLabel={fundLabel}
+                isSharedView={isSharedView}
+                isDemoBuild={isDemoBuild}
+                onDownloadPdf={onDownloadPdf}
+                onShareLink={onShareLink}
+                onCopyLink={onCopyLink}
+              />
+            </>
+          ) : null}
         </div>
       </div>
     </TooltipProvider>

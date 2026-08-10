@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isDemoBuild } from '@/demo/config/demoMode'
+import { useFeature } from '@/context/FeatureFlagProvider'
 import { DemoFundPicker } from '@/components/demo/DemoFundPicker'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useAppChromeOffset } from '@/hooks/useAppChromeOffset'
@@ -42,6 +43,7 @@ export function FundReportPage() {
   const { scheme: routeScheme } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const [scheme, setScheme] = useState(routeScheme ?? searchParams.get('scheme') ?? '')
+  const pdfExportEnabled = useFeature('ui.exportPdf')
 
   const isMobileReportLayout = useIsReportMobileLayout()
   const chromeOffset = useAppChromeOffset()
@@ -222,6 +224,10 @@ export function FundReportPage() {
   }, [isSharedView])
 
   const handleDownloadPdf = async () => {
+    if (!pdfExportEnabled) {
+      toast.error('PDF download is temporarily unavailable.')
+      return
+    }
     if (!exportActionsEnabled) {
       toast.error('Select a fund first.')
       return

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Download, Link2, Loader2, MoreVertical, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
+import { useFeature } from '@/context/FeatureFlagProvider'
 import { cn } from '@/lib/utils'
 
 type FundReportToolbarProps = {
@@ -35,7 +37,7 @@ function CompactToolbarButton({
   disabled?: boolean
   busy?: boolean
   onClick: () => void
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const button = (
     <Button
@@ -74,6 +76,13 @@ export function FundReportToolbar({
   onShareLink,
   onCopyLink,
 }: FundReportToolbarProps) {
+  const pdfExportEnabled = useFeature('ui.exportPdf')
+  const shareEnabled = useFeature('ui.share')
+
+  if (!pdfExportEnabled && !shareEnabled) {
+    return null
+  }
+
   if (variant === 'compact') {
     const busy = exporting || sharing
     const downloadLabel = exporting
@@ -114,6 +123,8 @@ export function FundReportToolbar({
       })()
     }
 
+    const showShareActions = shareEnabled && !isSharedView
+
     const desktopToolbar = (
       <div
         className={cn(
@@ -123,15 +134,17 @@ export function FundReportToolbar({
         role="toolbar"
         aria-label="Report export actions"
       >
-        <CompactToolbarButton
-          label={downloadLabel}
-          disabled={!exportActionsEnabled || busy}
-          busy={exporting}
-          onClick={onDownloadPdf}
-        >
-          <Download className="size-4" aria-hidden="true" />
-        </CompactToolbarButton>
-        {!isSharedView && (
+        {pdfExportEnabled ? (
+          <CompactToolbarButton
+            label={downloadLabel}
+            disabled={!exportActionsEnabled || busy}
+            busy={exporting}
+            onClick={onDownloadPdf}
+          >
+            <Download className="size-4" aria-hidden="true" />
+          </CompactToolbarButton>
+        ) : null}
+        {showShareActions ? (
           <>
             <CompactToolbarButton
               label={shareLabel}
@@ -150,7 +163,7 @@ export function FundReportToolbar({
               <Link2 className="size-4" aria-hidden="true" />
             </CompactToolbarButton>
           </>
-        )}
+        ) : null}
       </div>
     )
 
@@ -173,14 +186,16 @@ export function FundReportToolbar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem
-            disabled={!exportActionsEnabled || busy}
-            onSelect={() => onDownloadPdf()}
-          >
-            <Download className="size-4" aria-hidden="true" />
-            {exporting ? 'Preparing PDF…' : 'Download PDF'}
-          </DropdownMenuItem>
-          {!isSharedView && (
+          {pdfExportEnabled ? (
+            <DropdownMenuItem
+              disabled={!exportActionsEnabled || busy}
+              onSelect={() => onDownloadPdf()}
+            >
+              <Download className="size-4" aria-hidden="true" />
+              {exporting ? 'Preparing PDF…' : 'Download PDF'}
+            </DropdownMenuItem>
+          ) : null}
+          {showShareActions ? (
             <>
               <DropdownMenuItem
                 disabled={!exportActionsEnabled || busy}
@@ -197,10 +212,14 @@ export function FundReportToolbar({
                 {sharing ? 'Encoding…' : 'Copy link'}
               </DropdownMenuItem>
             </>
-          )}
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     )
+
+    if (!pdfExportEnabled && !showShareActions) {
+      return null
+    }
 
     return (
       <div className="flex shrink-0 items-center">
@@ -211,6 +230,20 @@ export function FundReportToolbar({
   }
 
   if (isSharedView) {
+    if (!pdfExportEnabled) {
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Shared snapshot — offline view</p>
+            <p className="text-xs text-muted-foreground">
+              {fundLabel}
+              {isDemoBuild ? ' · opens from URL in demo mode without backend' : ' · no backend calls'}
+            </p>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
         <div>
@@ -233,53 +266,59 @@ export function FundReportToolbar({
       <span className="mr-auto text-xs text-muted-foreground">
         {exportReady ? `Export ${fundLabel}` : 'Export loads the full report first'}
       </span>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        disabled={!exportActionsEnabled || exporting}
-        onClick={onDownloadPdf}
-      >
-        <Download className="size-4" aria-hidden="true" />
-        {exporting ? 'Preparing PDF…' : 'Download PDF'}
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        disabled={!exportActionsEnabled || sharing}
-        onClick={async () => {
-          try {
-            await onShareLink()
-            toast.success('Share link copied to clipboard')
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Could not create share link')
-          }
-        }}
-      >
-        <Share2 className="size-4" aria-hidden="true" />
-        {sharing ? 'Encoding…' : 'Share link'}
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="gap-2"
-        disabled={!exportActionsEnabled || sharing}
-        onClick={async () => {
-          try {
-            await onCopyLink()
-            toast.success('Link copied to clipboard')
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Could not copy link')
-          }
-        }}
-      >
-        <Link2 className="size-4" aria-hidden="true" />
-        Copy link
-      </Button>
+      {pdfExportEnabled ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={!exportActionsEnabled || exporting}
+          onClick={onDownloadPdf}
+        >
+          <Download className="size-4" aria-hidden="true" />
+          {exporting ? 'Preparing PDF…' : 'Download PDF'}
+        </Button>
+      ) : null}
+      {shareEnabled ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={!exportActionsEnabled || sharing}
+            onClick={async () => {
+              try {
+                await onShareLink()
+                toast.success('Share link copied to clipboard')
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Could not create share link')
+              }
+            }}
+          >
+            <Share2 className="size-4" aria-hidden="true" />
+            {sharing ? 'Encoding…' : 'Share link'}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+            disabled={!exportActionsEnabled || sharing}
+            onClick={async () => {
+              try {
+                await onCopyLink()
+                toast.success('Link copied to clipboard')
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Could not copy link')
+              }
+            }}
+          >
+            <Link2 className="size-4" aria-hidden="true" />
+            Copy link
+          </Button>
+        </>
+      ) : null}
     </div>
   )
 }

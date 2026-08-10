@@ -882,3 +882,31 @@ export const drawdownPeersSchema = z.object({
 })
 
 export type DrawdownPeers = z.infer<typeof drawdownPeersSchema>
+
+export const calendarReturnsSchema = z.object({
+  months: z.array(z.object({
+    year: z.number(),
+    month: z.number(),
+    returnPercent: z.number(),
+    startNav: z.number(),
+    endNav: z.number(),
+    startDate: z.string(),
+    endDate: z.string(),
+  })),
+  years: z.array(z.object({
+    year: z.number(),
+    returnPercent: z.number(),
+    startNav: z.number(),
+    endNav: z.number(),
+    monthsCovered: z.number(),
+    partial: z.boolean(),
+  })),
+  bestMonth: z.number(),
+  worstMonth: z.number(),
+  bestYear: z.number(),
+  worstYear: z.number(),
+  positiveMonths: z.number(),
+  totalMonths: z.number(),
+})
+
+export type CalendarReturns = z.infer<typeof calendarReturnsSchema>

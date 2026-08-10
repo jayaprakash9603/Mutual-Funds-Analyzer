@@ -44,6 +44,7 @@ import { DeclineRecoveryChart } from '../charts/DeclineRecoveryChart'
 import { FundReportReturnsChart } from '../charts/FundReportReturnsChart'
 import { FundAnnualReturnsChart } from '../charts/FundAnnualReturnsChart'
 import { FundBenchmarkAnalysisCharts } from '../charts/FundBenchmarkAnalysisCharts'
+import { CalendarReturnsHeatmap } from '../charts/CalendarReturnsHeatmap'
 import { FundGrowthTrendChart } from '../charts/FundGrowthTrendChart'
 import { FundRollingTrendChart } from '../charts/FundRollingTrendChart'
 import { PerformanceTimelinePanel } from '../charts/PerformanceTimelinePanel'
@@ -235,6 +236,18 @@ export function FundReportSections({
             loading={risk.loading && risk.data == null}
           />
         </ReportInsightCard>
+        {scheme ? (
+          <ReportInsightCard
+            title="Calendar returns"
+            subtitle="Month-end to month-end NAV returns by year — each Yearly cell compounds the twelve monthly cells in that row."
+          >
+            <CalendarReturnsHeatmap
+              scheme={scheme}
+              startDate={startDate}
+              offlineView={isSharedView}
+            />
+          </ReportInsightCard>
+        ) : null}
         {scheme ? (
           <FundAnnualReturnsChart
             scheme={scheme}
