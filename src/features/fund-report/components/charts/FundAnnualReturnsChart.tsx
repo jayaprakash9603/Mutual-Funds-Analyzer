@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, Label, ReferenceLine, XAxis, YAxis } from 'recharts'
 import {
   CHART_TOOLTIP_CURSOR,
@@ -6,7 +6,7 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { ChartShell, chartHeightForGuide } from '@/components/charts/ChartShell'
+import { ChartShell } from '@/components/charts/ChartShell'
 import { CHART_GUIDES } from '@/lib/analytics/chartGuide'
 import { getAnnualReturns } from '@/lib/analytics/chartData'
 import { CHART_COLORS } from '@/lib/charts/chartColors'
@@ -21,15 +21,7 @@ import {
 } from '@/lib/charts/chartAxes'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
-
-const FUND_COLOR = CHART_COLORS.fund
-const BENCHMARK_COLOR = CHART_COLORS.benchmark
-
-type AnnualReturnRow = {
-  year: string
-  fund: number
-  benchmark: number
-}
+import { AnnualReturnsSnakeTimeline, type AnnualReturnRow } from './AnnualReturnsSnakeTimeline'
 
 function AnnualReturnsTooltip({
   active,
@@ -93,6 +85,7 @@ export function FundAnnualReturnsChart({
   startDate?: string
   offlineView?: boolean
 }) {
+  const [viewMode, setViewMode] = useState<'snake' | 'bar'>('snake')
   const axis = useResponsiveAxis()
   const { data, result, loading, error } = useFundAnalysis(
     offlineView ? null : scheme,
@@ -143,7 +136,7 @@ export function FundAnnualReturnsChart({
       loading={loading && annualReturns.length === 0}
       empty={!loading && annualReturns.length === 0}
       footer={
-        annualReturns.length > 0 ? (
+        viewMode === 'bar' && annualReturns.length > 0 ? (
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-border/70 pt-3 text-[11px] sm:text-xs">
             <span className="inline-flex items-center gap-2">
               <span className="size-2 rounded-[2px]" style={{ backgroundColor: FUND_COLOR }} aria-hidden="true" />
@@ -165,45 +158,66 @@ export function FundAnnualReturnsChart({
         ) : null
       }
     >
-      <ChartContainer config={chartConfig} className={chartHeightForGuide(CHART_GUIDES.annualReturns)}>
-        <BarChart data={annualReturns} margin={MARGIN_X}>
-          <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
-          <XAxis
-            dataKey="year"
-            tickLine={TICK_LINE}
-            axisLine={AXIS_LINE}
-            tick={axis.tick}
-            height={axis.xHeight}
-            minTickGap={4}
-          >
-            <Label {...xLabel('Year', -4)} />
-          </XAxis>
-          <YAxis
-            tickLine={TICK_LINE}
-            axisLine={AXIS_LINE}
-            unit="%"
-            tick={axis.tick}
-            width={axis.yWidth}
-          >
-            {axis.showYLabel ? <Label {...yLabel('Return (%)')} /> : null}
-          </YAxis>
-          <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeWidth={1} />
-          <ChartTooltip
-            cursor={CHART_TOOLTIP_CURSOR}
-            content={
-              <AnnualReturnsTooltip fundName={resolvedFundName} benchmarkName={resolvedBenchmarkName} />
-            }
-          />
-          <Bar dataKey="fund" fill={FUND_COLOR} radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false} />
-          <Bar
-            dataKey="benchmark"
-            fill={BENCHMARK_COLOR}
-            radius={[3, 3, 0, 0]}
-            maxBarSize={28}
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </ChartContainer>
+      {viewMode === 'snake' ? (
+        <AnnualReturnsSnakeTimeline
+          data={annualReturns}
+          fundName={resolvedFundName}
+          benchmarkName={resolvedBenchmarkName}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex justify-end pb-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('snake')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 hover:bg-accent text-xs font-semibold text-foreground transition-all shadow-xs"
+            >
+              <span>🐍 Switch to Serpentine Timeline Path</span>
+            </button>
+          </div>
+          <ChartContainer config={chartConfig} className="h-[320px] w-full">
+            <BarChart data={annualReturns} margin={MARGIN_X}>
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
+              <XAxis
+                dataKey="year"
+                tickLine={TICK_LINE}
+                axisLine={AXIS_LINE}
+                tick={axis.tick}
+                height={axis.xHeight}
+                minTickGap={4}
+              >
+                <Label {...xLabel('Year', -4)} />
+              </XAxis>
+              <YAxis
+                tickLine={TICK_LINE}
+                axisLine={AXIS_LINE}
+                unit="%"
+                tick={axis.tick}
+                width={axis.yWidth}
+              >
+                {axis.showYLabel ? <Label {...yLabel('Return (%)')} /> : null}
+              </YAxis>
+              <ReferenceLine y={0} stroke={ZERO_LINE_STROKE} strokeWidth={1} />
+              <ChartTooltip
+                cursor={CHART_TOOLTIP_CURSOR}
+                content={
+                  <AnnualReturnsTooltip fundName={resolvedFundName} benchmarkName={resolvedBenchmarkName} />
+                }
+              />
+              <Bar dataKey="fund" fill={FUND_COLOR} radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+              <Bar
+                dataKey="benchmark"
+                fill={BENCHMARK_COLOR}
+                radius={[3, 3, 0, 0]}
+                maxBarSize={28}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      )}
     </ChartShell>
   )
 }
