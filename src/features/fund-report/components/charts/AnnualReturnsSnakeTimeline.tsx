@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown, Layers, BarChart2, GitCommit } from 'lucide-react'
-import { CHART_COLORS } from '@/lib/charts/chartColors'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { TrendingUp, TrendingDown, BarChart2, GitCommit } from 'lucide-react'
 
 export type AnnualReturnRow = {
   year: string
@@ -33,24 +32,18 @@ export function AnnualReturnsSnakeTimeline({
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const [pathPoints, setPathPoints] = useState<Point[]>([])
 
-  // Measure responsive column count
+  // Responsive column count calculation
   const updateCols = useCallback(() => {
     if (!containerRef.current) return
     const width = containerRef.current.clientWidth
     if (width >= 1024) setCols(5)
-    else if (width >= 720) setCols(4)
-    else if (width >= 480) setCols(3)
-    else setCols(2)
+    else if (width >= 768) setCols(4)
+    else if (width >= 560) setCols(3)
+    else if (width >= 360) setCols(2)
+    else setCols(1)
   }, [])
 
-  useEffect(() => {
-    updateCols()
-    const ro = new ResizeObserver(updateCols)
-    if (containerRef.current) ro.observe(containerRef.current)
-    return () => ro.disconnect()
-  }, [updateCols])
-
-  // Compute centers of all card nodes relative to container
+  // Calculate center coordinates of all card nodes relative to container
   const updatePaths = useCallback(() => {
     if (!containerRef.current) return
     const containerRect = containerRef.current.getBoundingClientRect()
@@ -69,15 +62,28 @@ export function AnnualReturnsSnakeTimeline({
     setPathPoints(points)
   }, [data.length])
 
+  // ResizeObserver to handle screen & container size changes
   useEffect(() => {
+    updateCols()
+    if (!containerRef.current) return
+    const ro = new ResizeObserver(() => {
+      updateCols()
+      updatePaths()
+    })
+    ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [updateCols, updatePaths])
+
+  // Measure path positions on initial layout and whenever state changes
+  useLayoutEffect(() => {
     updatePaths()
-    const timer = setTimeout(updatePaths, 50)
-    window.addEventListener('resize', updatePaths)
+    const t1 = setTimeout(updatePaths, 50)
+    const t2 = setTimeout(updatePaths, 200)
     return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', updatePaths)
+      clearTimeout(t1)
+      clearTimeout(t2)
     }
-  }, [updatePaths, cols, selectedSeries])
+  }, [updatePaths, cols, selectedSeries, data])
 
   // Calculate summary stats
   const summary = useMemo(() => {
@@ -85,15 +91,6 @@ export function AnnualReturnsSnakeTimeline({
     const returns = data.map((d) => (selectedSeries === 'fund' ? d.fund : d.benchmark))
     const profitCount = returns.filter((r) => r >= 0).length
     const lossCount = returns.filter((r) => r < 0).length
-    const best = data.reduce((max, d) => {
-      const val = selectedSeries === 'fund' ? d.fund : d.benchmark
-      return val > (selectedSeries === 'fund' ? max.fund : max.benchmark) ? d : max
-    }, data[0])
-    const worst = data.reduce((min, d) => {
-      const val = selectedSeries === 'fund' ? d.fund : d.benchmark
-      return val < (selectedSeries === 'fund' ? min.fund : min.benchmark) ? d : min
-    }, data[0])
-
     const avg = returns.reduce((a, b) => a + b, 0) / returns.length
 
     return {
@@ -101,13 +98,11 @@ export function AnnualReturnsSnakeTimeline({
       profitCount,
       lossCount,
       profitPercent: Math.round((profitCount / data.length) * 100),
-      best,
-      worst,
       avg,
     }
   }, [data, selectedSeries])
 
-  // Reorder items in serpentine format
+  // Reorder items in serpentine format (reversing alternating rows)
   const serpentineGrid = useMemo(() => {
     const gridRows: { item: AnnualReturnRow; originalIndex: number }[][] = []
     let currentRow: { item: AnnualReturnRow; originalIndex: number }[] = []
@@ -120,7 +115,7 @@ export function AnnualReturnsSnakeTimeline({
       }
     })
 
-    // Reverse every odd row to create the winding serpentine layout
+    // Reverse every odd row to form serpentine snake flow
     return gridRows.map((row, rowIndex) => {
       if (rowIndex % 2 === 1) {
         return [...row].reverse()
@@ -129,43 +124,61 @@ export function AnnualReturnsSnakeTimeline({
     })
   }, [data, cols])
 
-  // Generate SVG path string connecting nodes
+  // Generate SVG path string connecting consecutive nodes
   const svgPaths = useMemo(() => {
     if (pathPoints.length < 2) return []
-    const paths: { d: string; isProfit: boolean }[] = []
+    const paths: { d: string; isProfit: boolean; key: string }[] = []
 
     for (let i = 0; i < pathPoints.length - 1; i++) {
       const p1 = pathPoints[i]
       const p2 = pathPoints[i + 1]
+      if (!p1 || !p2) continue
+
       const val1 = selectedSeries === 'fund' ? data[i].fund : data[i].benchmark
       const val2 = selectedSeries === 'fund' ? data[i + 1].fund : data[i + 1].benchmark
       const isProfit = (val1 + val2) / 2 >= 0
 
-      // Check if p1 and p2 are on different vertical rows
-      const dy = Math.abs(p2.y - p1.y)
+      const r1 = Math.floor(i / cols)
+      const r2 = Math.floor((i + 1) / cols)
 
-      if (dy < 25) {
-        // Straight horizontal or near horizontal line
+      if (r1 === r2) {
+        // Same row: horizontal connecting line
         paths.push({
           d: `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`,
           isProfit,
+          key: `path-${i}`,
         })
       } else {
-        // U-turn curve connecting end of one row to start of next row
-        const midY = (p1.y + p2.y) / 2
-        const isRightEdge = p1.x > p2.x
-        const curveOffset = isRightEdge ? 45 : -45
+        // Different rows: U-turn loop
+        if (cols === 1) {
+          // Single column mobile layout: vertical S-curve
+          const isEven = r1 % 2 === 0
+          const offset = isEven ? 55 : -55
+          const controlX = p1.x + offset
+          paths.push({
+            d: `M ${p1.x} ${p1.y} C ${controlX} ${p1.y}, ${controlX} ${p2.y}, ${p2.x} ${p2.y}`,
+            isProfit,
+            key: `path-${i}`,
+          })
+        } else {
+          // Multi-column grid layout: U-turn at edge
+          const isEvenRow = r1 % 2 === 0
+          // Even row (0, 2...) goes L -> R, U-turn curves to the RIGHT
+          // Odd row (1, 3...) goes R -> L, U-turn curves to the LEFT
+          const curveOffset = isEvenRow ? 65 : -65
+          const edgeX = isEvenRow ? Math.max(p1.x, p2.x) : Math.min(p1.x, p2.x)
+          const controlX = edgeX + curveOffset
 
-        const controlX = Math.max(p1.x, p2.x) + (isRightEdge ? curveOffset : -Math.abs(curveOffset))
-
-        paths.push({
-          d: `M ${p1.x} ${p1.y} C ${controlX} ${p1.y}, ${controlX} ${p2.y}, ${p2.x} ${p2.y}`,
-          isProfit,
-        })
+          paths.push({
+            d: `M ${p1.x} ${p1.y} C ${controlX} ${p1.y}, ${controlX} ${p2.y}, ${p2.x} ${p2.y}`,
+            isProfit,
+            key: `path-${i}`,
+          })
+        }
       }
     }
     return paths
-  }, [pathPoints, data, selectedSeries])
+  }, [pathPoints, data, selectedSeries, cols])
 
   const activeSeriesName = selectedSeries === 'fund' ? fundName : benchmarkName
 
@@ -177,18 +190,18 @@ export function AnnualReturnsSnakeTimeline({
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5 font-medium text-foreground bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded-full">
             <span className="size-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shadow-xs" />
-            <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Profit</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Returns in Profit</span>
             <span className="text-muted-foreground text-[11px]">(≥ 0%)</span>
           </div>
 
           <div className="flex items-center gap-1.5 font-medium text-foreground bg-rose-500/10 dark:bg-rose-950/40 border border-rose-500/30 px-2.5 py-1 rounded-full">
             <span className="size-2.5 rounded-full bg-rose-600 dark:bg-rose-500 shadow-xs" />
-            <span className="text-rose-700 dark:text-rose-300 font-semibold">Loss</span>
-            <span className="text-muted-foreground text-[11px] shadow-xs">(&lt; 0%)</span>
+            <span className="text-rose-700 dark:text-rose-300 font-semibold">Returns in Loss</span>
+            <span className="text-muted-foreground text-[11px]">(&lt; 0%)</span>
           </div>
         </div>
 
-        {/* Right: Series Toggle & View Mode Toggle */}
+        {/* Right: Series Selector & View Mode Switcher */}
         <div className="flex items-center gap-2">
           {/* Fund / Benchmark Selector */}
           <div className="inline-flex items-center p-0.5 rounded-lg border border-border bg-muted/50 text-xs">
@@ -226,7 +239,7 @@ export function AnnualReturnsSnakeTimeline({
                   ? 'bg-background text-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Serpentine Winding Timeline Path View"
+              title="Serpentine Timeline Path View"
             >
               <GitCommit className="size-3.5 text-primary" />
               <span>Timeline Path</span>
@@ -248,32 +261,35 @@ export function AnnualReturnsSnakeTimeline({
         </div>
       </div>
 
-      {/* Main Serpentine Snake Container */}
-      <div ref={containerRef} className="relative min-h-[300px] py-4 px-2 sm:px-6">
+      {/* Main Serpentine Snake Grid Container */}
+      <div
+        ref={containerRef}
+        className="relative min-h-[300px] py-6 px-6 sm:px-10 md:px-14 bg-muted/10 dark:bg-muted/5 rounded-2xl border border-border/40 overflow-hidden"
+      >
         {/* SVG Connecting Path Overlay */}
         <svg className="absolute inset-0 size-full pointer-events-none z-0 overflow-visible" aria-hidden="true">
-          <defs>
-            <linearGradient id="profitPathGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#059669" stopOpacity="0.8" />
-            </linearGradient>
-            <linearGradient id="lossPathGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#e11d48" stopOpacity="0.8" />
-            </linearGradient>
-          </defs>
-
-          {svgPaths.map((p, idx) => (
-            <path
-              key={`path-${idx}`}
-              d={p.d}
-              fill="none"
-              stroke={p.isProfit ? 'url(#profitPathGrad)' : 'url(#lossPathGrad)'}
-              strokeWidth={3}
-              strokeDasharray="6 4"
-              strokeLinecap="round"
-              className="transition-all duration-300 opacity-70 dark:opacity-80"
-            />
+          {svgPaths.map((p) => (
+            <g key={p.key}>
+              {/* Background Guide Track */}
+              <path
+                d={p.d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={6}
+                strokeLinecap="round"
+                className="text-muted-foreground/15 dark:text-muted-foreground/25"
+              />
+              {/* Foreground Solid Return Line */}
+              <path
+                d={p.d}
+                fill="none"
+                stroke={p.isProfit ? '#10b981' : '#f43f5e'}
+                strokeWidth={3.5}
+                strokeDasharray="8 4"
+                strokeLinecap="round"
+                className="transition-all duration-300 opacity-90 dark:opacity-95"
+              />
+            </g>
           ))}
         </svg>
 
@@ -305,12 +321,12 @@ export function AnnualReturnsSnakeTimeline({
                     onMouseLeave={() => setHoveredIndex(null)}
                     className="relative group transition-all duration-300 transform"
                   >
-                    {/* Floating Year Tag resting on top border */}
+                    {/* Year Tag Tab resting on top border */}
                     <div
-                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-t-md rounded-b-sm text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-colors ${
+                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs z-20 transition-colors ${
                         isProfit
-                          ? 'bg-emerald-950 text-emerald-100 border-emerald-600 dark:bg-emerald-950 dark:text-emerald-200'
-                          : 'bg-rose-950 text-rose-100 border-rose-600 dark:bg-rose-950 dark:text-rose-200'
+                          ? 'bg-background text-emerald-700 border-emerald-500/50 dark:bg-background dark:text-emerald-400 dark:border-emerald-500/60'
+                          : 'bg-background text-rose-700 border-rose-500/50 dark:bg-background dark:text-rose-400 dark:border-rose-500/60'
                       }`}
                     >
                       {item.year}
@@ -326,14 +342,14 @@ export function AnnualReturnsSnakeTimeline({
                           : 'bg-rose-600 dark:bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
                       }`}
                     >
-                      {/* Main Percentage Return */}
+                      {/* Return Percentage */}
                       <span className="text-base sm:text-lg font-black tracking-tight tabular-nums drop-shadow-xs">
                         {val >= 0 ? '+' : ''}
                         {val.toFixed(1)}%
                       </span>
 
-                      {/* Secondary Comparison Text */}
-                      <span className="mt-1 text-[10px] sm:text-[11px] font-medium opacity-90 truncate max-w-full px-1 py-0.5 rounded bg-black/15">
+                      {/* Sub-label comparison */}
+                      <span className="mt-1 text-[10px] sm:text-[11px] font-medium opacity-90 truncate max-w-full px-1.5 py-0.5 rounded bg-black/20">
                         {selectedSeries === 'fund'
                           ? `Bench: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`
                           : `Fund: ${otherVal >= 0 ? '+' : ''}${otherVal.toFixed(1)}%`}
@@ -393,7 +409,7 @@ export function AnnualReturnsSnakeTimeline({
         </div>
       </div>
 
-      {/* Summary Stats Banner at Bottom */}
+      {/* Summary Stats Banner */}
       {summary ? (
         <div className="mt-4 pt-3 border-t border-border/70 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground bg-muted/20 px-4 py-2.5 rounded-xl border border-border/50">
           <div className="flex items-center gap-2">
@@ -420,7 +436,11 @@ export function AnnualReturnsSnakeTimeline({
 
             <span className="text-foreground font-medium">
               Avg Return:{' '}
-              <span className={`font-semibold font-mono ${summary.avg >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <span
+                className={`font-semibold font-mono ${
+                  summary.avg >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
                 {summary.avg >= 0 ? '+' : ''}
                 {summary.avg.toFixed(1)}%
               </span>
