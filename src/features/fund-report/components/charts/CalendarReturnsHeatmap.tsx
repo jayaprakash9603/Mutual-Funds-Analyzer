@@ -25,15 +25,24 @@ function cellTitle(cell: MonthCell | undefined, yearRow: YearRow | undefined, ki
   return `${MONTH_LABELS[cell.month - 1]} ${cell.year}: ${cell.returnPercent.toFixed(2)}% · ${cell.startDate} (${cell.startNav.toFixed(2)}) → ${cell.endDate} (${cell.endNav.toFixed(2)})`
 }
 
+/** Shared table chrome so pinned Year column lines up with the scrollable months */
+const HEATMAP_TABLE =
+  '!border-separate border-spacing-x-1 border-spacing-y-1.5 text-[11px] sm:text-xs'
+const HEATMAP_HEADER_CELL =
+  'h-9 px-2 py-0 align-middle font-bold whitespace-nowrap leading-none'
+
 /** Opaque pinned leading pane containing only the Year column */
 function YearColumn({ years }: { years: YearRow[] }) {
   return (
-    <table className="border-separate border-spacing-x-1 border-spacing-y-1.5 text-left text-[11px] sm:text-xs">
+    <table className={cn(HEATMAP_TABLE, 'text-left')}>
       <thead>
         <tr className="bg-slate-100 dark:bg-slate-800">
           <th
             scope="col"
-            className="px-3 py-2 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap min-w-[3.5rem] sm:min-w-[4rem]"
+            className={cn(
+              HEATMAP_HEADER_CELL,
+              'px-3 text-slate-800 dark:text-slate-200 min-w-[3.5rem] sm:min-w-[4rem]',
+            )}
           >
             Year
           </th>
@@ -47,7 +56,7 @@ function YearColumn({ years }: { years: YearRow[] }) {
           >
             <th
               scope="row"
-              className="px-3 py-1.5 font-bold tabular-nums text-slate-800 dark:text-slate-200 text-xs sm:text-sm whitespace-nowrap"
+              className="h-9 px-3 py-0 align-middle font-bold tabular-nums text-slate-800 dark:text-slate-200 text-xs sm:text-sm whitespace-nowrap"
             >
               {yearRow.year}
               {yearRow.partial ? (
@@ -143,17 +152,24 @@ export function CalendarReturnsHeatmap({
           minWidth={680}
           hint="Swipe sideways to see all monthly returns"
         >
-          <table className="w-full border-separate border-spacing-x-1 border-spacing-y-1.5 text-center text-[11px] sm:text-xs">
+          <table className={cn(HEATMAP_TABLE, 'w-full text-center')}>
             <thead>
               <tr className="bg-slate-100 dark:bg-slate-800">
                 {MONTH_LABELS.map((label) => (
-                  <th key={label} scope="col" className="px-1.5 py-2 font-bold text-slate-700 dark:text-slate-300">
+                  <th
+                    key={label}
+                    scope="col"
+                    className={cn(HEATMAP_HEADER_CELL, 'text-slate-700 dark:text-slate-300')}
+                  >
                     {label}
                   </th>
                 ))}
                 <th
                   scope="col"
-                  className="border-l border-slate-200 dark:border-slate-700 px-3 py-2 font-bold text-slate-900 dark:text-slate-100"
+                  className={cn(
+                    HEATMAP_HEADER_CELL,
+                    'border-l border-slate-200 dark:border-slate-700 px-3 text-slate-900 dark:text-slate-100',
+                  )}
                 >
                   Yearly
                 </th>
@@ -175,7 +191,7 @@ export function CalendarReturnsHeatmap({
                       return (
                         <td
                           key={month}
-                          className="px-0.5 py-0.5"
+                          className="h-9 px-0.5 py-0 align-middle"
                           title="No data"
                           aria-label={`${MONTH_LABELS[monthIndex]} ${yearRow.year}: no data`}
                         >
@@ -187,7 +203,7 @@ export function CalendarReturnsHeatmap({
                     return (
                       <td
                         key={month}
-                        className="px-0.5 py-0.5"
+                        className="h-9 px-0.5 py-0 align-middle"
                         title={cellTitle(cell, undefined, 'month')}
                       >
                         <span
@@ -199,7 +215,10 @@ export function CalendarReturnsHeatmap({
                       </td>
                     )
                   })}
-                  <td className="border-l border-slate-200 dark:border-slate-700 pl-1.5 px-0.5 py-0.5" title={cellTitle(undefined, yearRow, 'year')}>
+                  <td
+                    className="h-9 border-l border-slate-200 dark:border-slate-700 pl-1.5 px-0.5 py-0 align-middle"
+                    title={cellTitle(undefined, yearRow, 'year')}
+                  >
                     <span
                       className="inline-flex h-8 w-full min-w-[3.75rem] sm:min-w-[4.25rem] items-center justify-center rounded-lg font-mono text-[11px] sm:text-xs font-bold tabular-nums shadow-2xs transition-transform hover:scale-105"
                       style={returnHeatColor(yearRow.returnPercent, maxYearlyAbs)}
