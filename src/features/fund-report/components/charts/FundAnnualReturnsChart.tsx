@@ -23,6 +23,9 @@ import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
 import { AnnualReturnsSnakeTimeline, type AnnualReturnRow } from './AnnualReturnsSnakeTimeline'
 
+const FUND_COLOR = CHART_COLORS.fund
+const BENCHMARK_COLOR = CHART_COLORS.benchmark
+
 function AnnualReturnsTooltip({
   active,
   payload,
