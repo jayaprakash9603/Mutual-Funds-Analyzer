@@ -489,7 +489,8 @@ export function AnnualReturnsSnakeTimeline({
                   const isProfit = val >= 0
                   const isHovered = hoveredIndex === originalIndex
                   const isActive = activeIndex === originalIndex
-                  const showPopover = isHovered || isActive
+                  // Popover only on manual hover — not during automatic highlight flow
+                  const showPopover = isHovered
                   // Top row: place popover below to avoid clipping; else above the card
                   const popoverBelow = rowIndex === 0
 
@@ -504,7 +505,7 @@ export function AnnualReturnsSnakeTimeline({
                       onMouseLeave={() => setHoveredIndex(null)}
                       onClick={() => setActiveIndex(originalIndex)}
                       className={`relative group transition-all duration-300 transform overflow-visible ${
-                        showPopover ? 'z-[60]' : 'z-10'
+                        isHovered || isActive ? 'z-[60]' : 'z-10'
                       }`}
                     >
                       {/* Year Tag Tab resting on top border */}
