@@ -54,7 +54,7 @@ export function MultiplyProbabilityTable({
               </th>
             </tr>
             <tr>
-              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20 bg-[#1e3a5f]'))}>Multiply</th>
+              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-10 bg-[#1e3a5f]'))}>Multiply</th>
               {table.holdingYears.map((y) => (
                 <th key={y} className={fiMultiplyHeaderCell()}>
                   {y} Year

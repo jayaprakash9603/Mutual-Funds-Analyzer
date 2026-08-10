@@ -44,7 +44,7 @@ export function ReportStickyHeader({
     <TooltipProvider>
       <div
         className={cn(
-          'fixed z-30 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
+          'fixed z-30 border-b border-border/60 bg-background shadow-sm lg:bg-background/90 lg:backdrop-blur-xl lg:supports-[backdrop-filter]:bg-background/75',
           'inset-x-0',
           sidebarVisible && 'lg:left-[var(--report-sidebar-width)]',
         )}

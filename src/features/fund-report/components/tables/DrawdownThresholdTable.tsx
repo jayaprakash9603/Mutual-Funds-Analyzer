@@ -93,7 +93,7 @@ export function DrawdownThresholdTable({
         <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Drawdown from peak</th>
+              <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-10'))}>Drawdown from peak</th>
               <th className={fiHeaderCell()}>Fund</th>
               <th className={fiHeaderCell()}>{benchmarkName}</th>
               <th className={fiHeaderCell()}>Category peers (median)</th>

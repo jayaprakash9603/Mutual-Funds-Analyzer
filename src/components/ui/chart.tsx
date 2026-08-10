@@ -30,13 +30,23 @@ export const CHART_TOOLTIP_CURSOR = {
   opacity: 1,
 } as const
 
+/** Recharts 3 defaults accessibilityLayer + tabIndex=0, which draws a white focus box on click. */
+function withoutChartFocusRing(
+  children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children'],
+) {
+  if (!React.isValidElement<{ accessibilityLayer?: boolean; tabIndex?: number }>(children)) {
+    return children
+  }
+  return React.cloneElement(children, { accessibilityLayer: false, tabIndex: -1 })
+}
+
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> & {
     config: ChartConfig
     children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children']
   }
->(({ id, className, children, config, ...props }, ref) => {
+>(({ id, className, children, config, onMouseDown, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
@@ -48,10 +58,10 @@ const ChartContainer = React.forwardRef<
         {...props}
         className={cn(
           'flex aspect-video justify-center rounded-lg bg-[var(--chart-surface)] text-xs text-foreground min-w-0 w-full',
-          'outline-none focus:outline-none focus-visible:outline-none',
+          'outline-none focus:outline-none focus-visible:outline-none [-webkit-tap-highlight-color:transparent]',
           '[&_.recharts-wrapper]:outline-none [&_.recharts-wrapper]:focus:outline-none [&_.recharts-wrapper]:focus-visible:outline-none',
           '[&_svg]:outline-none [&_svg]:focus:outline-none [&_svg]:focus-visible:outline-none',
-          '[&_.recharts-surface]:outline-none [&_.recharts-surface]:focus:outline-none',
+          '[&_.recharts-surface]:outline-none [&_.recharts-surface]:focus:outline-none [&_.recharts-surface]:focus-visible:outline-none',
           '[&_.recharts-cartesian-axis-tick_text]:fill-[var(--chart-axis)]',
           '[&_.recharts-cartesian-grid_line]:stroke-[var(--chart-grid-stroke)]',
           '[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[var(--chart-tooltip-cursor)]',
@@ -60,15 +70,25 @@ const ChartContainer = React.forwardRef<
           '[&_.recharts-default-tooltip_.recharts-tooltip-item]:!text-popover-foreground',
           className,
         )}
+        onMouseDown={(event) => {
+          // Block focus transfer to the chart SVG so no selection border can appear.
+          event.preventDefault()
+          onMouseDown?.(event)
+        }}
       >
         <style
           dangerouslySetInnerHTML={{
             __html: `[data-chart=${chartId}]{${Object.entries(config)
               .map(([key, item]) => (item.color ? `--color-${key}:${item.color};` : ''))
-              .join('')}}`,
+              .join('')}}
+[data-chart=${chartId}] .recharts-wrapper,
+[data-chart=${chartId}] .recharts-surface,
+[data-chart=${chartId}] svg{outline:none!important;box-shadow:none!important}`,
           }}
         />
-        <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
+        <RechartsPrimitive.ResponsiveContainer>
+          {withoutChartFocusRing(children)}
+        </RechartsPrimitive.ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   )

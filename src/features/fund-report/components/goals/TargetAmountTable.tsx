@@ -28,7 +28,7 @@ export function TargetAmountTable({
       <table className={FI_TABLE}>
         <thead>
           <tr>
-            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>
+            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-10'))}>
               SIP ({stepUpPercent}% step-up)
             </th>
             {grid.targetAmounts.map((target) => (

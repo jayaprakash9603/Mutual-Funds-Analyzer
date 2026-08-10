@@ -13,7 +13,7 @@ export function SavingsRateTable({ cagrPercent }: { cagrPercent: number }) {
       <table className={FI_TABLE}>
         <thead>
           <tr>
-            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20'))}>Savings rate</th>
+            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-10'))}>Savings rate</th>
             {grid.horizonsYears.map((years) => (
               <th key={years} className={fiMultiplyHeaderCell()}>
                 {years}Y

@@ -22,7 +22,7 @@ export function RequiredCagrGrid() {
       <table className={FI_TABLE}>
         <thead>
           <tr>
-            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-20 bg-[#1e3a5f]'))}>
+            <th className={fiMultiplyHeaderCell(fiStickyLabelCell('normal-case z-10 bg-[#1e3a5f]'))}>
               Multiple
             </th>
             {grid.horizonsYears.map((years) => (

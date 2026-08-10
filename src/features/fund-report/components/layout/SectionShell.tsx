@@ -28,9 +28,12 @@ export function SectionShell({
   // Phone width cannot afford section-card + child-card padding; stack keeps each block its own card.
   const useStack = variant === 'stack' || isSmall
 
+  // Off-screen sections skip paint work on long mobile reports without leaving the DOM.
+  const sectionClass = 'report-section-shell'
+
   if (useStack) {
     return (
-      <section id={id} style={scrollStyle} className={SECTION_CHILDREN_GAP}>
+      <section id={id} style={scrollStyle} className={cn(sectionClass, SECTION_CHILDREN_GAP)}>
         <div className="px-0.5">
           <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg md:text-xl">
             {title}
@@ -47,7 +50,7 @@ export function SectionShell({
   }
 
   return (
-    <section id={id} style={scrollStyle}>
+    <section id={id} style={scrollStyle} className={sectionClass}>
       <Card>
         <CardHeader>
           <CardTitle>{title}</CardTitle>

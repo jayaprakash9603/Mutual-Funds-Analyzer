@@ -15,14 +15,18 @@ export function ReportSectionMobileNav({
   className,
 }: ReportSectionMobileNavProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const clickCenteredRef = useRef(false)
 
   useEffect(() => {
     const scroller = scrollerRef.current
     if (!scroller) return
     const activeButton = scroller.querySelector<HTMLElement>(`[data-section-id="${activeSection}"]`)
-    if (activeButton) {
-      centerElementInScroller(scroller, activeButton)
-    }
+    if (!activeButton) return
+
+    // User tap: smooth recenter if needed. Scroll-spy: instant so it never fights page scroll.
+    const behavior: ScrollBehavior = clickCenteredRef.current ? 'smooth' : 'auto'
+    clickCenteredRef.current = false
+    centerElementInScroller(scroller, activeButton, behavior)
   }, [activeSection])
 
   return (
@@ -30,13 +34,13 @@ export function ReportSectionMobileNav({
       aria-label="Report sections"
       style={{ top: 'var(--report-page-top)' }}
       className={cn(
-        'sticky z-20 -mx-4 border-b border-border/60 bg-background/98 backdrop-blur-md lg:hidden',
+        'sticky z-20 -mx-4 border-b border-border/60 bg-background lg:hidden',
         className,
       )}
     >
       <div
         ref={scrollerRef}
-        className="flex gap-0 overflow-x-auto px-1 scrollbar-none"
+        className="flex touch-pan-x gap-0 overflow-x-auto overscroll-x-contain px-1 scrollbar-none"
         role="tablist"
       >
         {REPORT_SECTIONS.map((section) => {
@@ -47,7 +51,10 @@ export function ReportSectionMobileNav({
               type="button"
               role="tab"
               data-section-id={section.id}
-              onClick={() => onSectionSelect(section.id)}
+              onClick={() => {
+                clickCenteredRef.current = true
+                onSectionSelect(section.id)
+              }}
               aria-selected={isActive}
               aria-current={isActive ? 'page' : undefined}
               className={cn(

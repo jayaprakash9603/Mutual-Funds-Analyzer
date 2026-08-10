@@ -64,10 +64,10 @@ export function PeerComparisonTable({ data, loading, error }: PeerComparisonTabl
   }
 
   const fundPane = (
-    <table className={FI_TABLE}>
+    <table className={cn(FI_TABLE, 'bg-card')}>
       <thead>
         <tr>
-          <th className={cn(FUND_COL, TABLE_HEAD_CLASS, 'font-semibold normal-case')}>Fund</th>
+          <th className={cn(FUND_COL, TABLE_HEAD_CLASS, 'bg-card font-semibold normal-case')}>Fund</th>
         </tr>
         <tr>
           <th className={cn(FUND_COL, TABLE_SUBHEAD_CLASS)} aria-hidden="true">

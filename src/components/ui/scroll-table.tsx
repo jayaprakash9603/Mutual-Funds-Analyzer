@@ -139,11 +139,11 @@ export function ScrollTable({
           <div
             ref={leadingRef}
             className={cn(
-              'relative shrink-0 overflow-hidden bg-card',
-              // Flat grid seam at rest; raise + shadow only while metrics scroll underneath.
-              scrolled
-                ? 'z-30 shadow-[4px_0_14px_-4px_rgba(15,23,42,0.2)] dark:shadow-[4px_0_14px_-4px_rgba(0,0,0,0.55)]'
-                : 'z-10',
+              // Opaque pane beside metrics — never cover the first data column at rest.
+              // z-10/z-20 stay below report chrome (sticky nav z-20 / header z-30).
+              'relative z-10 shrink-0 isolate overflow-hidden bg-card',
+              scrolled &&
+                'z-20 shadow-[4px_0_14px_-4px_rgba(15,23,42,0.2)] dark:shadow-[4px_0_14px_-4px_rgba(0,0,0,0.55)]',
             )}
           >
             {pinnedLeading}

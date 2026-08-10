@@ -340,3 +340,30 @@
     background-clip: padding-box;
   }
 }
+
+/* Long mobile reports: skip paint for off-screen sections while keeping layout. */
+.report-section-shell {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
+
+/* Outside @layer so it always wins over UA focus rings on chart SVGs. */
+.recharts-wrapper,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-wrapper svg,
+.recharts-wrapper svg:focus,
+.recharts-wrapper svg:focus-visible,
+[data-chart],
+[data-chart]:focus,
+[data-chart]:focus-visible,
+[data-chart] svg,
+[data-chart] svg:focus,
+[data-chart] svg:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

@@ -62,7 +62,7 @@ export function FundsIndiaMatrixTable({
           ))}
 
           <tr className="border-b border-slate-900/80">
-            <td className={cn(fiHeaderCell(fiStickyLabelCell('z-20 normal-case')), matrixLabelCell)}>
+            <td className={cn(fiHeaderCell(fiStickyLabelCell('z-10 normal-case')), matrixLabelCell)}>
               Period
             </td>
             {data.holdingYears.map((year) => (

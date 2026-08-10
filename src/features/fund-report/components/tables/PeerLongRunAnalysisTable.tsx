@@ -93,11 +93,11 @@ export function PeerLongRunAnalysisTable({
   const metricsMinWidth = compact ? (isSmall ? 420 : 560) : 800
 
   const schemePane = (
-    <table className={FI_TABLE}>
+    <table className={cn(FI_TABLE, 'bg-card')}>
       <thead>
         <tr>
           <th
-            className={cn(fiHeaderCell(), SCHEME_COL, 'normal-case')}
+            className={cn(fiHeaderCell(), SCHEME_COL, 'bg-card normal-case')}
             title={asOfSuffix ? `Scheme${asOfSuffix}` : 'Scheme'}
           >
             {asOfHeader}

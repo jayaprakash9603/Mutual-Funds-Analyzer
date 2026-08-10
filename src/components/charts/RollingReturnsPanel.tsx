@@ -285,7 +285,7 @@ function RollingReturnsChart({
             <TableRow className="border-0 hover:bg-transparent">
               <TableHead
                 rowSpan={2}
-                className={cn('text-left', fiStickyLabelCell('z-20 min-w-[220px] normal-case'), TABLE_HEAD_CLASS)}
+                className={cn('text-left', fiStickyLabelCell('z-10 min-w-[220px] normal-case'), TABLE_HEAD_CLASS)}
               >
                 Scheme / Category Name
               </TableHead>

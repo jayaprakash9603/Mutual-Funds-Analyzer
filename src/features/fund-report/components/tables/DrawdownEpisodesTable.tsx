@@ -40,7 +40,7 @@ export function DrawdownEpisodesTable({ drawdown }: { drawdown: Drawdown }) {
         <table className={FI_TABLE}>
           <thead>
             <tr>
-              <th className={fiHeaderCell(fiStickyLabelCell('normal-case z-20'))}>#</th>
+              <th className={fiHeaderCell(fiStickyLabelCell('normal-case z-10'))}>#</th>
               <th className={fiHeaderCell()}>Peak</th>
               <th className={fiHeaderCell()}>Trough</th>
               <th className={fiHeaderCell()}>Recovery</th>

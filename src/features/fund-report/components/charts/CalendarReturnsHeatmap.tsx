@@ -31,17 +31,17 @@ const HEATMAP_TABLE =
 const HEATMAP_HEADER_CELL =
   'h-9 px-2 py-0 align-middle font-bold whitespace-nowrap leading-none'
 
-/** Opaque pinned leading pane containing only the Year column */
+/** Opaque pinned leading pane containing only the Year column (no alpha fills — prevents bleed). */
 function YearColumn({ years }: { years: YearRow[] }) {
   return (
-    <table className={cn(HEATMAP_TABLE, 'text-left')}>
+    <table className={cn(HEATMAP_TABLE, 'bg-slate-50 text-left dark:bg-slate-900')}>
       <thead>
-        <tr className="bg-slate-100 dark:bg-slate-800">
+        <tr>
           <th
             scope="col"
             className={cn(
               HEATMAP_HEADER_CELL,
-              'px-3 text-slate-800 dark:text-slate-200 min-w-[3.5rem] sm:min-w-[4rem]',
+              'min-w-[3.5rem] bg-slate-100 px-3 text-slate-800 dark:bg-slate-800 dark:text-slate-200 sm:min-w-[4rem]',
             )}
           >
             Year
@@ -50,13 +50,15 @@ function YearColumn({ years }: { years: YearRow[] }) {
       </thead>
       <tbody>
         {years.map((yearRow, rowIndex) => (
-          <tr
-            key={yearRow.year}
-            className={rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-100/30 dark:bg-slate-800/20'}
-          >
+          <tr key={yearRow.year}>
             <th
               scope="row"
-              className="h-9 px-3 py-0 align-middle font-bold tabular-nums text-slate-800 dark:text-slate-200 text-xs sm:text-sm whitespace-nowrap"
+              className={cn(
+                'h-9 whitespace-nowrap px-3 py-0 align-middle text-xs font-bold tabular-nums text-slate-800 sm:text-sm dark:text-slate-200',
+                rowIndex % 2 === 0
+                  ? 'bg-slate-50 dark:bg-slate-900'
+                  : 'bg-slate-100 dark:bg-slate-800',
+              )}
             >
               {yearRow.year}
               {yearRow.partial ? (
