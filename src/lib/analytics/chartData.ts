@@ -28,7 +28,6 @@ const HEATMAP_MONTHS = 36
 const TRADING_DAYS_PER_MONTH = 21
 const MAX_NAV_GAP_DAYS = 7
 const MILLIS_PER_DAY = 1000 * 60 * 60 * 24
-const ANNUAL_RETURN_YEARS = 12
 const VOLATILITY_WINDOW_DAYS = 63
 const HISTOGRAM_BINS = 20
 const RISK_METER_SCALE = 4
@@ -180,6 +179,7 @@ export function getAnnualReturns(input: AnalysisInput) {
   }
 
   return Array.from(years.entries())
+    .sort(([a], [b]) => a - b)
     .flatMap(([year, v]) => {
       if (!v.fundStart || !v.fundEnd || !v.benchStart || !v.benchEnd) return []
       return [{
@@ -188,7 +188,6 @@ export function getAnnualReturns(input: AnalysisInput) {
         benchmark: ((v.benchEnd / v.benchStart) - 1) * PERCENT,
       }]
     })
-    .slice(-ANNUAL_RETURN_YEARS)
 }
 
 export function getRollingReturnTimeline(input: AnalysisInput) {

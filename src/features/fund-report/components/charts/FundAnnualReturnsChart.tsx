@@ -21,7 +21,6 @@ import {
 } from '@/lib/charts/chartAxes'
 import { useResponsiveAxis } from '@/lib/charts/useResponsiveAxis'
 import { useFundAnalysis } from '@/hooks/useFundAnalysis'
-import { DEFAULT_PERIOD } from '@/lib/constants'
 
 const FUND_COLOR = CHART_COLORS.fund
 const BENCHMARK_COLOR = CHART_COLORS.benchmark
@@ -97,12 +96,12 @@ export function FundAnnualReturnsChart({
   const axis = useResponsiveAxis()
   const { data, result, loading, error } = useFundAnalysis(
     offlineView ? null : scheme,
-    DEFAULT_PERIOD,
+    '1 Year',
     startDate,
   )
 
   const annualReturns = useMemo<AnnualReturnRow[]>(
-    () => (data ? getAnnualReturns({ fund: data.fund, benchmark: data.benchmark, period: DEFAULT_PERIOD }) : []),
+    () => (data ? getAnnualReturns({ fund: data.fund, benchmark: data.benchmark, period: '1 Year' }) : []),
     [data],
   )
 
