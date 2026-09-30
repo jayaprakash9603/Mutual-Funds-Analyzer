@@ -27,7 +27,7 @@ export function ParallaxBand() {
       <div className="absolute inset-0 -z-10 bg-background/30 dark:bg-background/45" />
 
       <div className="mx-auto w-full max-w-[84rem] px-4 sm:px-6 lg:px-8">
-        <SectionLabel index="05" className="text-foreground/80">
+        <SectionLabel index="06" className="text-foreground/80">
           The data
         </SectionLabel>
         <h2 className="mt-6 font-display text-[clamp(3.2rem,9vw,8.5rem)] leading-[0.9] tracking-[-0.02em] text-foreground">

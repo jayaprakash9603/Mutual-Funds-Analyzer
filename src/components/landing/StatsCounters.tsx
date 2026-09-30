@@ -43,7 +43,7 @@ export function StatsCounters() {
 
   return (
     <section ref={ref} className="mx-auto w-full max-w-[84rem] px-4 py-24 sm:px-6 lg:px-8">
-      <SectionLabel index="06">By the numbers</SectionLabel>
+      <SectionLabel index="07">By the numbers</SectionLabel>
       <div className="mt-8 grid border-t border-border/70 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <StatItem key={stat.label} stat={stat} start={inView} index={index} />

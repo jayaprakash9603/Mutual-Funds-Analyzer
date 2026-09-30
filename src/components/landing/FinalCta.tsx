@@ -85,7 +85,7 @@ export function FinalCta() {
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute -bottom-40 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-primary/15 blur-[140px]" aria-hidden="true" />
       <div className="relative mx-auto flex w-full max-w-[84rem] flex-col px-4 py-28 sm:px-6 lg:px-8 lg:py-36">
-        <SectionLabel index="07">Start here</SectionLabel>
+        <SectionLabel index="08">Start here</SectionLabel>
         <h2 className="mt-6 font-display text-[clamp(3.6rem,11vw,10rem)] leading-[0.88] tracking-[-0.02em]">
           <RevealLine>Stop guessing.</RevealLine>
           <RevealLine delay={0.1}>

@@ -1,12 +1,15 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { FinalCta } from '@/components/landing/FinalCta'
+import { FlowLine } from '@/components/landing/FlowLine'
+import { PickedFundProvider } from '@/components/landing/PickedFundContext'
 import { FundShowcase } from '@/components/landing/FundShowcase'
 import { GoldenTrianglePinned } from '@/components/landing/GoldenTrianglePinned'
 import { IntroLoader } from '@/components/landing/IntroLoader'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { Marquee } from '@/components/landing/Marquee'
 import { ParallaxBand } from '@/components/landing/ParallaxBand'
-import { ReportRail } from '@/components/landing/ReportRail'
+import { NoiseIgnored } from '@/components/landing/NoiseIgnored'
+import { ReportStack } from '@/components/landing/ReportStack'
 import { ScrollWords } from '@/components/landing/ScrollWords'
 import { SectionLabel } from '@/components/landing/SectionLabel'
 import { StatsCounters } from '@/components/landing/StatsCounters'
@@ -15,12 +18,22 @@ const MANIFESTO =
   'Most funds look brilliant in a bull run. The real question is whether they beat their *benchmark* from every start date, through every cycle and every correction. Analyzer tests the *full history*, so luck has nowhere to hide.'
 
 export function LandingPage() {
+  return (
+    <PickedFundProvider>
+      <LandingContent />
+    </PickedFundProvider>
+  )
+}
+
+function LandingContent() {
   const [ready, setReady] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   const handleIntroDone = useCallback(() => setReady(true), [])
 
   return (
-    <div className="relative overflow-x-clip">
+    <div ref={rootRef} className="relative overflow-x-clip">
       <IntroLoader onDone={handleIntroDone} />
+      <FlowLine rootRef={rootRef} />
       <div
         className="landing-grain pointer-events-none fixed inset-[-50%] z-[60] opacity-[0.035] dark:opacity-[0.05]"
         aria-hidden="true"
@@ -38,8 +51,9 @@ export function LandingPage() {
       </section>
 
       <GoldenTrianglePinned />
+      <NoiseIgnored />
       <FundShowcase />
-      <ReportRail />
+      <ReportStack />
       <ParallaxBand />
       <StatsCounters />
       <FinalCta />

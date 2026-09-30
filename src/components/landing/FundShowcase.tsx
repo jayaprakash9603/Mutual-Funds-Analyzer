@@ -4,11 +4,13 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight, Check, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCountUp } from '@/hooks/useCountUp'
+import { toShowcaseSample } from '@/hooks/useFundPicks'
 import { useLandingSample, type LandingSample } from '@/hooks/useLandingSample'
 import { cn } from '@/lib/utils'
 import { CRITERIA } from './criteria'
 import { EASE, revealUp, VIEWPORT_ONCE } from './motion'
 import { PerformanceCurve } from './PerformanceCurve'
+import { usePickedFund } from './pickedFund'
 import { RevealLine } from './RevealLine'
 import { SectionLabel } from './SectionLabel'
 
@@ -120,13 +122,15 @@ export function FundShowcase() {
   const ref = useRef<HTMLElement>(null)
   const near = useInView(ref, { once: true, margin: '600px 0px' })
   const inView = useInView(ref, { once: true, amount: 0.25 })
-  const sample = useLandingSample(near)
+  const { pick } = usePickedFund()
+  const fallback = useLandingSample(near && !pick)
+  const sample = pick ? toShowcaseSample(pick) : fallback
 
   return (
     <section ref={ref} className="mx-auto w-full max-w-[84rem] px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
       <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
         <div className="lg:col-span-7">
-          <SectionLabel index="03">A real example</SectionLabel>
+          <SectionLabel index="04">A real example</SectionLabel>
           <h2 className="mt-5 font-display text-[clamp(2.8rem,6vw,5.5rem)] leading-[0.95] tracking-[-0.01em]">
             <RevealLine>One fund.</RevealLine>
             <RevealLine delay={0.1}>
@@ -141,9 +145,10 @@ export function FundShowcase() {
           viewport={VIEWPORT_ONCE}
           className="max-w-md text-muted-foreground lg:col-span-5"
         >
-          Here is how the analyzer scores a well-known flexi cap fund against its benchmark, using the same
-          captured data as the demo report. Illustrative only, and past performance does not guarantee future
-          returns.
+          {pick
+            ? `This is ${shortName(pick.fundName)}, the fund the bowl just picked, scored against its benchmark with the same captured data as the demo report.`
+            : 'Here is how the analyzer scores a well-known flexi cap fund against its benchmark, using the same captured data as the demo report.'}{' '}
+          Illustrative only, and past performance does not guarantee future returns.
         </motion.p>
       </div>
 
@@ -153,12 +158,14 @@ export function FundShowcase() {
           initial="hidden"
           whileInView="show"
           viewport={VIEWPORT_ONCE}
-          className="lg:col-span-7"
+          className="relative lg:col-span-7"
         >
+          <div data-flow-end className="pointer-events-none absolute right-0 top-0 size-px" aria-hidden />
           {sample === undefined ? (
             <Skeleton className="aspect-[4/3.6] w-full rounded-2xl" />
           ) : (
             <PerformanceCurve
+              key={sample?.fundName}
               className="h-full"
               series={sample?.series}
               title={sample ? `Growth of \u20b91,00,000 since ${sample.startYear}` : undefined}
@@ -177,7 +184,7 @@ export function FundShowcase() {
           className="lg:col-span-5"
         >
           {sample ? (
-            <Scorecard sample={sample} start={inView} />
+            <Scorecard key={sample.fundName} sample={sample} start={inView} />
           ) : (
             <Skeleton className="h-full min-h-[28rem] w-full rounded-2xl" />
           )}
