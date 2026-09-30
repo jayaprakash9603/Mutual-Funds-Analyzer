@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 const VIEW_WIDTH = 640
 const VIEW_HEIGHT = 480
@@ -42,12 +43,36 @@ function toLinePath(points: { x: number; y: number }[]) {
 
 const currency = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
 
-export function PerformanceCurve() {
+type PerformanceCurveProps = {
+  /** Levels indexed to 100 at the start. Falls back to the seeded sample series. */
+  series?: { fund: number[]; benchmark: number[] }
+  title?: string
+  badge?: string
+  fundLabel?: string
+  benchmarkLabel?: string
+  className?: string
+}
+
+export function PerformanceCurve({
+  series,
+  title = 'Growth of \u20b91,00,000 over ten years',
+  badge = 'Sample series',
+  fundLabel = 'Selected fund',
+  benchmarkLabel = 'Benchmark index',
+  className,
+}: PerformanceCurveProps) {
   const reduceMotion = useReducedMotion()
+  const gradientId = `fund-area-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
+  const draw = (delay: number, duration: number) => ({
+    initial: reduceMotion ? false : { pathLength: 0 },
+    whileInView: { pathLength: 1 },
+    viewport: { once: true, amount: 0.4 },
+    transition: { duration, delay, ease: [0.16, 1, 0.3, 1] as const },
+  })
 
   const chart = useMemo(() => {
-    const fundLevels = buildSeries(20130104, 0.0237, 0.055)
-    const benchmarkLevels = buildSeries(19960329, 0.0183, 0.044)
+    const fundLevels = series?.fund ?? buildSeries(20130104, 0.0237, 0.055)
+    const benchmarkLevels = series?.benchmark ?? buildSeries(19960329, 0.0183, 0.044)
     const combined = [...fundLevels, ...benchmarkLevels]
     const floor = Math.min(...combined) * 0.94
     const ceiling = Math.max(...combined) * 1.04
@@ -65,23 +90,23 @@ export function PerformanceCurve() {
       fundValue: (BASE_INVESTMENT * fundLevels[fundLevels.length - 1]) / 100,
       benchmarkValue: (BASE_INVESTMENT * benchmarkLevels[benchmarkLevels.length - 1]) / 100,
     }
-  }, [])
+  }, [series])
 
   const gridLines = [0.22, 0.46, 0.7, 0.94]
 
   return (
-    <figure className="glass flex flex-col gap-4 rounded-2xl p-5 sm:p-6">
+    <figure className={cn('glass flex flex-col gap-4 rounded-2xl p-5 sm:p-6', className)}>
       <figcaption className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium">Growth of &#8377;1,00,000 over ten years</span>
+        <span className="text-sm font-medium">{title}</span>
         <span className="shrink-0 whitespace-nowrap rounded-full border border-border/70 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-          Sample series
+          {badge}
         </span>
       </figcaption>
 
       <div className="relative aspect-[4/3] w-full">
         <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className="h-full w-full overflow-visible">
           <defs>
-            <linearGradient id="fund-area-fill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
               <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
             </linearGradient>
@@ -107,17 +132,16 @@ export function PerformanceCurve() {
             strokeWidth="2.25"
             strokeDasharray="6 6"
             strokeLinecap="round"
-            initial={reduceMotion ? false : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            {...draw(0.35, 1.5)}
           />
 
           <motion.path
             d={chart.fundArea}
-            fill="url(#fund-area-fill)"
+            fill={`url(#${gradientId})`}
             stroke="none"
             initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.8, delay: 1.35 }}
           />
 
@@ -128,9 +152,7 @@ export function PerformanceCurve() {
             strokeWidth="2.75"
             strokeLinecap="round"
             strokeLinejoin="round"
-            initial={reduceMotion ? false : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1.7, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            {...draw(0.5, 1.7)}
           />
 
           {!reduceMotion && (
@@ -154,7 +176,8 @@ export function PerformanceCurve() {
             stroke="var(--background)"
             strokeWidth="2.5"
             initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.4, delay: 2.1, ease: [0.16, 1, 0.3, 1] }}
             style={{ transformOrigin: `${chart.marker.x}px ${chart.marker.y}px` }}
           />
@@ -165,7 +188,7 @@ export function PerformanceCurve() {
         <div>
           <div className="flex items-center gap-2">
             <span className="h-0.5 w-4 rounded-full bg-primary" aria-hidden="true" />
-            <span className="text-xs text-muted-foreground">Selected fund</span>
+            <span className="truncate text-xs text-muted-foreground">{fundLabel}</span>
           </div>
           <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
             &#8377;{currency.format(chart.fundValue)}
@@ -178,7 +201,7 @@ export function PerformanceCurve() {
               style={{ backgroundImage: 'repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 6px)' }}
               aria-hidden="true"
             />
-            <span className="text-xs text-muted-foreground">Benchmark index</span>
+            <span className="truncate text-xs text-muted-foreground">{benchmarkLabel}</span>
           </div>
           <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-muted-foreground">
             &#8377;{currency.format(chart.benchmarkValue)}

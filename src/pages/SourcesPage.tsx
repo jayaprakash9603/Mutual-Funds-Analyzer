@@ -51,6 +51,21 @@ export function SourcesPage() {
         </ul>
       </LegalSection>
 
+      <LegalSection title="Imagery">
+        <p>
+          Home page photograph of Marine Drive, Mumbai by{' '}
+          <a
+            href="https://unsplash.com/photos/a-body-of-water-with-a-city-in-the-background-nsunJX3Q9lg"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            Nishith Parikh on Unsplash
+          </a>
+          , used under the Unsplash License.
+        </p>
+      </LegalSection>
+
       <LegalSection title="Trademarks">
         <p>
           Fund house names, scheme names, and index names are trademarks of their respective owners.

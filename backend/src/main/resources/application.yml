@@ -79,6 +79,8 @@ features:
       type: none
     openapi:
       enabled: true
+    apiExporter:
+      enabled: true
   upstream:
     host: analysis.investt.in
     basePath: /mutual-funds-research
@@ -121,3 +123,42 @@ springdoc:
     enabled: ${features.platform.openapi.enabled:true}
   swagger-ui:
     enabled: ${features.platform.openapi.enabled:true}
+
+api-exporter:
+  enabled: ${features.platform.apiExporter.enabled:true}
+  endpoint:
+    base-path: /api-export
+  metadata:
+    title: Mutual Funds Analyzer
+    description: Golden Triangle Mutual Fund Analyzer REST API
+    version: 0.0.1-SNAPSHOT
+  server:
+    base-url: "{{baseUrl}}"
+  discovery:
+    enabled: true
+    mode: startup
+    refresh-enabled: false
+  schemas:
+    enabled: true
+  examples:
+    enabled: true
+  exporters:
+    postman:
+      enabled: true
+    insomnia:
+      enabled: true
+    openapi:
+      enabled: true
+    curl:
+      enabled: true
+    http:
+      enabled: true
+    markdown:
+      enabled: true
+    html:
+      enabled: true
+  security:
+    enabled: false
+    mask-sensitive-fields: true
+  openapi:
+    version: 3.1.0

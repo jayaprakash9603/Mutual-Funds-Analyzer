@@ -36,10 +36,13 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --color-gold: var(--gold);
 }
 
 :root {
   --radius: 0.75rem;
+  --gold: #b7862b;
   /* Report green used by the rolling-returns tables and headings. */
   --brand: #1a8354;
   /* Presentation one-liners: deck ink #0456a0, highlight #00b050, alert #c00000. */
@@ -106,6 +109,7 @@
 }
 
 .dark {
+  --gold: #e8b04b;
   --headline-ink: #cadff7;
   --headline-accent: #3ddc84;
   --headline-alert: #fca5a5;
@@ -257,20 +261,6 @@
       radial-gradient(circle at 80% 0%, oklch(0.58 0.14 250 / 0.08), transparent 35%);
   }
 
-  /* The landing route is a single-screen composition, so the reserved scrollbar
-     gutter is dropped along with the overflow it would otherwise sit next to.
-     Below this threshold the content cannot fit and scrolling stays available. */
-  @media (min-width: 1024px) and (min-height: 680px) {
-    html.landing-locked,
-    html.landing-locked body {
-      overflow: hidden;
-    }
-
-    html.landing-locked body {
-      scrollbar-gutter: auto;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -285,16 +275,22 @@
 }
 
 @layer utilities {
-  .landing-viewport {
-    display: flex;
-    flex-direction: column;
+  .landing-hero {
+    min-height: calc(100svh - var(--app-chrome-offset));
   }
 
-  @media (min-width: 1024px) and (min-height: 680px) {
-    .landing-viewport {
-      height: calc(100dvh - var(--app-chrome-offset) - var(--landing-footer-offset));
-      overflow: hidden;
-    }
+  .landing-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: landing-grain 1s steps(6) infinite;
+  }
+
+  .landing-marquee {
+    animation: landing-marquee 36s linear infinite;
+  }
+
+  .landing-outline {
+    color: transparent;
+    -webkit-text-stroke: 1px currentColor;
   }
 
   .glass {
@@ -339,6 +335,17 @@
     border: 1px solid transparent;
     background-clip: padding-box;
   }
+}
+
+@keyframes landing-grain {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-3%, 2%); }
+  66% { transform: translate(2%, -3%); }
+  100% { transform: translate(-1%, 1%); }
+}
+
+@keyframes landing-marquee {
+  to { transform: translateX(-50%); }
 }
 
 /* Long mobile reports: skip paint for off-screen sections while keeping layout. */
