@@ -614,6 +614,7 @@ function buildVolatility(
     ],
     volatilityBand: annual >= 20 ? 'High' : annual >= 12 ? 'Moderate' : 'Low',
     headline: `Annualised volatility near ${annual.toFixed(1)}% (demo reconstruction).`,
+    rollingSharpeSeries: [],
   }
 }
 

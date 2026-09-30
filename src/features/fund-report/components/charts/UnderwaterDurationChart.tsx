@@ -114,7 +114,7 @@ export function UnderwaterDurationChart({ drawdown }: { drawdown: Drawdown }) {
                   dataKey="count"
                   position="top"
                   className="fill-foreground text-[11px] font-semibold"
-                  formatter={(value: number) => (value > 0 ? String(value) : '')}
+                  formatter={(value) => (Number(value) > 0 ? String(value) : '')}
                 />
               </Bar>
             </BarChart>

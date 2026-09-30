@@ -39,6 +39,7 @@ export const EMPTY_VOLATILITY: FundReportRisk['volatility'] = {
   dailyDistribution: [],
   volatilityBand: '',
   headline: '',
+  rollingSharpeSeries: [],
 }
 
 export const EMPTY_BEST_DAYS: FundReportRisk['bestDays'] = {

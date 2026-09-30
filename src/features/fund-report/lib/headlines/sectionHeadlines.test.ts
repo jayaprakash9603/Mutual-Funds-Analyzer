@@ -258,6 +258,7 @@ describe('buildVolatilityHeadline', () => {
         dailyDistribution: [],
         volatilityBand: 'High',
         headline: '',
+        rollingSharpeSeries: [],
       },
       'Demo Fund - Direct - Growth',
     )

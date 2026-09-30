@@ -61,6 +61,7 @@ const sampleVolatility: FundReportRisk['volatility'] = {
   dailyDistribution: [],
   volatilityBand: 'High',
   headline: 'High risk with 18.5% annualised volatility',
+  rollingSharpeSeries: [],
 }
 
 describe('volatilityInsights', () => {
