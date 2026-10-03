@@ -96,7 +96,6 @@ const DRAIN_SECONDS = 1.7
 export const SPOT_SECONDS = 5.2
 const SOLO_SPOT_SECONDS = 7
 const WINNER_SCALE = 1.15
-const BENCH_SCALE = 0.82
 const SPOT_SCALE = 1.55
 const TAU = Math.PI * 2
 
@@ -343,6 +342,79 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
   let clock = 0
   let spin = 0
   let counts: StageEvent['counts'] = [ballCount, ballCount, ballCount, ballCount]
+  let activeCount = 0
+
+  function activeSlots() {
+    return ids.map((id, i) => (id ? i : -1)).filter((i) => i >= 0)
+  }
+
+  function visibleFundSlots() {
+    return activeSlots().filter((i) => balls[i].visible)
+  }
+
+  /** Funds that should ride the ring through test 2 (top three finalists plus anyone who fails later). */
+  function ringSlots() {
+    return activeSlots().filter((i) => {
+      const outcome = states[i].outcome
+      if (outcome === 1) return false
+      if (outcome === null && !ranked.includes(ids[i])) return false
+      return states[i].checked >= 1
+    })
+  }
+
+  function pourDuration() {
+    return Math.max(POUR_SECONDS, 0.25 + (activeCount - 1) * POUR_GAP + 1.45)
+  }
+
+  function test1Duration() {
+    return 1.35 + activeCount * 0.14
+  }
+
+  function test2Duration() {
+    const finalists = Math.max(ringSlots().length, counts[1] > 0 ? Math.min(counts[1], PODIUM_SIZE + 2) : 1)
+    return 1.15 + finalists * 0.2
+  }
+
+  function pourComplete() {
+    return activeSlots().every((i) => states[i].spawnAt < 0)
+  }
+
+  function test1Complete() {
+    return visibleFundSlots().every((i) => states[i].checked >= 1)
+  }
+
+  function test2Complete() {
+    const slots = ringSlots()
+    return slots.length === 0 || slots.every((i) => states[i].checked >= 2)
+  }
+
+  function gateComplete() {
+    const flyers = gateFlyers()
+    return flyers.length === 0 || flyers.every((i) => states[i].checked >= 3)
+  }
+
+  function gateFlyers() {
+    return activeSlots().filter((i) => {
+      if (!balls[i].visible || !states[i].kin) return false
+      if (states[i].outcome === 3) return true
+      return states[i].outcome === null && ranked.includes(ids[i])
+    })
+  }
+
+  function hideBenchBall(i: number) {
+    balls[i].visible = false
+    states[i].kin = false
+    states[i].flightAt = -1
+    states[i].path = null
+    bodies[i].held = true
+    states[i].mark.visible = false
+  }
+
+  function ejectFromBowl(i: number) {
+    fail(i)
+    const position = balls[i].position
+    release(i, position.x * 0.55 + (random() - 0.5) * 0.35, 0.55 + random() * 0.35, position.z * 0.55 + (random() - 0.5) * 0.35)
+  }
 
   /** Loads a category onto the ball pool: textures, outcomes and podium pillars. */
   function loadCategory(index: number) {
@@ -350,6 +422,7 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
     const category = categories[index]
     const plan = planCategory(category.funds)
     counts = plan.counts
+    activeCount = category.funds.length
     winners = plan.winners
     ranked = winners.slice(0, PODIUM_SIZE)
     bench = winners.slice(PODIUM_SIZE)
@@ -496,8 +569,8 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
     stage = next
     stageTime = 0
     if (next === 'pour') {
-      stageLength = POUR_SECONDS
       loadCategory(nextCategory ?? categoryIndex)
+      stageLength = pourDuration()
       nextCategory = null
       const order = shuffle(
         ids.map((id, i) => (id ? i : -1)).filter((i) => i >= 0),
@@ -509,22 +582,36 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       })
     }
     if (next === 'test1') {
-      stageLength = 2.9
+      stageLength = test1Duration()
       slotCursor = 0
       options.onSpotlight(null)
     }
-    if (next === 'test2') stageLength = 2.5
+    if (next === 'test2') {
+      stageLength = test2Duration()
+      bench.forEach((id) => {
+        const i = ids.indexOf(id)
+        if (i >= 0) hideBenchBall(i)
+      })
+    }
     if (next === 'gate') {
-      const survivors = states
-        .map((s, i) => (s.kin ? i : -1))
-        .filter((i) => i >= 0)
-        .sort((a, b) => balls[a].position.x - balls[b].position.x)
+      bench.forEach((id) => {
+        const i = ids.indexOf(id)
+        if (i >= 0) hideBenchBall(i)
+      })
+      const survivors = gateFlyers().sort((a, b) => balls[a].position.x - balls[b].position.x)
       const passers = survivors.filter((i) => states[i].outcome === null)
       survivors.forEach((i, order) => {
         states[i].flightAt = GATE_READY + order * FLIGHT_GAP
         states[i].frontSlot = passers.indexOf(i)
       })
-      stageLength = GATE_READY + survivors.length * FLIGHT_GAP + PASS_FLIGHT + 0.4
+      activeSlots().forEach((i) => {
+        if (!survivors.includes(i) && states[i].kin) {
+          states[i].kin = false
+          states[i].flightAt = -1
+          bodies[i].held = true
+        }
+      })
+      stageLength = GATE_READY + survivors.length * FLIGHT_GAP + PASS_FLIGHT + 0.55
       gate.reset()
       gate.show()
     }
@@ -534,21 +621,16 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       podium.raise(1)
       podium.spotlight(0)
       gate.toHalo(1)
+      bench.forEach((id) => {
+        const i = ids.indexOf(id)
+        if (i >= 0) hideBenchBall(i)
+      })
       ranked.forEach((id, rank) => {
         const i = ids.indexOf(id)
         if (i < 0) return
         toKin(i, podiumTarget(rank, i), 1.2)
         states[i].scaleTarget = WINNER_SCALE
         states[i].glowTarget = 0.4
-      })
-      bench.forEach((id, slot) => {
-        const i = ids.indexOf(id)
-        if (i < 0) return
-        const point = benchPoint(slot, bench.length)
-        toKin(i, (out) => out.copy(point), 1 + slot * 0.08)
-        states[i].scaleTarget = BENCH_SCALE
-        states[i].glowTarget = 0.15
-        states[i].dimTarget = 0.2
       })
       moreTarget = bench.length ? 1 : 0
     }
@@ -580,7 +662,8 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
   }
 
   function runTest1() {
-    const sweep = clamp01((stageTime - 0.2) / 2.1)
+    const sweepSpan = 1.55 + activeCount * 0.1
+    const sweep = clamp01((stageTime - 0.2) / sweepSpan)
     const scanY = 0.45 - (0.45 + BOWL_RADIUS) * sweep
     scan.visible = sweep > 0 && sweep < 1
     const radius = scanY >= 0 ? BOWL_RADIUS + 0.03 : Math.sqrt(Math.max(BOWL_RADIUS ** 2 - scanY ** 2, 0.01))
@@ -591,24 +674,27 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       if (balls[i].position.y < scanY && sweep < 1) return
       state.checked = 1
       if (state.outcome === 1) {
-        fail(i)
+        ejectFromBowl(i)
         return
       }
       mark(i, true)
       state.glowTarget = 1
-      toKin(i, ringTarget(slotCursor, counts[1]), 1.1)
+      const ringCount = Math.max(counts[1], Math.min(PODIUM_SIZE + 2, slotCursor + 1))
+      toKin(i, ringTarget(slotCursor, ringCount), 1.1)
       slotCursor += 1
     })
   }
 
   function runTest2() {
-    const sweep = clamp01((stageTime - 0.2) / 1.9) * TAU * 1.15
+    const sweepSpan = 1.55 + ringSlots().length * 0.16
+    const sweep = clamp01((stageTime - 0.2) / sweepSpan) * TAU * 1.15
     const start = Math.PI / 2
     const angle = start + sweep
     beamGroup.visible = sweep > 0 && sweep < TAU * 1.15
     beamGroup.position.set(Math.cos(angle) * RING[0].radius, RING[0].y, Math.sin(angle) * RING[0].radius)
     states.forEach((state, i) => {
-      if (!state.kin || state.checked >= 2) return
+      if (!state.kin || state.checked >= 2 || !balls[i].visible) return
+      if (state.outcome === null && !ranked.includes(ids[i])) return
       const position = balls[i].position
       const relative = (((Math.atan2(position.z, position.x) - start) % TAU) + TAU) % TAU
       if (sweep < relative && sweep < TAU * 1.15) return
@@ -696,7 +782,17 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       podium.burst()
     }
     if (stage === 'spotlight') runSpotlight(dt)
-    if (stageTime >= stageLength) {
+    const stageReady =
+      stage === 'pour'
+        ? pourComplete() && stageTime >= stageLength
+        : stage === 'test1'
+          ? test1Complete() && stageTime >= stageLength
+          : stage === 'test2'
+            ? test2Complete() && stageTime >= stageLength
+            : stage === 'gate'
+              ? gateComplete() && stageTime >= stageLength
+              : stageTime >= stageLength
+    if (stageReady) {
       scan.visible = false
       beamGroup.visible = false
       const next = NEXT_STAGE[stage]
@@ -727,6 +823,9 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       } else {
         const body = bodies[i]
         mesh.position.set(body.x, body.y, body.z)
+        if (state.dimTarget > 0.45 && body.y < -BOWL_RADIUS - 0.35 && !state.draining) {
+          mesh.visible = false
+        }
         const speed = Math.hypot(body.vx, body.vz)
         if (speed > 0.001 && dt > 0) {
           axis.set(body.vz, 0, -body.vx).normalize()
@@ -811,14 +910,9 @@ export function createFundBowl(container: HTMLElement, options: FundBowlOptions)
       states[i].t0 = -10
       states[i].scale = WINNER_SCALE
     })
-    bench.forEach((id, slot) => {
+    bench.forEach((id) => {
       const i = ids.indexOf(id)
-      if (i < 0) return
-      const point = benchPoint(slot, bench.length)
-      toKin(i, (out) => out.copy(point), 1)
-      states[i].t0 = -10
-      states[i].scale = BENCH_SCALE
-      states[i].scaleTarget = BENCH_SCALE
+      if (i >= 0) hideBenchBall(i)
     })
     moreTarget = bench.length ? 1 : 0
     stage = 'spotlight'
